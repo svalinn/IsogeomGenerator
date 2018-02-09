@@ -1,6 +1,6 @@
 import yt
 import sys
-
+import numpy as np
 
 def load_mesh(f):
 
@@ -31,6 +31,38 @@ def get_isosurfaces(mesh):
     #mesh.surface(mesh, 'ww_n', 0.1)
 
 
+def convert_to_uniform(mesh):
+
+    left = mesh.domain_left_edge
+    right = mesh.domain_right_edge
+    dims = mesh.domain_dimensions
+    print(mesh.field_list)
+
+    data = mesh.all_data()
+
+    print(type(data))
+
+    # print(data.field_list)
+    ww_data = data['ww_n']
+    print(data['idx'])
+    idx_data = data['idx']
+    #
+    # print('idx')
+    d = {'ww_n':ww_data, 'idx':idx_data}
+    #
+    # print(ww_data.shape)
+    #
+    # arr = np.random.random((128, 128, 128))
+    #print(arr.shape)
+    #
+    # #obj = mesh.arbitrary_grid(left, right, dims)
+    #
+    ds = yt.load_uniform_grid(d, dims)
+    print(ds.field_list)
+    #
+    # #d = ds.all_data()
+    # #
+    # ds.extract_isocontours("ww_n", 0.02, "test.obj", True)
 
 
 def main():
@@ -41,7 +73,9 @@ def main():
     mesh = load_mesh(f)
 
     # attempt to get iso_contours from
-    get_isosurfaces(mesh)
+    # get_isosurfaces(mesh)
+
+    convert_to_uniform(mesh)
 
 
 
