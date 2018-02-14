@@ -2,3 +2,4 @@
 *.vtk
 visitlog.py
 *.obj
+bld/
