@@ -1,0 +1,4 @@
+*.png
+*.vtk
+visitlog.py
+*.obj
