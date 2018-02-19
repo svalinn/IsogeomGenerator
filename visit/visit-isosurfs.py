@@ -3,25 +3,60 @@ import sys
 
 v.LaunchNowin()
 
+def load_vtk(f):
+    """Load a .vtk file into visit that contains weight window data.
 
-def get_contours():
-    # get the contours from the file
-    # to add: ability to choose number of contour levels
-    # add plot
-    v.AddPlot("Contour", "ww_n")
+    Paramaters:
+    -----------
+        f: string, path to .vtk file to open
+    """
+    v.OpenDatabase(f)
+
+
+def get_contours(data, N=10, log=True, **kwargs):
+    """Get the isosurface contours according to desired parameters.
+
+    Paramters:
+    ----------
+        data: string, name of data to use to make contours
+            example: "ww_n" for neutron weight windows
+        N: (optional) int, number of contours to generate, default=10
+        log: (optional) boolean, true to use log scale, false to use
+            inear; default is true (log scale)
+        minval: (optional) float, minimum value to use for isosurfaces;
+            if not provided, to be chosen by VisIt
+        maxval: (optional) float, maximum value to use for isosurfaces;
+            if not provided, to be chosen by VisIt
+    """
+
+    v.AddPlot("Contour", data)
 
     # adjust settings
     att = v.ContourAttributes()
-    att.SetScaling(1)
-    att.minFlag = True
-    att.maxFlag = True
-    att.min = 5e-9
-    att.max = 0.5
+
+    # log or linear scale
+    if log:
+        att.SetScaling(1)
+    else:
+        att.SetScaling(0)
+
+    # minimum and maximum surface values to use
+    if 'minval' in kwargs:
+        att.minFlag = True
+        att.min = kwargs['minval']
+    if 'maxval' in kwargs:
+        att.maxFlag = True
+        att.max = 0.5
+
     v.SetPlotOptions(att)
-    #print(att)
+
+    # number of evenly spaced contours - TO DO
 
     # draw the plot
-    v.DrawPlots()
+    #v.DrawPlots()
+
+    print(att)
+
 
 def save_plot():
     #save the plot
@@ -50,13 +85,13 @@ def main():
     # load the file
     # this should be "expanded_tags.vtk"
     f = sys.argv[1]
-    v.OpenDatabase(f)
 
-    get_contours()
+    load_vtk(f)
+    get_contours("ww_n", N=10, log=True, minval=5.e-9, maxval=0.5)
 
     #save_plot()
 
-    export_db()
+    #export_db()
 
 
 if __name__ == "__main__":
