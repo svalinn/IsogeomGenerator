@@ -46,29 +46,92 @@ def get_contours(data, N=10, log=True, **kwargs):
         att.min = kwargs['minval']
     if 'maxval' in kwargs:
         att.maxFlag = True
-        att.max = 0.5
+        att.max = kwargs['maxval']
+
+    # number of evenly spaced contours
+    att.contourNLevels = N
 
     v.SetPlotOptions(att)
-
-    # number of evenly spaced contours - TO DO
-
-    # draw the plot
-    #v.DrawPlots()
-
     print(att)
 
 
-def save_plot():
-    #save the plot
-    s = v.SaveWindowAttributes()
-    s.format = s.PNG
-    s.fileName = "test"
-    s.width, s.height = 1024,768
-    s.screenCapture = 0
-    v.SetSaveWindowAttributes(s)
-    name = v.SaveWindow()
-    print(name)
+def save_plots(plot3D=True, plot2D=True, basename="plot", **kwargs):
+    """Save a PNG image of the plot if desired. 3D contour and 2D slice
+    of contour plot possible.
 
+    Parameters:
+    -----------
+        plot3D: (optional) bool, True to save as a 3D image of the contours;
+            default=True
+        plot2D: (optional) bool, True to save as a 2D image of the contours;
+            default=True
+        basename: (optional), string, base name to use for file names.
+            Default="plot". Files saved as plot-2d.png and plot-3d.png
+            for 2D and 3D plots, respectively.
+        axis: string, required if 2D plot, axis to slice along
+        val: float, required if 2D plot, value to slice at
+    """
+
+    # plot 3D first
+    if plot3D:
+        v.DrawPlots()
+        s = v.SaveWindowAttributes()
+        s.format = s.PNG
+        s.fileName = basename + "-3d"
+        s.width, s.height = 1024,768
+        s.screenCapture = 0
+        v.SetSaveWindowAttributes(s)
+        v.SaveWindow()
+
+    # plot 2D next
+    if plot2D:
+        # check that appropriate kwargs supplied
+        # if not supplied, return no plot
+        if ('axis' and 'val') not in kwargs:
+            print("Must supply slicing axis and location for 2D plot.")
+            return
+        else:
+            axis = kwargs['axis']
+            # check that "axis" is either x, y, or z
+            if axis not in ['x', 'y', 'z', 'X', 'Y', 'Z']:
+                print("Axis {} is invalid.".format(axis))
+                return
+            else:
+                v.AddOperator("Slice")
+                atts = v.SliceAttributes()
+                print(atts)
+
+                # set axis
+                if axis in ['x', 'X']:
+                    ax = 0
+                elif axis in ['y', 'Y']:
+                    ax = 1
+                elif axis in ['y', 'Y']:
+                    ax = 2
+
+                atts.axisType = ax
+                val = kwargs['val']
+                atts.originIntercept = val
+
+                v.SetOperatorOptions(atts)
+
+                # redraw to include slice operator
+                v.DrawPlots()
+
+                # save plot
+                s = v.SaveWindowAttributes()
+                s.format = s.PNG
+                s.fileName = basename + "-2d"
+                s.width, s.height = 1024,768
+                s.screenCapture = 0
+                v.SetSaveWindowAttributes(s)
+                v.SaveWindow()
+
+                # remove the slice to continue working
+                v.RemoveLastOperator()
+
+                # redraw plot to get back to 3D
+                v.DrawPlots()
 
 def export_db():
     # save the database as OBJ
@@ -89,7 +152,8 @@ def main():
     load_vtk(f)
     get_contours("ww_n", N=10, log=True, minval=5.e-9, maxval=0.5)
 
-    #save_plot()
+    save_plots(plot3D=True, plot2D=True, basename="plot", axis='y', val=0.0)
+    #save_plots()
 
     #export_db()
 
