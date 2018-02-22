@@ -1,5 +1,6 @@
 import visit as v
 import sys
+import os
 
 v.LaunchNowin()
 
@@ -52,7 +53,7 @@ def get_contours(data, N=10, log=True, **kwargs):
     att.contourNLevels = N
 
     v.SetPlotOptions(att)
-    print(att)
+    v.DrawPlots()
 
 
 def save_plots(plot3D=True, plot2D=True, basename="plot", **kwargs):
@@ -133,14 +134,48 @@ def save_plots(plot3D=True, plot2D=True, basename="plot", **kwargs):
                 # redraw plot to get back to 3D
                 v.DrawPlots()
 
-def export_db():
-    # save the database as OBJ
+
+def export_complete_db(dbname, data):
+    """Export all 3D contours as a database. This will save a folder
+    with each contour as a different .vtk file.
+
+    Parameters:
+    -----------
+        dbname: string, name of the database to use for folder and files
+        data: string, variable name that is contoured to be exported
+    """
 
     e = v.ExportDBAttributes()
-    e.db_type="WavefrontOBJ"
-    e.filename="test_export_obj"
-    e.variables="ww_n"
+    e.db_type = "VTK"
+    e.filename = dbname
+    e.variables = data
     v.ExportDatabase(e)
+
+
+def export_slices(dbname):
+    """Exports the vtk files for the intersection of countours with the
+    domain bounds.
+
+    Parameters:
+    -----------
+        dbname: string, name of the database (must correspond to folder
+            name and .vtk files within the folder)
+    """
+
+    # open database
+    v.OpenDatabase(dbname + "/" + dbname + ".*.vtk database")
+
+    # load meshes
+    v.AddPlot("Mesh", "mesh")
+
+    # determine number of contour files in the database
+    path, dirs, files = os.walk(dbname).next()
+    N = len(files)
+
+    # get domain boundaries
+
+
+    # for each contour, get intersections with boundaries
 
 
 def main():
@@ -148,15 +183,25 @@ def main():
     # load the file
     # this should be "expanded_tags.vtk"
     f = sys.argv[1]
+    data = "ww_n"
+    dbname = "contours"
 
-    load_vtk(f)
-    get_contours("ww_n", N=10, log=True, minval=5.e-9, maxval=0.5)
+    #load_vtk(f)
 
-    save_plots(plot3D=True, plot2D=True, basename="plot", axis='y', val=0.0)
-    #save_plots()
+    # to capture the full problem
+    # get_contours(data, N=10, log=True, minval=5.e-9, maxval=0.5)
 
-    #export_db()
+    # to get clean lines, use these values
+    #get_contours(data, N=6, log=True, minval=1.e-6, maxval=0.5)
 
+    #save_plots(plot3D=True, plot2D=True, basename="plot", axis='y', val=0.0)
+
+    #export_complete_db(dbname, data)
+
+    # delete all active plots before moving on to slices
+    v.DeleteAllPlots()
+
+    export_slices(dbname)
 
 if __name__ == "__main__":
     main()
