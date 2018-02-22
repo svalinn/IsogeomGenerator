@@ -189,6 +189,7 @@ def export_slices(dbname):
         dbname: string, name of the database (must correspond to folder
             name and .vtk files within the folder)
     """
+
     # determine number of contour files in the database
     path, dirs, files = os.walk(dbname).next()
     N = len(files)
@@ -198,14 +199,77 @@ def export_slices(dbname):
     xb = bounds[0:2]
     yb = bounds[2:4]
     zb = bounds[4:6]
+    bounds = {'x': xb, 'y': yb, 'z': zb}
 
     # open database
     v.OpenDatabase(dbname + "/" + dbname + ".*.vtk database")
-
-    # load meshes
+    print(v.GetDatabaseNStates())
+    print(v.GetWindowInformation().timeSliders)
+    # load and draw meshes
     v.AddPlot("Mesh", "mesh")
+    v.DrawPlots()
+
+    # suppress upcoming error and warning messages from visit (we
+    # know that some slices will yield no data
+    #v.SuppressMessages(1)
+
+    if not os.path.exists('slices'):
+        os.makedirs('slices')
 
     # for each contour, get intersections with boundaries
+
+
+    # for each bound, check if there is an intersection
+    for axis in bounds.keys():
+        v.AddOperator("Slice")
+        atts = v.SliceAttributes()
+
+        if axis == 'x':
+            atts.axisType = 0
+        elif axis == 'y':
+            atts.axisType = 1
+        elif axis == 'z':
+            atts.axisType = 2
+
+        #print(axis)
+
+        # slice for each bound on the current axis
+        for b in bounds[axis]:
+
+            # determine if min or max bound
+            if b == min(bounds[axis]):
+                slice_type = 'min'
+            else:
+                slice_type = 'max'
+
+            #print(slice_type, b)
+
+            # set slice location and draw
+            atts.originIntercept = b
+            v.SetOperatorOptions(atts)
+            v.DrawPlots()
+
+            # try to export for each time step
+            for t in range(0, N):
+                #print(t)
+                # set time step
+                v.SetTimeSliderState(t)
+
+                # try export
+                e = v.ExportDBAttributes()
+                e.db_type = "VTK"
+                e.dirname = 'slices'
+                e.filename = 't{}-{}{}'.format(t, axis, slice_type)
+                e.variables = "ww_n"
+                v.ExportDatabase(e)
+
+            # remove slice to be able to re-slice
+            v.RemoveLastOperator()
+
+    # unsuppress messages
+    v.SuppressMessages(4)
+
+
 
 
 def main():
@@ -216,17 +280,17 @@ def main():
     data = "ww_n"
     dbname = "contours"
 
-    #load_vtk(f)
+    load_vtk(f)
 
     # to capture the full problem
     # get_contours(data, N=10, log=True, minval=5.e-9, maxval=0.5)
 
     # to get clean lines, use these values
-    #get_contours(data, N=6, log=True, minval=1.e-6, maxval=0.5)
+    get_contours(data, N=6, log=True, minval=1.e-6, maxval=0.5)
 
     #save_plots(plot3D=True, plot2D=True, basename="plot", axis='y', val=0.0)
 
-    #export_complete_db(dbname, data)
+    export_complete_db(dbname, data)
 
     # delete all active plots before moving on to slices
     v.DeleteAllPlots()
