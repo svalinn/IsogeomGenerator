@@ -152,6 +152,34 @@ def export_complete_db(dbname, data):
     v.ExportDatabase(e)
 
 
+def get_boundaries(filename):
+    """Get boundaries of the domain by opening one file
+
+    Parameters:
+    -----------
+        filename: string, path to single .vtk file
+
+    Returns:
+    --------
+        bounds: list of floats, list of bounds in this order:
+            [xmin, xmax, ymin, ymax, zmin, zmax]
+    """
+
+    f = open(filename)
+    end = False
+    while not end:
+        line = f.readline()
+        if line.split(" ")[0] == 'avtOriginalBounds':
+            bline = f.readline()
+            bound_list = bline.split(" ")
+            bound_list.remove("\n")
+            bounds = [float(x) for x in bound_list]
+            end = True
+    f.close()
+
+    return bounds
+
+
 def export_slices(dbname):
     """Exports the vtk files for the intersection of countours with the
     domain bounds.
@@ -161,19 +189,21 @@ def export_slices(dbname):
         dbname: string, name of the database (must correspond to folder
             name and .vtk files within the folder)
     """
+    # determine number of contour files in the database
+    path, dirs, files = os.walk(dbname).next()
+    N = len(files)
+
+    # get domain boundaries
+    bounds = get_boundaries(dbname + "/" + dbname + ".0.vtk")
+    xb = bounds[0:2]
+    yb = bounds[2:4]
+    zb = bounds[4:6]
 
     # open database
     v.OpenDatabase(dbname + "/" + dbname + ".*.vtk database")
 
     # load meshes
     v.AddPlot("Mesh", "mesh")
-
-    # determine number of contour files in the database
-    path, dirs, files = os.walk(dbname).next()
-    N = len(files)
-
-    # get domain boundaries
-
 
     # for each contour, get intersections with boundaries
 
