@@ -100,7 +100,6 @@ def save_plots(plot3D=True, plot2D=True, basename="plot", **kwargs):
             else:
                 v.AddOperator("Slice")
                 atts = v.SliceAttributes()
-                print(atts)
 
                 # set axis
                 if axis in ['x', 'X']:
@@ -176,6 +175,7 @@ def get_boundaries(filename):
             bounds = [float(x) for x in bound_list]
             end = True
     f.close()
+    print(bounds)
 
     return bounds
 
@@ -203,46 +203,46 @@ def export_slices(dbname):
 
     # open database
     v.OpenDatabase(dbname + "/" + dbname + ".*.vtk database")
-    print(v.GetDatabaseNStates())
-    print(v.GetWindowInformation().timeSliders)
+
     # load and draw meshes
     v.AddPlot("Mesh", "mesh")
     v.DrawPlots()
 
     # suppress upcoming error and warning messages from visit (we
     # know that some slices will yield no data
-    #v.SuppressMessages(1)
+    v.SuppressMessages(1)
 
+    # create directory to hold slices
     if not os.path.exists('slices'):
         os.makedirs('slices')
 
-    # for each contour, get intersections with boundaries
-
-
-    # for each bound, check if there is an intersection
+    # for each domain boundary, check if there is an intersection with
+    # each contour and export if there is.
     for axis in bounds.keys():
-        v.AddOperator("Slice")
-        atts = v.SliceAttributes()
-
-        if axis == 'x':
-            atts.axisType = 0
-        elif axis == 'y':
-            atts.axisType = 1
-        elif axis == 'z':
-            atts.axisType = 2
-
-        #print(axis)
 
         # slice for each bound on the current axis
         for b in bounds[axis]:
 
+            # create slice
+            v.AddOperator("Slice")
+            atts = v.SliceAttributes()
+
+            # determine axis
+            if axis == 'x':
+                atts.axisType = 0
+            elif axis == 'y':
+                atts.axisType = 1
+            elif axis == 'z':
+                atts.axisType = 2
+
             # determine if min or max bound
             if b == min(bounds[axis]):
                 slice_type = 'min'
+                # also reassign minimum bound value so that it is
+                # inclusive in the slice, else there may be no slice
+                b += 1.e-8
             else:
                 slice_type = 'max'
-
-            #print(slice_type, b)
 
             # set slice location and draw
             atts.originIntercept = b
@@ -251,7 +251,7 @@ def export_slices(dbname):
 
             # try to export for each time step
             for t in range(0, N):
-                #print(t)
+
                 # set time step
                 v.SetTimeSliderState(t)
 
@@ -270,8 +270,6 @@ def export_slices(dbname):
     v.SuppressMessages(4)
 
 
-
-
 def main():
 
     # load the file
@@ -280,6 +278,7 @@ def main():
     data = "ww_n"
     dbname = "contours"
 
+    # load original vtk of full model
     load_vtk(f)
 
     # to capture the full problem
@@ -288,13 +287,16 @@ def main():
     # to get clean lines, use these values
     get_contours(data, N=6, log=True, minval=1.e-6, maxval=0.5)
 
-    #save_plots(plot3D=True, plot2D=True, basename="plot", axis='y', val=0.0)
+    # save a 2D and 3D countour plot for reference
+    save_plots(plot3D=True, plot2D=True, basename="plot", axis='y', val=0.0)
 
+    # export complete 3D countours
     export_complete_db(dbname, data)
 
     # delete all active plots before moving on to slices
     v.DeleteAllPlots()
 
+    # export set of slices
     export_slices(dbname)
 
 if __name__ == "__main__":
