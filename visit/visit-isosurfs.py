@@ -209,7 +209,7 @@ def export_slices(dbname):
     v.DrawPlots()
 
     # suppress upcoming error and warning messages from visit (we
-    # know that some slices will yield no data
+    # know that some slices will yield no data)
     v.SuppressMessages(1)
 
     # create directory to hold slices
@@ -236,13 +236,14 @@ def export_slices(dbname):
                 atts.axisType = 2
 
             # determine if min or max bound
+            # need to adjust bounds by 1e-14 to ensure inclusivity
+            # within visit slicing program
             if b == min(bounds[axis]):
                 slice_type = 'min'
-                # also reassign minimum bound value so that it is
-                # inclusive in the slice, else there may be no slice
-                b += 1.e-8
+                b += 1.e-14
             else:
                 slice_type = 'max'
+                b -= 1.e-14
 
             # set slice location and draw
             atts.originIntercept = b
