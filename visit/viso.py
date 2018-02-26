@@ -3,6 +3,36 @@ import sys
 import os
 
 
+def _unpack_params(params):
+    # determine if log scale or linear
+    if 'log' in params.keys():
+        log = params['log']
+    else:
+        log = False
+
+    # minimum and maximum isosurface values to use
+    if 'minval' not in params.keys():
+        if log:
+            minval = 1.e-10
+        else:
+            minval = 0.
+    else:
+        minval = params['minval']
+
+    # set maximum isosurface value if any
+    if 'maxval' in params.keys():
+        maxval = params['maxval']
+    else:
+        maxval = None
+
+    # set number of contour levels
+    if 'N' in params.keys():
+        N = params['N']
+    else:
+        N = 10
+
+    return log, minval, maxval, N
+
 
 def _load_vtk(f):
     """Load a .vtk file into visit that contains weight window data.
@@ -14,7 +44,7 @@ def _load_vtk(f):
     v.OpenDatabase(f)
 
 
-def _get_isosurfs(data, N, log, minval, maxval):
+def _plot_isosurfs(data, N, log, minval, maxval):
     """Get the isosurface contours according to desired parameters.
 
     Paramters:
@@ -47,7 +77,6 @@ def _get_isosurfs(data, N, log, minval, maxval):
 
     # set maximum isosurface value if given
     if maxval:
-        print(maxval)
         att.maxFlag = True
         att.max = maxval
 
@@ -104,7 +133,7 @@ def _get_boundaries(filename):
     return bounds
 
 
-def _export_slices(dbname):
+def _generate_slices(dbname):
     """Exports the vtk files for the intersection of countours with the
     domain bounds.
 
@@ -196,89 +225,7 @@ def _export_slices(dbname):
     v.SuppressMessages(4)
 
 
-def SavePlot2d():
-    pass
-
-
-def SavePlot3d(plot3D=True, plot2D=True, basename="plot", **kwargs):
-    """Save a PNG image of the plot if desired. 3D contour and 2D slice
-    of contour plot possible.
-
-    Parameters:
-    -----------
-        plot3D: (optional) bool, True to save as a 3D image of the contours;
-            default=True
-        plot2D: (optional) bool, True to save as a 2D image of the contours;
-            default=True
-        basename: (optional), string, base name to use for file names.
-            Default="plot". Files saved as plot-2d.png and plot-3d.png
-            for 2D and 3D plots, respectively.
-        axis: string, required if 2D plot, axis to slice along
-        val: float, required if 2D plot, value to slice at
-    """
-
-    # plot 3D first
-    if plot3D:
-        v.DrawPlots()
-        s = v.SaveWindowAttributes()
-        s.format = s.PNG
-        s.fileName = basename + "-3d"
-        s.width, s.height = 1024,768
-        s.screenCapture = 0
-        v.SetSaveWindowAttributes(s)
-        v.SaveWindow()
-
-    # plot 2D next
-    if plot2D:
-        # check that appropriate kwargs supplied
-        # if not supplied, return no plot
-        if ('axis' and 'val') not in kwargs:
-            print("Must supply slicing axis and location for 2D plot.")
-            return
-        else:
-            axis = kwargs['axis']
-            # check that "axis" is either x, y, or z
-            if axis not in ['x', 'y', 'z', 'X', 'Y', 'Z']:
-                print("Axis {} is invalid.".format(axis))
-                return
-            else:
-                v.AddOperator("Slice")
-                atts = v.SliceAttributes()
-
-                # set axis
-                if axis in ['x', 'X']:
-                    ax = 0
-                elif axis in ['y', 'Y']:
-                    ax = 1
-                elif axis in ['y', 'Y']:
-                    ax = 2
-
-                atts.axisType = ax
-                val = kwargs['val']
-                atts.originIntercept = val
-
-                v.SetOperatorOptions(atts)
-
-                # redraw to include slice operator
-                v.DrawPlots()
-
-                # save plot
-                s = v.SaveWindowAttributes()
-                s.format = s.PNG
-                s.fileName = basename + "-2d"
-                s.width, s.height = 1024,768
-                s.screenCapture = 0
-                v.SetSaveWindowAttributes(s)
-                v.SaveWindow()
-
-                # remove the slice to continue working
-                v.RemoveLastOperator()
-
-                # redraw plot to get back to 3D
-                v.DrawPlots()
-
-
-def GenerateIsosurfaceContours(f, data, dbname, N=10, log=True, **kwargs):
+def GenerateIsosurfaceContours(f, data, dbname, params={}):
     """Generates a set of .vtk files that correspond to the following:
         VTK Database called <dbname>: contains one vtk file for each
             3D generated isosurface (# of files <= N).
@@ -300,38 +247,153 @@ def GenerateIsosurfaceContours(f, data, dbname, N=10, log=True, **kwargs):
         f: string, path to the data file to contour (.vtk)
         data: string, name of data to use to make contours
             example: "ww_n" for neutron weight windows
-        N: (optional) int, number of contours to generate, default=10
-        log: (optional) boolean, true to use log scale, false to use
-            linear; default is true (log scale)
-        minval: (optional) float, minimum value to use for isosurfaces;
-            if not provided, minval=1.e-10 when log=True, else minval=0.
-        maxval: (optional) float, maximum value to use for isosurfaces;
-            if not provided, to be chosen by VisIt
+        dbname: string, name of the database to use for folder and files
+        params: (optional) dictionary, with the following optional keys
+            and values:
+            'N': (optional) int, number of contours to generate;
+                default=10
+            'log': (optional) boolean, true to use log scale, false to
+                use linear; default is true (log scale)
+            'minval': (optional) float, minimum value to use for
+                isosurfaces; if not provided, minval=1.e-10 when
+                log=True, else minval=0.
+            'maxval': (optional) float, maximum value to use for
+                isosurfaces; if not provided, to be chosen by VisIt
+
+            example: {'N': 6, 'log': True, 'minval': 1e-5, 'maxval': .5}
+            If using all default values, no params argument is necessary.
     """
 
-    # minimum and maximum isosurface values to use
-    if 'minval' not in kwargs:
-        if log:
-            minval = 1.e-10
-        else:
-            minval = 0.
-    else:
-        minval = kwargs['minval']
-
-    # set maximum isosurface value if any
-    if 'maxval' in kwargs:
-        maxval = kwargs['maxval']
-    else:
-        maxval = None
+    log, minval, maxval, N = _unpack_params(params)
 
     v.LaunchNowin()
 
     _load_vtk(f)
-    _get_isosurfs(data, N, log, minval, maxval=maxval)
+    _plot_isosurfs(data, N, log, minval, maxval)
     _export_isosurf_db(dbname, data)
 
     v.DeleteAllPlots()
 
-    _export_slices(dbname)
+    _generate_slices(dbname)
+
+    v.Close()
 
 
+def SavePlot3d(f, data, params, name="plot3d"):
+    """Save a PNG image of the 3D contour plot.
+
+    Parameters:
+    -----------
+        f: string, path to the data file to contour (.vtk)
+        data: string, name of data to use to make contours
+            example: "ww_n" for neutron weight windows
+        params: (optional) dictionary, with the following optional keys
+            and values:
+            'N': (optional) int, number of contours to generate;
+                default=10
+            'log': (optional) boolean, true to use log scale, false to
+                use linear; default is true (log scale)
+            'minval': (optional) float, minimum value to use for
+                isosurfaces; if not provided, minval=1.e-10 when
+                log=True, else minval=0.
+            'maxval': (optional) float, maximum value to use for
+                isosurfaces; if not provided, to be chosen by VisIt
+
+            example: {'N': 6, 'log': True, 'minval': 1e-5, 'maxval': .5}
+            If using all default values, no params argument is necessary.
+        name: (optional), string, file name to save as name.png.
+            Default="plot3d".
+    """
+
+    # unpack parameters
+    log, minval, maxval, N = _unpack_params(params)
+
+    v.LaunchNowin()
+
+    _load_vtk(f)
+
+    # plot the 3D contours
+    _plot_isosurfs(data, N, log, minval, maxval)
+
+    # save the plot
+    s = v.SaveWindowAttributes()
+    s.format = s.PNG
+    s.fileName = name
+    s.width, s.height = 1024,768
+    s.screenCapture = 0
+    v.SetSaveWindowAttributes(s)
+    v.SaveWindow()
+
+    v.Close()
+
+
+def SavePlot2d(f, data, params, axis, val, name="plot2d"):
+    """Saves a PNG image of the 2D slice plot along axis at location
+    val.
+
+    Parameters:
+    -----------
+        f: string, path to the data file to contour (.vtk)
+        params: (optional) dictionary, with the following optional keys
+            and values:
+            'N': (optional) int, number of contours to generate;
+                default=10
+            'log': (optional) boolean, true to use log scale, false to
+                use linear; default is true (log scale)
+            'minval': (optional) float, minimum value to use for
+                isosurfaces; if not provided, minval=1.e-10 when
+                log=True, else minval=0.
+            'maxval': (optional) float, maximum value to use for
+                isosurfaces; if not provided, to be chosen by VisIt
+
+            example: {'N': 6, 'log': True, 'minval': 1e-5, 'maxval': .5}
+            If using all default values, no params argument is necessary.
+        axis: string, axis to slice along ('x', 'y', or 'z')
+        val: float, value on axis to slice at
+        name: (optional), string, file name to save as name.png.
+            Default="plot2d".
+    """
+
+    # unpack parameters
+    log, minval, maxval, N = _unpack_params(params)
+
+    v.LaunchNowin()
+
+    _load_vtk(f)
+
+    # plot 3D in order to slice
+    _plot_isosurfs(data, N, log, minval, maxval)
+
+    # add slice
+    v.AddOperator("Slice")
+    atts = v.SliceAttributes()
+
+    # set axis
+    if axis in ['x', 'X']:
+        ax = 0
+    elif axis in ['y', 'Y']:
+        ax = 1
+    elif axis in ['y', 'Y']:
+        ax = 2
+    else:
+        print('Axis {} not recognized.'.format(axis))
+        return
+
+    atts.axisType = ax
+    atts.originIntercept = val
+
+    v.SetOperatorOptions(atts)
+
+    # redraw to include slice operator
+    v.DrawPlots()
+
+    # save plot
+    s = v.SaveWindowAttributes()
+    s.format = s.PNG
+    s.fileName = name
+    s.width, s.height = 1024,768
+    s.screenCapture = 0
+    v.SetSaveWindowAttributes(s)
+    v.SaveWindow()
+
+    v.Close()
