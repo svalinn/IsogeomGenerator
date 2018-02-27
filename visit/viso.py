@@ -4,6 +4,37 @@ import os
 
 
 def _unpack_params(params):
+    """Unpack the parameters to define the 3D contour for isosurfaces.
+    If a certain parameter is not provided, the default value will be
+    set.
+
+    Parameters:
+    -----------
+        params: dictionary, dict with zero or more of the following keys
+            and values:
+            'N': (optional) int, number of contours to generate;
+                default=10
+            'log': (optional) boolean, true to use log scale, false to
+                use linear; default is true (log scale)
+            'minval': (optional) float, minimum value to use for
+                isosurfaces; if not provided, minval=1.e-10 when
+                log=True, else minval=0.
+            'maxval': (optional) float, maximum value to use for
+                isosurfaces; if not provided, to be chosen by VisIt
+
+            example: {'N': 6, 'log': True, 'minval': 1e-5, 'maxval': .5}
+            If using all default values, params={}.
+
+    Returns:
+    --------
+        log: bool, true to use log scale, false for linear; default=True
+        minval: float, minimum value to use for contours; default=0
+            if log=False, or default=1.e-10 if log=True.
+        maxval: float or None, if given in params, maxval is float; if
+            not provided by params, set to None to be chosen by VisIt
+        N: int, number of contours to use; default=10
+    """
+
     # determine if log scale or linear
     if 'log' in params.keys():
         log = params['log']
@@ -32,16 +63,6 @@ def _unpack_params(params):
         N = 10
 
     return log, minval, maxval, N
-
-
-def _load_vtk(f):
-    """Load a .vtk file into visit that contains weight window data.
-
-    Paramaters:
-    -----------
-        f: string, path to .vtk file to open
-    """
-    v.OpenDatabase(f)
 
 
 def _plot_isosurfs(data, N, log, minval, maxval):
@@ -268,7 +289,7 @@ def GenerateIsosurfaceContours(f, data, dbname, params={}):
 
     v.LaunchNowin()
 
-    _load_vtk(f)
+    v.OpenDatabase(f)
     _plot_isosurfs(data, N, log, minval, maxval)
     _export_isosurf_db(dbname, data)
 
@@ -310,7 +331,7 @@ def SavePlot3d(f, data, params, name="plot3d"):
 
     v.LaunchNowin()
 
-    _load_vtk(f)
+    v.OpenDatabase(f)
 
     # plot the 3D contours
     _plot_isosurfs(data, N, log, minval, maxval)
@@ -359,7 +380,7 @@ def SavePlot2d(f, data, params, axis, val, name="plot2d"):
 
     v.LaunchNowin()
 
-    _load_vtk(f)
+    v.OpenDatabase(f)
 
     # plot 3D in order to slice
     _plot_isosurfs(data, N, log, minval, maxval)
@@ -395,5 +416,7 @@ def SavePlot2d(f, data, params, axis, val, name="plot2d"):
     s.screenCapture = 0
     v.SetSaveWindowAttributes(s)
     v.SaveWindow()
+
+    v.RemoveAllOperators()
 
     v.Close()
