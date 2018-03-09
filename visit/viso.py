@@ -1,7 +1,7 @@
 import visit as v
 import sys
 import os
-
+import numpy as np
 
 def _unpack_params(params):
     """Unpack the parameters to define the 3D contour for isosurfaces.
@@ -202,25 +202,30 @@ def _generate_slices(dbname):
             v.AddOperator("Slice")
             atts = v.SliceAttributes()
 
-            # determine axis
+            # do not project to 2D to preserve 3D coordinates on slices
+            atts.project2d = 0
+
+            # set as arbitrary axis and set normal direction depending
+            # on axis (x, y, or z)
+            atts.axisType = 3
             if axis == 'x':
-                atts.axisType = 0
+                norm = np.array((1, 0, 0))
             elif axis == 'y':
-                atts.axisType = 1
+                norm = np.array((0, 1, 0))
             elif axis == 'z':
-                atts.axisType = 2
+                norm = np.array((0, 0, 1))
 
             # determine if min or max bound
-            # need to adjust bounds by 1e-14 to ensure inclusivity
-            # within visit slicing program
+            # set surface normal accordingly
             if b == min(bounds[axis]):
                 slice_type = 'min'
-                b += 1.e-14
+                atts.normal = tuple(-1*norm)
             else:
                 slice_type = 'max'
-                b -= 1.e-14
+                atts.normal = tuple(norm)
 
             # set slice location and draw
+            atts.originType = atts.Intercept
             atts.originIntercept = b
             v.SetOperatorOptions(atts)
             v.DrawPlots()
