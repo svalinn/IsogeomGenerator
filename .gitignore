@@ -1,5 +1,1 @@
-*.png
-*.vtk
-visitlog.py
-*.obj
-*.visit
+*.pyc
