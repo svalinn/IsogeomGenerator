@@ -218,10 +218,10 @@ def _generate_slices(dbname):
             # determine if min or max bound
             # set surface normal accordingly
             if b == min(bounds[axis]):
-                slice_type = 'min'
+                slice_type = 0
                 atts.normal = tuple(-1*norm)
             else:
-                slice_type = 'max'
+                slice_type = 1
                 atts.normal = tuple(norm)
 
             # set slice location and draw
@@ -240,7 +240,7 @@ def _generate_slices(dbname):
                 e = v.ExportDBAttributes()
                 e.db_type = "VTK"
                 e.dirname = dirname
-                e.filename = 's{}-{}{}'.format(t, axis, slice_type)
+                e.filename = '{}-{}-{}'.format(t, axis, slice_type)
                 e.variables = "ww_n"
                 v.ExportDatabase(e)
 
