@@ -52,12 +52,12 @@ class IsoVolumes(object):
         # generate evenly spaced values
         if log:
             base = 10.
-            start = m.log(minN, base)
-            stop = m.log(maxN, base)
+            start = m.log(self.minN, base)
+            stop = m.log(self.maxN, base)
             self.levels = np.logspace(start, stop, num=N,
                                       endpoint=True, base=base)
         else:
-            self.levels = np.linspace(minN, maxN, num=N, endpoint=True)
+            self.levels = np.linspace(self.minN, self.maxN, num=N, endpoint=True)
 
 
     def _plot_pseudocolor(self):
@@ -98,7 +98,7 @@ class IsoVolumes(object):
         e = v.ExportDBAttributes()
         cwd = os.getcwd()
         e.dirname = cwd + "/" + self.db
-        e.db_type = "VTK"
+        e.db_type = "STL"
         e.filename = str(i)
         e.variables = self.data
         v.ExportDatabase(e)
