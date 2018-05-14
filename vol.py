@@ -3,6 +3,8 @@ import sys
 import os
 import numpy as np
 import math as m
+from pymoab import core, types
+from pymoab.rng import Range
 
 
 class IsoVolumes(object):
@@ -101,7 +103,7 @@ class IsoVolumes(object):
         cwd = os.getcwd()
         e.dirname = cwd + "/" + self.db
         e.db_type = "STL"
-        e.filename = str(i)
+        e.filename = "v" + str(i)
         e.variables = self.data
         v.ExportDatabase(e)
 
@@ -185,5 +187,59 @@ class IsoVolumes(object):
         v.ExportDatabase(e)
 
         # close everything
-        v.DeleteAllPlots()
+        #v.DeleteAllPlots()
         v.Close()
+
+
+    def _separate(self, f):
+
+        fpath = os.getcwd() + "/" + self.db + "/" + f
+        rootname = f.strip(".stl")
+
+        mb = core.Core()
+        mb.load_file(fpath)
+        root_set = mb.get_root_set()
+        all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
+        i = 0
+
+        while len(all_verts) > 0:
+
+            # get full set of connected verts starting from a seed
+            verts = [all_verts[0]]
+            while True:
+                # this step takes too long for complex surfaces
+                vtmp = mb.get_adjacencies(mb.get_adjacencies(verts, 2, op_type=1), 0, op_type=1)
+                if set(list(vtmp)) == set(list(verts)):
+                    break
+                else:
+                    verts = vtmp
+
+            # get the connected set of triangles that make the single surf
+            tris = mb.get_adjacencies(verts, 2, op_type=1)
+            surf = mb.create_meshset()
+            mb.add_entities(surf, tris)
+
+            # write to file
+            r_surf = Range(surf)
+            mb.write_file(self.db + "/{}-{}.stl".format(rootname, i), r_surf)
+
+            # remove surface from meshset
+            mb.delete_entities(tris)
+            mb.delete_entities(verts)
+
+            # resassign vertices
+            all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
+            i += 1
+
+        # add line here to delete the original file f since it is now
+        # broken into multiple
+
+
+    def separate_surfs(self):
+        """Separates surfaces into different files.
+        """
+
+        for f in os.listdir(self.db):
+            self._separate(f)
+
+
