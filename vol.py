@@ -4,6 +4,7 @@ import os
 import numpy as np
 import math as m
 
+
 class IsoVolumes(object):
     """This class contains methods to create a set of isovolumes given
     a cartesian mesh with data.
@@ -14,9 +15,10 @@ class IsoVolumes(object):
         data: string, name of the data to use from the file
     """
 
-    def __init__(self, filename, data):
+    def __init__(self, filename, data, dbname="tmp"):
         self.data = data
         self.f = filename
+        self.db = dbname
 
 
     def assign_levels(self, levels):
@@ -107,21 +109,12 @@ class IsoVolumes(object):
         v.RemoveAllOperators()
 
 
-    def generate_volumes(self, dbname="volumes"):
+    def generate_volumes(self):
         """Generates the isosurfaces volumes inbetween the contour levels.
         Data files are exported as STLs and saved in the folder dbname.
         Files will be named based on their index corresponding to their
         level values (0.stl is lowest values).
-
-        Input:
-        ------
-        dbname: string (optional), folder name to store volume data
-            files to be generated. Default "volumes" in current working
-            directory.
         """
-
-        # set folder to save exported data
-        self.db = dbname
 
         # make sure levels have been set before proceding
         if not self.levels:
@@ -162,6 +155,34 @@ class IsoVolumes(object):
         lbound = self.levels[-1]
         ubound = 1000.
         self._get_isovol(lbound, ubound, i+1)
+
+        # close everything
+        v.DeleteAllPlots()
+        v.Close()
+
+    def generate_contours(self):
+        """Generates the single surface contours that match the generated
+        isovolumes.
+        """
+
+        # draw matching contours
+        v.LaunchNowin()
+        v.OpenDatabase(self.f)
+        v.AddPlot("Contour", self.data)
+        att = v.ContourAttributes()
+        att.SetContourMethod(1)
+        att.SetContourValue(tuple(self.levels))
+        v.SetPlotOptions(att)
+        v.DrawPlots()
+
+        # export
+        e = v.ExportDBAttributes()
+        cwd = os.getcwd()
+        e.dirname = cwd + "/" + self.db
+        e.db_type = "STL"
+        e.filename = "c"
+        e.variables = self.data
+        v.ExportDatabase(e)
 
         # close everything
         v.DeleteAllPlots()
