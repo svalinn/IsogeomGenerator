@@ -64,6 +64,7 @@ class IsoVolumes(object):
             self.levels = np.linspace(self.minN, self.maxN, num=N, endpoint=True)
 
 
+
     def _plot_pseudocolor(self):
         """Plots the data on a pseudocolor plot to use."""
 
@@ -101,9 +102,9 @@ class IsoVolumes(object):
         # export current volume to folder
         e = v.ExportDBAttributes()
         cwd = os.getcwd()
-        e.dirname = cwd + "/" + self.db
+        e.dirname = cwd + "/vols/" + self.db
         e.db_type = "STL"
-        e.filename = "v" + str(i)
+        e.filename = str(i)
         e.variables = self.data
         v.ExportDatabase(e)
 
@@ -111,7 +112,7 @@ class IsoVolumes(object):
         v.RemoveAllOperators()
 
 
-    def generate_volumes(self):
+    def _generate_volumes(self):
         """Generates the isosurfaces volumes inbetween the contour levels.
         Data files are exported as STLs and saved in the folder dbname.
         Files will be named based on their index corresponding to their
@@ -162,7 +163,8 @@ class IsoVolumes(object):
         v.DeleteAllPlots()
         v.Close()
 
-    def generate_contours(self):
+
+    def _generate_contours(self):
         """Generates the single surface contours that match the generated
         isovolumes.
         """
@@ -187,59 +189,91 @@ class IsoVolumes(object):
         v.ExportDatabase(e)
 
         # close everything
-        #v.DeleteAllPlots()
+        v.DeleteAllPlots()
         v.Close()
 
 
-    def _separate(self, f):
-
-        fpath = os.getcwd() + "/" + self.db + "/" + f
-        rootname = f.strip(".stl")
-
-        mb = core.Core()
-        mb.load_file(fpath)
-        root_set = mb.get_root_set()
-        all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
-        i = 0
-
-        while len(all_verts) > 0:
-
-            # get full set of connected verts starting from a seed
-            verts = [all_verts[0]]
-            while True:
-                # this step takes too long for complex surfaces
-                vtmp = mb.get_adjacencies(mb.get_adjacencies(verts, 2, op_type=1), 0, op_type=1)
-                if set(list(vtmp)) == set(list(verts)):
-                    break
-                else:
-                    verts = vtmp
-
-            # get the connected set of triangles that make the single surf
-            tris = mb.get_adjacencies(verts, 2, op_type=1)
-            surf = mb.create_meshset()
-            mb.add_entities(surf, tris)
-
-            # write to file
-            r_surf = Range(surf)
-            mb.write_file(self.db + "/{}-{}.stl".format(rootname, i), r_surf)
-
-            # remove surface from meshset
-            mb.delete_entities(tris)
-            mb.delete_entities(verts)
-
-            # resassign vertices
-            all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
-            i += 1
-
-        # add line here to delete the original file f since it is now
-        # broken into multiple
-
-
-    def separate_surfs(self):
-        """Separates surfaces into different files.
+    def _separate_isovols(self):
+        """for each volume surf in the database, separate into single
+        surface files.
         """
+        for f in os.listdir(self.db + "/vols/"):
 
-        for f in os.listdir(self.db):
-            self._separate(f)
+            # get file
+            fpath = os.getcwd() + "/" + self.db + "/vols/" + f
+            rootname = f.strip(".stl")
+
+            # start pymoab instance
+            mb = core.Core()
+
+            # load file and get set of all verts
+            mb.load_file(fpath)
+            root_set = mb.get_root_set()
+            all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
+
+            i = 0
+            while len(all_verts) > 0:
+
+                # get full set of connected verts starting from a seed
+                verts = [all_verts[0]]
+                while True:
+                    # this step takes too long for complex surfaces
+                    vtmp = mb.get_adjacencies(mb.get_adjacencies(verts, 2, op_type=1), 0, op_type=1)
+                    if set(list(vtmp)) == set(list(verts)):
+                        break
+                    else:
+                        verts = vtmp
+
+                # get the connected set of triangles that make the single surf
+                tris = mb.get_adjacencies(verts, 2, op_type=1)
+                surf = mb.create_meshset()
+                mb.add_entities(surf, tris)
+
+                # write to file
+                r_surf = Range(surf)
+                mb.write_file(self.db + "/{}-{}.stl".format(rootname, i), r_surf)
+
+                # remove surface from meshset
+                mb.delete_entities(tris)
+                mb.delete_entities(verts)
+
+                # resassign vertices
+                all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
+                i += 1
+
+            # add line here to delete the original file f since it is now
+            # broken into multiple
 
 
+    def merge_surfs(self):
+        """use pymoab to create parent/child meshsets for volumes.
+        """
+        pass
+
+
+    def create_geometry(self):
+        """Over-arching function to do all steps to create a single
+        isovolume geometry for DAGMC.
+        """
+        # either step 0 or 1a - calculate average WW value to use in
+        # each volume and tag
+        # create tuples of (vol_id, ww_val)
+
+        # Step 1: Generate Isovolumes using VisIT
+        self._generate_volumes()
+
+        # Step 2: Generate corresponding Isocontours using VisIT
+        self._generate_contours()
+
+        # Step 3: Separate isovolumes into Surfaces w/ PyMOAB
+        self._separate_isovols()
+
+        # Step 4: separate isocontours into separate files
+
+        # Step 5: create parent-child meshsets for each isovolume
+
+        # Step 6: create isocontour meshsets
+
+        # Step 7: merge isocontour/isovol surfaces (see algorithm in notes)
+
+        # Step 8: write out as single h5m
