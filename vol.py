@@ -8,13 +8,16 @@ from pymoab.rng import Range
 
 
 class IsoVolumes(object):
-    """This class contains methods to create a set of isovolumes given
-    a cartesian mesh with data.
+    """This class contains methods to create a DAGMC geometry of
+    isovolumes given any cartesian mesh with tagged data.
 
     Parameters:
     -----------
         filename: string, path to vtk file with the mesh
-        data: string, name of the data to use from the file
+        data: string, name of the data whose values exist on the mesh
+            (will be used to generate isocontours and isovolumes)
+        dbname: (optional), string, name of folder to store created
+            surface files
     """
 
     def __init__(self, filename, data, dbname="tmp"):
@@ -61,8 +64,8 @@ class IsoVolumes(object):
             self.levels = np.logspace(start, stop, num=N,
                                       endpoint=True, base=base)
         else:
-            self.levels = np.linspace(self.minN, self.maxN, num=N, endpoint=True)
-
+            self.levels = np.linspace(self.minN, self.maxN,
+                                      num=N, endpoint=True)
 
 
     def _plot_pseudocolor(self):
@@ -84,7 +87,15 @@ class IsoVolumes(object):
 
 
     def _get_isovol(self, lbound, ubound, i):
-        """Set selection for isovolume and export as STL."""
+        """Gets the volume selection for isovolume and export just the
+        outer surface of the volume as STL.
+
+        Input:
+        ------
+            lbound: float, lower boundary value for the isovolume
+            ubound: float, upper boundary value for the isovolume
+            i: int, surface number
+        """
 
         # generate isovolume
         v.AddOperator("Isovolume")
@@ -108,12 +119,12 @@ class IsoVolumes(object):
         e.variables = self.data
         v.ExportDatabase(e)
 
-        # delete the operators (external surface/isovolume selection)
+        # delete the operators
         v.RemoveAllOperators()
 
 
     def _generate_volumes(self):
-        """Generates the isosurfaces volumes inbetween the contour levels.
+        """Generates the isosurface volumes between the contour levels.
         Data files are exported as STLs and saved in the folder dbname.
         Files will be named based on their index corresponding to their
         level values (0.stl is lowest values).
@@ -129,9 +140,6 @@ class IsoVolumes(object):
         if not os.path.isdir(self.db):
             os.mkdir(self.db)
             os.mkdir(self.db + "/vols/")
-
-        # launch VisIt and open database
-
 
         # plot the pseudocolor data inorder to get volumes
         self._plot_pseudocolor()
@@ -159,13 +167,13 @@ class IsoVolumes(object):
         ubound = 1000.
         self._get_isovol(lbound, ubound, i+1)
 
-        # close everything
+        # delete plots
         v.DeleteAllPlots()
 
 
     def _generate_contours(self):
-        """Generates the single surface contours that match the generated
-        isovolumes.
+        """Generates the isocontours that separate the isovolumes. These
+        contours corresepond to the match the generated isovolumes.
         """
 
         # draw matching contours
@@ -190,6 +198,20 @@ class IsoVolumes(object):
 
 
     def _separate(self, fpath, rootname, spath):
+        """Separates a given meshset file into separate files. Each file
+        will contain just one meshset for a single file. If there are
+        more than one disjoint surface in the starting file, they will
+        be saved as separate files. The original file will be deleted
+        after it is separated.
+
+        Input:
+        ------
+            fpath: str, path to original data file
+            rootname: str, name to use as base to designate the
+                collection each written file belongs to
+            spath: str, path to folder to save created files
+        """
+
         # start pymoab instance
         mb = core.Core()
 
@@ -201,7 +223,6 @@ class IsoVolumes(object):
         print("separating file {}".format(rootname))
         i = 0
         while len(all_verts) > 0:
-
             # get full set of connected verts starting from a seed
             verts = [all_verts[0]]
             while True:
@@ -233,7 +254,7 @@ class IsoVolumes(object):
 
 
     def _separate_isovols(self):
-        """for each volume surf in the database, separate into single
+        """For each isovolume in the database, separate into single
         surface files.
         """
         for f in os.listdir(self.db + "/vols/"):
@@ -247,7 +268,7 @@ class IsoVolumes(object):
 
 
     def _separate_contours(self):
-        """for each volume surf in the database, separate into single
+        """For each surface in the isocontour file, separate into single
         surface files.
         """
         # get file
@@ -283,8 +304,8 @@ class IsoVolumes(object):
         # Step 2: Generate corresponding Isocontours using VisIT
         print("generating isocontours...")
         self._generate_contours()
-        v.Close()
         print("isocontours complete!")
+        v.Close()
 
         # Step 3: Separate isovolumes into Surfaces w/ PyMOAB
         print("separating isovolumes...")
