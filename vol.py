@@ -102,7 +102,7 @@ class IsoVolumes(object):
         # export current volume to folder
         e = v.ExportDBAttributes()
         cwd = os.getcwd()
-        e.dirname = cwd + "/vols/" + self.db
+        e.dirname = cwd + "/" + self.db + "/vols/"
         e.db_type = "STL"
         e.filename = str(i)
         e.variables = self.data
@@ -128,10 +128,10 @@ class IsoVolumes(object):
         # create folder to store data if it does not already exist
         if not os.path.isdir(self.db):
             os.mkdir(self.db)
+            os.mkdir(self.db + "/vols/")
 
         # launch VisIt and open database
-        v.LaunchNowin()
-        v.OpenDatabase(self.f)
+
 
         # plot the pseudocolor data inorder to get volumes
         self._plot_pseudocolor()
@@ -161,7 +161,6 @@ class IsoVolumes(object):
 
         # close everything
         v.DeleteAllPlots()
-        v.Close()
 
 
     def _generate_contours(self):
@@ -170,8 +169,6 @@ class IsoVolumes(object):
         """
 
         # draw matching contours
-        v.LaunchNowin()
-        v.OpenDatabase(self.f)
         v.AddPlot("Contour", self.data)
         att = v.ContourAttributes()
         att.SetContourMethod(1)
@@ -188,9 +185,51 @@ class IsoVolumes(object):
         e.variables = self.data
         v.ExportDatabase(e)
 
-        # close everything
+        # delete everything
         v.DeleteAllPlots()
-        v.Close()
+
+
+    def _separate(self, fpath, rootname, spath):
+        # start pymoab instance
+        mb = core.Core()
+
+        # load file and get set of all verts
+        mb.load_file(fpath)
+        root_set = mb.get_root_set()
+        all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
+
+        print("separating file {}".format(rootname))
+        i = 0
+        while len(all_verts) > 0:
+
+            # get full set of connected verts starting from a seed
+            verts = [all_verts[0]]
+            while True:
+                # this step takes too long for large surfaces
+                vtmp = mb.get_adjacencies(mb.get_adjacencies(verts, 2, op_type=1), 0, op_type=1)
+                if len(vtmp) == len(verts):
+                    break
+                else:
+                    verts = vtmp
+
+            # get the connected set of triangles that make the single surf
+            tris = mb.get_adjacencies(verts, 2, op_type=1)
+            surf = mb.create_meshset()
+            mb.add_entities(surf, tris)
+
+            # write to file
+            r_surf = Range(surf)
+            mb.write_file(spath + "{}-{}.stl".format(rootname, i), r_surf)
+
+            # remove surface from meshset
+            mb.delete_entities(tris)
+            mb.delete_entities(verts)
+
+            # resassign vertices
+            all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
+            i += 1
+
+        os.remove(fpath)
 
 
     def _separate_isovols(self):
@@ -198,51 +237,25 @@ class IsoVolumes(object):
         surface files.
         """
         for f in os.listdir(self.db + "/vols/"):
-
             # get file
             fpath = os.getcwd() + "/" + self.db + "/vols/" + f
             rootname = f.strip(".stl")
+            spath = self.db + "/vols/"
+            self._separate(fpath, rootname, spath)
 
-            # start pymoab instance
-            mb = core.Core()
+            # add line to delete original vol files since no longer needed
 
-            # load file and get set of all verts
-            mb.load_file(fpath)
-            root_set = mb.get_root_set()
-            all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
 
-            i = 0
-            while len(all_verts) > 0:
-
-                # get full set of connected verts starting from a seed
-                verts = [all_verts[0]]
-                while True:
-                    # this step takes too long for complex surfaces
-                    vtmp = mb.get_adjacencies(mb.get_adjacencies(verts, 2, op_type=1), 0, op_type=1)
-                    if set(list(vtmp)) == set(list(verts)):
-                        break
-                    else:
-                        verts = vtmp
-
-                # get the connected set of triangles that make the single surf
-                tris = mb.get_adjacencies(verts, 2, op_type=1)
-                surf = mb.create_meshset()
-                mb.add_entities(surf, tris)
-
-                # write to file
-                r_surf = Range(surf)
-                mb.write_file(self.db + "/{}-{}.stl".format(rootname, i), r_surf)
-
-                # remove surface from meshset
-                mb.delete_entities(tris)
-                mb.delete_entities(verts)
-
-                # resassign vertices
-                all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
-                i += 1
-
-            # add line here to delete the original file f since it is now
-            # broken into multiple
+    def _separate_contours(self):
+        """for each volume surf in the database, separate into single
+        surface files.
+        """
+        # get file
+        fpath = os.getcwd() + "/" + self.db + "/c.stl"
+        if not os.path.isdir(self.db + "/cont/"):
+            os.mkdir(self.db + "/cont/")
+        spath = self.db + "/cont/"
+        self._separate(fpath, "c", spath)
 
 
     def merge_surfs(self):
@@ -259,16 +272,29 @@ class IsoVolumes(object):
         # each volume and tag
         # create tuples of (vol_id, ww_val)
 
+        v.LaunchNowin()
+        v.OpenDatabase(self.f)
+
         # Step 1: Generate Isovolumes using VisIT
+        print("generating isovolumes...")
         self._generate_volumes()
+        print("isovolumes complete!")
 
         # Step 2: Generate corresponding Isocontours using VisIT
+        print("generating isocontours...")
         self._generate_contours()
+        v.Close()
+        print("isocontours complete!")
 
         # Step 3: Separate isovolumes into Surfaces w/ PyMOAB
+        print("separating isovolumes...")
         self._separate_isovols()
+        print("separation complete!")
 
         # Step 4: separate isocontours into separate files
+        print("separating isocontours...")
+        self._separate_contours()
+        print("separation complete!")
 
         # Step 5: create parent-child meshsets for each isovolume
 
