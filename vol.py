@@ -7,7 +7,7 @@ from pymoab import core, types
 from pymoab.rng import Range
 
 
-class IsoVolumes(object):
+class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
     isovolumes given any cartesian mesh with tagged data.
 
@@ -17,10 +17,10 @@ class IsoVolumes(object):
         data: string, name of the data whose values exist on the mesh
             (will be used to generate isocontours and isovolumes)
         dbname: (optional), string, name of folder to store created
-            surface files
+            surface files. Must be absolute path!
     """
 
-    def __init__(self, filename, data, dbname="tmp"):
+    def __init__(self, filename, data, dbname=os.getcwd() + "/tmp"):
         self.data = data
         self.f = filename
         self.db = dbname
@@ -61,11 +61,11 @@ class IsoVolumes(object):
             base = 10.
             start = m.log(self.minN, base)
             stop = m.log(self.maxN, base)
-            self.levels = np.logspace(start, stop, num=N,
-                                      endpoint=True, base=base)
+            self.levels = list(np.logspace(start, stop, num=N,
+                                      endpoint=True, base=base))
         else:
-            self.levels = np.linspace(self.minN, self.maxN,
-                                      num=N, endpoint=True)
+            self.levels = list(np.linspace(self.minN, self.maxN,
+                                      num=N, endpoint=True))
 
 
     def _plot_pseudocolor(self):
@@ -112,8 +112,7 @@ class IsoVolumes(object):
 
         # export current volume to folder
         e = v.ExportDBAttributes()
-        cwd = os.getcwd()
-        e.dirname = cwd + "/" + self.db + "/vols/"
+        e.dirname = self.db + "/vols/"
         e.db_type = "STL"
         e.filename = str(i)
         e.variables = self.data
@@ -131,7 +130,7 @@ class IsoVolumes(object):
         """
 
         # make sure levels have been set before proceding
-        if not self.levels:
+        if self.levels is None or []:
             print("No contour levels have been set!")
             print("Please use assign_levels or generate_levels to set levels.")
             return
@@ -139,6 +138,7 @@ class IsoVolumes(object):
         # create folder to store data if it does not already exist
         if not os.path.isdir(self.db):
             os.mkdir(self.db)
+        if not os.path.isdir(self.db + "/vols/"):
             os.mkdir(self.db + "/vols/")
 
         # plot the pseudocolor data inorder to get volumes
@@ -300,22 +300,23 @@ class IsoVolumes(object):
         print("generating isovolumes...")
         self._generate_volumes()
         print("isovolumes complete!")
-
-        # Step 2: Generate corresponding Isocontours using VisIT
-        print("generating isocontours...")
-        self._generate_contours()
-        print("isocontours complete!")
         v.Close()
 
-        # Step 3: Separate isovolumes into Surfaces w/ PyMOAB
-        print("separating isovolumes...")
-        self._separate_isovols()
-        print("separation complete!")
+        # # Step 2: Generate corresponding Isocontours using VisIT
+        # print("generating isocontours...")
+        # self._generate_contours()
+        # print("isocontours complete!")
+        # v.Close()
 
-        # Step 4: separate isocontours into separate files
-        print("separating isocontours...")
-        self._separate_contours()
-        print("separation complete!")
+        # Step 3: Separate isovolumes into Surfaces w/ PyMOAB
+        # print("separating isovolumes...")
+        # self._separate_isovols()
+        # print("separation complete!")
+        #
+        # # Step 4: separate isocontours into separate files
+        # print("separating isocontours...")
+        # self._separate_contours()
+        # print("separation complete!")
 
         # Step 5: create parent-child meshsets for each isovolume
 
