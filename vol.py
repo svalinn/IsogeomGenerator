@@ -164,7 +164,7 @@ class IsoVolume(object):
 
         # get maximum isovolume level
         lbound = self.levels[-1]
-        ubound = 1000.
+        ubound = 1.e50
         self._get_isovol(lbound, ubound, i+1)
 
         # delete plots
