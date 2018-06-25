@@ -399,7 +399,7 @@ def SavePlot2d(f, data, params, axis, val, name="plot2d"):
         ax = 0
     elif axis in ['y', 'Y']:
         ax = 1
-    elif axis in ['y', 'Y']:
+    elif axis in ['z', 'Z']:
         ax = 2
     else:
         print('Axis {} not recognized.'.format(axis))
