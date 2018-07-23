@@ -171,112 +171,87 @@ class IsoVolume(object):
         v.DeleteAllPlots()
 
 
-    def _generate_contours(self):
-        """Generates the isocontours that separate the isovolumes. These
-        contours corresepond to the match the generated isovolumes.
-        """
-
-        # draw matching contours
-        v.AddPlot("Contour", self.data)
-        att = v.ContourAttributes()
-        att.SetContourMethod(1)
-        att.SetContourValue(tuple(self.levels))
-        v.SetPlotOptions(att)
-        v.DrawPlots()
-
-        # export
-        e = v.ExportDBAttributes()
-        cwd = os.getcwd()
-        e.dirname = cwd + "/" + self.db
-        e.db_type = "STL"
-        e.filename = "c"
-        e.variables = self.data
-        v.ExportDatabase(e)
-
-        # delete everything
-        v.DeleteAllPlots()
-
-
-    def _separate(self, fpath, rootname, spath):
-        """Separates a given meshset file into separate files. Each file
-        will contain just one meshset for a single file. If there are
-        more than one disjoint surface in the starting file, they will
-        be saved as separate files. The original file will be deleted
-        after it is separated.
+    def _separate(self, iv_info):
+        """Separates a given surface into separate surfaces. All
+        resulting surfaces are disjoint surfaces that made up the
+        original surface.
 
         Input:
         ------
-            fpath: str, path to original data file
-            rootname: str, name to use as base to designate the
-                collection each written file belongs to
-            spath: str, path to folder to save created files
+            iv_info: tuple, (iso_id, fs) where iso_id is the name of the
+                loaded isovolume file (without the extension) and fs is
+                a MOAB EntityHandle corresponding to the file_set for
+                the loaded isovolume file.
         """
 
-        # start pymoab instance
-        mb = core.Core()
+        # extract isovolume information
+        iso_id = iv_info[0]
+        fs = iv_info[1]
 
-        # load file and get set of all verts
-        mb.load_file(fpath)
-        root_set = mb.get_root_set()
-        all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
+        # get set of all vertices for the isosurface
+        all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
 
-        print("separating file {}".format(rootname))
-        i = 0
+        # initiate list to store separate surface entity handles
+        self.isovol_meshsets[iv_info]['surfs_EH'] = []
+
+        # separate the surfaces
+        print("separating isovolume {}".format(iso_id))
         while len(all_verts) > 0:
             # get full set of connected verts starting from a seed
             verts = [all_verts[0]]
+
+            # gather set of all vertices that are connected to the seed
             while True:
                 # this step takes too long for large surfaces
-                vtmp = mb.get_adjacencies(mb.get_adjacencies(verts, 2, op_type=1), 0, op_type=1)
+                # check adjancency and connectedness of vertices
+                vtmp = self.mb.get_adjacencies(self.mb.get_adjacencies(
+                                               verts, 2, op_type=1),
+                                               0, op_type=1)
                 if len(vtmp) == len(verts):
+                    # no more vertices are connected, so full surface
+                    # has been found
                     break
                 else:
+                    # update vertices list to include newly found
+                    # connected vertices
                     verts = vtmp
 
-            # get the connected set of triangles that make the single surf
-            tris = mb.get_adjacencies(verts, 2, op_type=1)
-            surf = mb.create_meshset()
-            mb.add_entities(surf, tris)
+            # get the connected set of triangles that make the single
+            # surface and store into a unique meshset
+            tris = self.mb.get_adjacencies(verts, 2, op_type=1)
+            surf = self.mb.create_meshset()
+            self.mb.add_entities(surf, tris)
+            self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
 
-            # write to file
-            r_surf = Range(surf)
-            mb.write_file(spath + "{}-{}.stl".format(rootname, i), r_surf)
+            # remove surface from original meshset
+            self.mb.remove_entities(fs, tris)
+            self.mb.remove_entities(fs, verts)
 
-            # remove surface from meshset
-            mb.delete_entities(tris)
-            mb.delete_entities(verts)
+            # resassign vertices that remain
+            all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
 
-            # resassign vertices
-            all_verts = mb.get_entities_by_type(root_set, types.MBVERTEX)
-            i += 1
-
-        os.remove(fpath)
 
 
     def _separate_isovols(self):
-        """For each isovolume in the database, separate into single
-        surface files.
+        """For each isovolume in the database, separate any disjoint
+        surfaces into unique single surfaces.
         """
-        for f in os.listdir(self.db + "/vols/"):
-            # get file
-            fpath = os.getcwd() + "/" + self.db + "/vols/" + f
+
+        for f in sorted(os.listdir(self.db + "/vols/")):
+            # get file name
+            fpath = self.db + "/vols/" + f
             rootname = f.strip(".stl")
-            spath = self.db + "/vols/"
-            self._separate(fpath, rootname, spath)
 
-            # add line to delete original vol files since no longer needed
+            # load file and create EH for file-set
+            fs = self.mb.create_meshset()
+            self.mb.load_file(fpath, file_set=fs)
 
+            # initiate dictionary
+            iv_info = (rootname, fs)
+            self.isovol_meshsets[iv_info] = {}
 
-    def _separate_contours(self):
-        """For each surface in the isocontour file, separate into single
-        surface files.
-        """
-        # get file
-        fpath = os.getcwd() + "/" + self.db + "/c.stl"
-        if not os.path.isdir(self.db + "/cont/"):
-            os.mkdir(self.db + "/cont/")
-        spath = self.db + "/cont/"
-        self._separate(fpath, "c", spath)
+            # separate
+            self._separate(iv_info)
 
 
     def merge_surfs(self):
@@ -293,35 +268,33 @@ class IsoVolume(object):
         # each volume and tag
         # create tuples of (vol_id, ww_val)
 
+        ###########################################
+        # Step 1: Generate Isovolumes using VisIT #
+        ###########################################
         v.LaunchNowin()
         v.OpenDatabase(self.f)
-
-        # Step 1: Generate Isovolumes using VisIT
         print("generating isovolumes...")
         self._generate_volumes()
         print("isovolumes complete!")
         v.Close()
 
-        # # Step 2: Generate corresponding Isocontours using VisIT
-        # print("generating isocontours...")
-        # self._generate_contours()
-        # print("isocontours complete!")
-        # v.Close()
 
-        # Step 3: Separate isovolumes into Surfaces w/ PyMOAB
-        # print("separating isovolumes...")
-        # self._separate_isovols()
-        # print("separation complete!")
-        #
-        # # Step 4: separate isocontours into separate files
-        # print("separating isocontours...")
-        # self._separate_contours()
-        # print("separation complete!")
+        ####################################################
+        # Step 2: Separate isovolumes into unique surfaces #
+        ####################################################
+        self.mb = core.Core()
+        self.isovol_meshsets = {}
+        print("separating isovolumes...")
+        self._separate_isovols()
+        print("separation complete!")
+        print(self.isovol_meshsets.items())
 
-        # Step 5: create parent-child meshsets for each isovolume
+        # Step 3: Merge Isovolume Surfaces
 
-        # Step 6: create isocontour meshsets
+        # for every isovolume:
+        #     for every separate_vol in isovolume:
+        #          check if parts match every separate_vol in isvols[i+1]
 
-        # Step 7: merge isocontour/isovol surfaces (see algorithm in notes)
+        # Step 4: create parent-child meshsets for each isovolume
 
-        # Step 8: write out as single h5m
+        # Step 5: write out as single h5m
