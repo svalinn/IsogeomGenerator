@@ -240,7 +240,7 @@ class IsoVolume(object):
         for f in sorted(os.listdir(self.db + "/vols/")):
             # get file name
             fpath = self.db + "/vols/" + f
-            rootname = f.strip(".stl")
+            rootname = int(f.strip(".stl"))
 
             # load file and create EH for file-set
             fs = self.mb.create_meshset()
@@ -254,10 +254,141 @@ class IsoVolume(object):
             self._separate(iv_info)
 
 
-    def merge_surfs(self):
-        """use pymoab to create parent/child meshsets for volumes.
+    def _list_coords(self, eh):
+        """Gets list of all coords as a list of tuples for an entity
+        handle eh.
+
+        Input:
+        ------
+            eh: MOAB entity handle for meshset to retrieve coordinates
+
+        Returns:
+        --------
+            coords: dictionary, key is the MOAB entity handle for the
+                vertice and the value is a tuple of the coordinate
+                (x, y, z)
         """
-        pass
+
+        # list of all entity handles for all vertices
+        all_verts_eh = self.mb.get_entities_by_type(eh, types.MBVERTEX)
+        coords = {}
+        for v in all_verts_eh:
+            coords[v] = tuple(eh.get_coords(v))
+
+        return coords
+
+
+    def _get_matches(self, vertsA, vertsB):
+        """Collects the set of entity handles in set of vertsA and their
+        coordinates that exist in vertsB.
+
+        Input:
+        ------
+            vertsA/B: dictionary, key is the MOAB entity handle for the
+                vertice and the value is a tuple of the coordinate
+                (x, y, z)
+
+        Returns:
+        --------
+            sA_match_eh: list of MOAB entity handles, the entity handles
+                for set vertsA that exist is vertsB
+            sA_match_coords: list of tuples, each entry is the
+                corresponding coordinate for the EH in sA_match_eh
+        """
+
+        sA_match_eh = []
+        sA_match_coords = []
+        for vert in vertsA.items():
+            eh = v[0]
+            coord = v[1]
+            if coord in vertsB.values():
+                sA_match_eh.append(eh)
+                sA_match_coords.append(coord)
+
+        return sA_match_eh, sA_match_coords
+
+
+
+    def _compare_surfs(self, v1, v2):
+        """finds coincident surfaces between two isovolumes.
+
+            v1/2: tuple, corresponds to the dictionary keys for two
+                isovolumes in self.isovol_meshsets
+        """
+
+        match_surfs = []
+
+        # compare all surfaces in v1 (s1) to all surfaces in v2 (s2)
+        for s1 in self.isovol_meshsets[v1]['surfs_EH']:
+            # get list of all coordinates in s1
+            verts1 = self._list_coords(s1)
+
+            for s2 in self.isovol_meshsets[v2]['surfs_EH']:
+                # get list of all coordinates in s2
+                verts2 = self._list_coords(s2)
+
+                # compare vertices and gather sets for s1 and s2
+                # that are coincident
+                s1_match_eh, s1_match_coords = self._get_matches(self, verts1, verts2)
+
+                # must also collect the corresponding entity handles for
+                # s2 so they can be properly updated
+                s2_match_eh, s2_match_coords = self._get_matches(self, verts2, verts1)
+
+                # check that the set of coordinates match for each
+                if set(s1_match_coords) != set(s2_match_coords):
+                    print("Sets of coincident coords do not match!!")
+
+
+                # create new coincident surface
+                tris1 = self.mb.get_adjacencies(s1_match_eh, 2, op_type=1)
+                surf = self.mb.create_meshset()
+                self.mb.add_entities(surf, tris1)
+
+                # get s2 tris to delete (no new surface needed)
+                tris2 = self.mb.get_adjacencies(s2_match_eh, 2, op_type=1)
+
+                # delete verts/tris from original surfaces
+                self.mb.remove_entities(s1, tris1)
+                self.mb.remove_entities(s1, s1_match_eh)
+                self.mb.remove_entities(s2, tris1)
+                self.mb.remove_entities(s2, s2_match_eh)
+
+                # add new surface to coincident surface list
+                match_surfs.append(surf)
+
+                # EVENTUALLY - tag the new surface with the correct WW value
+
+                # TO DO check if original surface is empty
+                #   if so delete
+
+        # After all comparisons have been made, add surfaces to lists
+        self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
+        self.isovol_meshsets[v2]['surfs_EH'].extend(match_surfs)
+
+
+
+    def _imprint_merge(self):
+        """Uses PyMOAB to check if surfaces are coincident. Creates a
+        single surface where surfaces are coincident. Weight-Window
+        values are tagged on each surface.
+        """
+
+        # get list of all original isovolumes
+        all_vols = sorted(self.isovol_meshsets.keys())
+
+        for i, isovol in enumerate(all_vols):
+
+            if i == (self.N + 1):
+                # do not need to check the last isovolume because it
+                # will be checked against all others alread
+                pass
+
+            else:
+                self._compare_surfs(isovol, all_vols[i+1])
+
+        # EVENTUALLY - if a surface doesn't have a WW tagged value
+        # give it a ww value of 0 (maybe move this to a Step 4.5?)
 
 
     def create_geometry(self):
@@ -278,10 +409,9 @@ class IsoVolume(object):
         print("isovolumes complete!")
         v.Close()
 
-
-        ####################################################
-        # Step 2: Separate isovolumes into unique surfaces #
-        ####################################################
+        #######################################
+        # Step 2: Separate Isovolume Surfaces #
+        #######################################
         self.mb = core.Core()
         self.isovol_meshsets = {}
         print("separating isovolumes...")
@@ -289,7 +419,10 @@ class IsoVolume(object):
         print("separation complete!")
         print(self.isovol_meshsets.items())
 
-        # Step 3: Merge Isovolume Surfaces
+        #####################################
+        # Step 3: Merge Coincident Surfaces #
+        #####################################
+        self._imprint_merge()
 
         # for every isovolume:
         #     for every separate_vol in isovolume:
