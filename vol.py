@@ -1,6 +1,7 @@
 import visit as v
 import sys
 import os
+import shutil
 import numpy as np
 import math as m
 from pymoab import core, types
@@ -37,6 +38,7 @@ class IsoVolume(object):
         self.levels = sorted(levels)
         self.minN = min(self.levels)
         self.maxN = max(self.levels)
+        self.N = len(self.levels)
 
 
     def generate_levels(self, N, minN, maxN, log=True):
@@ -55,17 +57,18 @@ class IsoVolume(object):
         # set min/max values
         self.minN = minN
         self.maxN = maxN
+        self.N = N
 
         # generate evenly spaced values
         if log:
             base = 10.
             start = m.log(self.minN, base)
             stop = m.log(self.maxN, base)
-            self.levels = list(np.logspace(start, stop, num=N,
+            self.levels = list(np.logspace(start, stop, num=self.N,
                                       endpoint=True, base=base))
         else:
             self.levels = list(np.linspace(self.minN, self.maxN,
-                                      num=N, endpoint=True))
+                                      num=self.N, endpoint=True))
 
 
     def _plot_pseudocolor(self):
@@ -138,8 +141,12 @@ class IsoVolume(object):
         # create folder to store data if it does not already exist
         if not os.path.isdir(self.db):
             os.mkdir(self.db)
-        if not os.path.isdir(self.db + "/vols/"):
+        if os.path.isdir(self.db + "/vols/"):
+            # make sure folder is empty by removing it first
+            shutil.rmtree(self.db + "/vols/")
             os.mkdir(self.db + "/vols/")
+
+
 
         # plot the pseudocolor data inorder to get volumes
         self._plot_pseudocolor()
@@ -231,7 +238,6 @@ class IsoVolume(object):
             all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
 
 
-
     def _separate_isovols(self):
         """For each isovolume in the database, separate any disjoint
         surfaces into unique single surfaces.
@@ -240,18 +246,26 @@ class IsoVolume(object):
         for f in sorted(os.listdir(self.db + "/vols/")):
             # get file name
             fpath = self.db + "/vols/" + f
-            rootname = int(f.strip(".stl"))
+            i = int(f.strip(".stl")) # must be an integer
 
             # load file and create EH for file-set
             fs = self.mb.create_meshset()
             self.mb.load_file(fpath, file_set=fs)
 
             # initiate dictionary
-            iv_info = (rootname, fs)
+            iv_info = (i, fs)
             self.isovol_meshsets[iv_info] = {}
 
             # separate
             self._separate(iv_info)
+
+            # add ww min/max info (min, max)
+            if i == 0:
+                self.isovol_meshsets[iv_info]['ww_bounds'] = (None, self.levels[i])
+            elif i == self.N:
+                self.isovol_meshsets[iv_info]['ww_bounds'] = (self.levels[i-1], None)
+            else:
+                self.isovol_meshsets[iv_info]['ww_bounds'] = (self.levels[i-1], self.levels[i])
 
 
     def _list_coords(self, eh):
@@ -331,36 +345,48 @@ class IsoVolume(object):
                 # that are coincident
                 s1_match_eh, s1_match_coords = self._get_matches(self, verts1, verts2)
 
-                # must also collect the corresponding entity handles for
-                # s2 so they can be properly updated
-                s2_match_eh, s2_match_coords = self._get_matches(self, verts2, verts1)
+                if s1_match_eh != []:
+                    # matches were found, so continue
 
-                # check that the set of coordinates match for each
-                if set(s1_match_coords) != set(s2_match_coords):
-                    print("Sets of coincident coords do not match!!")
+                    # must also collect the corresponding entity handles for
+                    # s2 so they can be properly updated
+                    s2_match_eh, s2_match_coords = self._get_matches(self, verts2, verts1)
 
+                    # check that the set of coordinates match for each
+                    if set(s1_match_coords) != set(s2_match_coords):
+                        print("Sets of coincident coords do not match!!")
 
-                # create new coincident surface
-                tris1 = self.mb.get_adjacencies(s1_match_eh, 2, op_type=1)
-                surf = self.mb.create_meshset()
-                self.mb.add_entities(surf, tris1)
+                    # create new coincident surface
+                    tris1 = self.mb.get_adjacencies(s1_match_eh, 2, op_type=1)
+                    surf = self.mb.create_meshset()
+                    self.mb.add_entities(surf, tris1)
 
-                # get s2 tris to delete (no new surface needed)
-                tris2 = self.mb.get_adjacencies(s2_match_eh, 2, op_type=1)
+                    # get s2 tris to delete (no new surface needed)
+                    tris2 = self.mb.get_adjacencies(s2_match_eh, 2, op_type=1)
 
-                # delete verts/tris from original surfaces
-                self.mb.remove_entities(s1, tris1)
-                self.mb.remove_entities(s1, s1_match_eh)
-                self.mb.remove_entities(s2, tris1)
-                self.mb.remove_entities(s2, s2_match_eh)
+                    # delete verts/tris from original surfaces
+                    self.mb.remove_entities(s1, tris1)
+                    self.mb.remove_entities(s1, s1_match_eh)
+                    self.mb.remove_entities(s2, tris1)
+                    self.mb.remove_entities(s2, s2_match_eh)
 
-                # add new surface to coincident surface list
-                match_surfs.append(surf)
+                    # tag the new surface with the shared WW value
+                    shared_ww = list(set(self.isovol_meshsets[v1]['ww_bounds']) & set(self.isovol_meshsets[v2]['ww_bounds']))
+                    if not(bool(ww_val)):
+                        print('no matching ww value!', v1, v2)
+                        ww_val = 0.0
+                    else:
+                        ww_val = shared_val[0]
 
-                # EVENTUALLY - tag the new surface with the correct WW value
+                    ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
+                            storage_type=types.MB_TAG_DENSE, create_if_missing=True)
+                    self.mb.tag_set_data(ww_tag, surf, ww_val)
 
-                # TO DO check if original surface is empty
-                #   if so delete
+                    # add new surface to coincident surface list
+                    match_surfs.append(surf)
+
+                    # TO DO check if original surfaces are empty
+                    #   if so delete empty surf meshset and remove from list
 
         # After all comparisons have been made, add surfaces to lists
         self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
@@ -379,13 +405,11 @@ class IsoVolume(object):
 
         for i, isovol in enumerate(all_vols):
 
-            if i == (self.N + 1):
+            if i != self.N:
                 # do not need to check the last isovolume because it
-                # will be checked against all others alread
-                pass
-
-            else:
+                # will be checked against its neighbor already
                 self._compare_surfs(isovol, all_vols[i+1])
+
 
         # EVENTUALLY - if a surface doesn't have a WW tagged value
         # give it a ww value of 0 (maybe move this to a Step 4.5?)
@@ -395,9 +419,6 @@ class IsoVolume(object):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
         """
-        # either step 0 or 1a - calculate average WW value to use in
-        # each volume and tag
-        # create tuples of (vol_id, ww_val)
 
         ###########################################
         # Step 1: Generate Isovolumes using VisIT #
@@ -423,6 +444,9 @@ class IsoVolume(object):
         # Step 3: Merge Coincident Surfaces #
         #####################################
         self._imprint_merge()
+
+        print(self.isovol_meshsets.items())
+        print(self.levels)
 
         # for every isovolume:
         #     for every separate_vol in isovolume:
