@@ -228,9 +228,10 @@ class IsoVolume(object):
             surf = self.mb.create_meshset()
 
             self.mb.add_entities(surf, tris)
+            self.mb.add_entities(surf, verts)
 
-            #test = self.mb.get_entities_by_type(surf, types.MBVERTEX)
-            #print(test)
+            test = self.mb.get_entities_by_type(surf, types.MBVERTEX)
+            print("test verts:", len(test))
             ## !!! ^^^ THIS IS EMPTY NOW FOR SOME REASON
 
             self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
@@ -290,12 +291,9 @@ class IsoVolume(object):
 
         # list of all entity handles for all vertices
         all_verts_eh = self.mb.get_entities_by_type(eh, types.MBVERTEX)
-        print(all_verts_eh)
         coords = {}
         for v in all_verts_eh:
             coords[v] = tuple(self.mb.get_coords(v))
-
-        print(coords.items())
 
         return coords
 
@@ -369,6 +367,10 @@ class IsoVolume(object):
                     tris1 = self.mb.get_adjacencies(s1_match_eh, 2, op_type=1)
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
+                    self.mb.add_entities(surf, s2_match_eh)
+
+                    test = self.mb.get_entities_by_type(surf, types.MBVERTEX)
+                    print("test verts:", (v1, v2), len(test))
 
                     # get s2 tris to delete (no new surface needed)
                     tris2 = self.mb.get_adjacencies(s2_match_eh, 2, op_type=1)
@@ -451,6 +453,7 @@ class IsoVolume(object):
         #####################################
         # Step 3: Merge Coincident Surfaces #
         #####################################
+        print("merging surfaces ... ")
         self._imprint_merge()
 
         print(self.isovol_meshsets.items())
