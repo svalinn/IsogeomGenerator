@@ -226,13 +226,8 @@ class IsoVolume(object):
             # surface and store into a unique meshset
             tris = self.mb.get_adjacencies(verts, 2, op_type=1)
             surf = self.mb.create_meshset()
-
             self.mb.add_entities(surf, tris)
             self.mb.add_entities(surf, verts)
-
-            test = self.mb.get_entities_by_type(surf, types.MBVERTEX)
-            print("test verts:", len(test))
-            ## !!! ^^^ THIS IS EMPTY NOW FOR SOME REASON
 
             self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
 
@@ -353,7 +348,6 @@ class IsoVolume(object):
 
                 if s1_match_eh != []:
                     # matches were found, so continue
-                    print("matches found", v1, v2, "\n", s1, s2)
 
                     # must also collect the corresponding entity handles for
                     # s2 so they can be properly updated
@@ -369,9 +363,6 @@ class IsoVolume(object):
                     self.mb.add_entities(surf, tris1)
                     self.mb.add_entities(surf, s2_match_eh)
 
-                    test = self.mb.get_entities_by_type(surf, types.MBVERTEX)
-                    print("test verts:", (v1, v2), len(test))
-
                     # get s2 tris to delete (no new surface needed)
                     tris2 = self.mb.get_adjacencies(s2_match_eh, 2, op_type=1)
 
@@ -383,11 +374,11 @@ class IsoVolume(object):
 
                     # tag the new surface with the shared WW value
                     shared_ww = list(set(self.isovol_meshsets[v1]['ww_bounds']) & set(self.isovol_meshsets[v2]['ww_bounds']))
-                    if not(bool(ww_val)):
+                    if not(bool(shared_ww)):
                         print('no matching ww value!', v1, v2)
                         ww_val = 0.0
                     else:
-                        ww_val = shared_val[0]
+                        ww_val = shared_ww[0]
 
                     ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
                             storage_type=types.MB_TAG_DENSE, create_if_missing=True)
