@@ -147,7 +147,6 @@ class IsoVolume(object):
             os.mkdir(self.db + "/vols/")
 
 
-
         # plot the pseudocolor data inorder to get volumes
         self._plot_pseudocolor()
 
@@ -227,7 +226,13 @@ class IsoVolume(object):
             # surface and store into a unique meshset
             tris = self.mb.get_adjacencies(verts, 2, op_type=1)
             surf = self.mb.create_meshset()
+
             self.mb.add_entities(surf, tris)
+
+            #test = self.mb.get_entities_by_type(surf, types.MBVERTEX)
+            #print(test)
+            ## !!! ^^^ THIS IS EMPTY NOW FOR SOME REASON
+
             self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
 
             # remove surface from original meshset
@@ -285,9 +290,12 @@ class IsoVolume(object):
 
         # list of all entity handles for all vertices
         all_verts_eh = self.mb.get_entities_by_type(eh, types.MBVERTEX)
+        print(all_verts_eh)
         coords = {}
         for v in all_verts_eh:
-            coords[v] = tuple(eh.get_coords(v))
+            coords[v] = tuple(self.mb.get_coords(v))
+
+        print(coords.items())
 
         return coords
 
@@ -313,8 +321,8 @@ class IsoVolume(object):
         sA_match_eh = []
         sA_match_coords = []
         for vert in vertsA.items():
-            eh = v[0]
-            coord = v[1]
+            eh = vert[0]
+            coord = vert[1]
             if coord in vertsB.values():
                 sA_match_eh.append(eh)
                 sA_match_coords.append(coord)
@@ -343,14 +351,15 @@ class IsoVolume(object):
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords = self._get_matches(self, verts1, verts2)
+                s1_match_eh, s1_match_coords = self._get_matches(verts1, verts2)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
+                    print("matches found", v1, v2, "\n", s1, s2)
 
                     # must also collect the corresponding entity handles for
                     # s2 so they can be properly updated
-                    s2_match_eh, s2_match_coords = self._get_matches(self, verts2, verts1)
+                    s2_match_eh, s2_match_coords = self._get_matches(verts2, verts1)
 
                     # check that the set of coordinates match for each
                     if set(s1_match_coords) != set(s2_match_coords):
@@ -391,7 +400,6 @@ class IsoVolume(object):
         # After all comparisons have been made, add surfaces to lists
         self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
         self.isovol_meshsets[v2]['surfs_EH'].extend(match_surfs)
-
 
 
     def _imprint_merge(self):
@@ -446,7 +454,6 @@ class IsoVolume(object):
         self._imprint_merge()
 
         print(self.isovol_meshsets.items())
-        print(self.levels)
 
         # for every isovolume:
         #     for every separate_vol in isovolume:
