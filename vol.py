@@ -331,6 +331,8 @@ class IsoVolume(object):
                 isovolumes in self.isovol_meshsets
         """
 
+        print("comparing surfaces in isovolumes {} and {}.".format(v1[0], v2[0]))
+
         match_surfs = []
 
         # compare all surfaces in v1 (s1) to all surfaces in v2 (s2)
@@ -339,6 +341,7 @@ class IsoVolume(object):
             verts1 = self._list_coords(s1)
 
             for s2 in self.isovol_meshsets[v2]['surfs_EH']:
+
                 # get list of all coordinates in s2
                 verts2 = self._list_coords(s2)
 
@@ -387,8 +390,20 @@ class IsoVolume(object):
                     # add new surface to coincident surface list
                     match_surfs.append(surf)
 
-                    # TO DO check if original surfaces are empty
-                    #   if so delete empty surf meshset and remove from list
+                    # check if original surfaces are empty (no vertices)
+                    # if so delete empty surf meshset and remove from list
+                    s2_remaining = self.mb.get_entities_by_type(s2, types.MBVERTEX)
+                    if len(s2_remaining) == 0:
+                        # delete surface from list and mb instance
+                        self.mb.delete_entities(s2)
+                        self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
+
+                    s1_remaining = self.mb.get_entities_by_type(s1, types.MBVERTEX)
+                    if len(s1_remaining) == 0:
+                        # delete from list and mb instance and move to next surf
+                        self.mb.delete_entities(s1)
+                        self.isovol_meshsets[v1]['surfs_EH'].remove(s1)
+                        break
 
         # After all comparisons have been made, add surfaces to lists
         self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
@@ -426,9 +441,9 @@ class IsoVolume(object):
         ###########################################
         v.LaunchNowin()
         v.OpenDatabase(self.f)
-        print("generating isovolumes...")
+        print("Generating isovolumes...")
         self._generate_volumes()
-        print("isovolumes complete!")
+        print("...Isovolumes files generated!")
         v.Close()
 
         #######################################
@@ -436,16 +451,17 @@ class IsoVolume(object):
         #######################################
         self.mb = core.Core()
         self.isovol_meshsets = {}
-        print("separating isovolumes...")
+        print("Separating isovolumes...")
         self._separate_isovols()
-        print("separation complete!")
+        print("...Separation complete!")
         print(self.isovol_meshsets.items())
 
         #####################################
         # Step 3: Merge Coincident Surfaces #
         #####################################
-        print("merging surfaces ... ")
+        print("Merging surfaces...")
         self._imprint_merge()
+        print("...Merging complete!")
 
         print(self.isovol_meshsets.items())
 
