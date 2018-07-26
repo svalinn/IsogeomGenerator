@@ -381,7 +381,7 @@ class IsoVolume(object):
                         print('no matching ww value!', v1, v2)
                         ww_val = 0.0
                     else:
-                        ww_val = shared_ww[0]
+                        ww_val = float(shared_ww[0])
 
                     ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
                             storage_type=types.MB_TAG_DENSE, create_if_missing=True)
@@ -395,13 +395,13 @@ class IsoVolume(object):
                     s2_remaining = self.mb.get_entities_by_type(s2, types.MBVERTEX)
                     if len(s2_remaining) == 0:
                         # delete surface from list and mb instance
-                        self.mb.delete_entities(s2)
+                        #self.mb.delete_entities(s2)
                         self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
 
                     s1_remaining = self.mb.get_entities_by_type(s1, types.MBVERTEX)
                     if len(s1_remaining) == 0:
                         # delete from list and mb instance and move to next surf
-                        self.mb.delete_entities(s1)
+                        #self.mb.delete_entities(s1)
                         self.isovol_meshsets[v1]['surfs_EH'].remove(s1)
                         break
 
@@ -454,7 +454,6 @@ class IsoVolume(object):
         print("Separating isovolumes...")
         self._separate_isovols()
         print("...Separation complete!")
-        print(self.isovol_meshsets.items())
 
         #####################################
         # Step 3: Merge Coincident Surfaces #
@@ -463,7 +462,6 @@ class IsoVolume(object):
         self._imprint_merge()
         print("...Merging complete!")
 
-        print(self.isovol_meshsets.items())
 
         # for every isovolume:
         #     for every separate_vol in isovolume:
