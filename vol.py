@@ -383,9 +383,9 @@ class IsoVolume(object):
                     else:
                         ww_val = float(shared_ww[0])
 
-                    ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
-                            storage_type=types.MB_TAG_DENSE, create_if_missing=True)
-                    self.mb.tag_set_data(ww_tag, surf, ww_val)
+                    #ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
+                    #        storage_type=types.MB_TAG_DENSE, create_if_missing=True)
+                    self.mb.tag_set_data(self.ww_tag, surf, ww_val)
 
                     # add new surface to coincident surface list
                     match_surfs.append(surf)
@@ -415,10 +415,12 @@ class IsoVolume(object):
         single surface where surfaces are coincident. Weight-Window
         values are tagged on each surface.
         """
+        # set up weight window tag information
+        self.ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_DENSE, create_if_missing=True)
 
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
-
         for i, isovol in enumerate(all_vols):
 
             if i != self.N:
@@ -426,9 +428,17 @@ class IsoVolume(object):
                 # will be checked against its neighbor already
                 self._compare_surfs(isovol, all_vols[i+1])
 
-
-        # EVENTUALLY - if a surface doesn't have a WW tagged value
-        # give it a ww value of 0 (maybe move this to a Step 4.5?)
+        # if a surface doesn't have a WW tagged value after merging
+        # give it a ww value of 0
+        for isovol in all_vols:
+            for surf in self.isovol_meshsets[isovol]['surfs_EH']:
+                # determine if surf already tagged with ww data,
+                # if not then tag with 0
+                try:
+                    ww_val = self.mb.tag_get_data(self.ww_tag, surf)
+                except:
+                    ww_val = 0.0
+                    self.mb.tag_set_data(self.ww_tag, surf, ww_val)
 
 
     def create_geometry(self):
@@ -461,11 +471,6 @@ class IsoVolume(object):
         print("Merging surfaces...")
         self._imprint_merge()
         print("...Merging complete!")
-
-
-        # for every isovolume:
-        #     for every separate_vol in isovolume:
-        #          check if parts match every separate_vol in isvols[i+1]
 
         # Step 4: create parent-child meshsets for each isovolume
 
