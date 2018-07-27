@@ -486,7 +486,12 @@ class IsoVolume(object):
                 self.mb.tag_set_data(category, surf_eh, 'Surface')
 
 
-    def create_geometry(self):
+    def _tag_metadata(self):
+        """tags data value as metadata on surface
+        """
+
+
+    def create_geometry(self, tag_metadata=False):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
         """
@@ -521,6 +526,12 @@ class IsoVolume(object):
         # Step 4: Assign Parent-Child Relationship #
         ############################################
         self._make_family()
+
+        ###################################
+        # Step 5: Tag Metadata (Optional) #
+        ###################################
+        if tag_metadata:
+            self._tag_metadata()
 
 
     def write_geometry(self):
