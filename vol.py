@@ -38,6 +38,8 @@ class IsoVolume(object):
             levels: list of floats, list of user-defined values to use
                 for contour levels
         """
+        # make sure values are floats
+        levels = [float(i) for i in levels]
         self.levels = sorted(levels)
         self.minN = min(self.levels)
         self.maxN = max(self.levels)
@@ -389,7 +391,7 @@ class IsoVolume(object):
                         print('no matching value!', v1, v2)
                         val = 0.0
                     else:
-                        val = float(shared[0])
+                        val = shared[0]
 
                     self.mb.tag_set_data(self.val_tag, surf, val)
 
@@ -441,12 +443,14 @@ class IsoVolume(object):
         for isovol in all_vols:
             for surf in self.isovol_meshsets[isovol]['surfs_EH']:
 
+                # tag val=0
                 try:
                     val = self.mb.tag_get_data(self.val_tag, surf)
                 except:
                     val = 0.0
                     self.mb.tag_set_data(self.val_tag, surf, val)
 
+                # tag fwd sense
                 try:
                     sense = self.mb.tag_get_data(self.sense_tag, surf)
                 except:
@@ -457,12 +461,29 @@ class IsoVolume(object):
 
     def _make_family(self):
         """Makes the correct parent-child relationships with volumes
-        and surfaces.
+        and surfaces. Tags geometry type and category on surfaces and
+        volumes.
         """
+        # create geometry dimension and category tags
+        geom_dim = self.mb.tag_get_handle('GEOM_DIMENSION', size=1, tag_type=types.MB_TYPE_INTEGER,
+                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
+        category = self.mb.tag_get_handle('CATEGORY', size=32, tag_type=types.MB_TYPE_OPAQUE,
+                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
+
         for v in self.isovol_meshsets.keys():
             vol_eh = v[1]
+
+            # tag volume
+            self.mb.tag_set_data(geom_dim, vol_eh, 3)
+            self.mb.tag_set_data(category, vol_eh, 'Volume')
+
             for surf_eh in self.isovol_meshsets[v]['surfs_EH']:
+                # create relationship
                 self.mb.add_parent_child(vol_eh, surf_eh)
+
+                # tag surfaces
+                self.mb.tag_set_data(geom_dim, surf_eh, 2)
+                self.mb.tag_set_data(category, surf_eh, 'Surface')
 
 
     def create_geometry(self):
