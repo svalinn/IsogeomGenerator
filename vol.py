@@ -19,12 +19,15 @@ class IsoVolume(object):
             (will be used to generate isocontours and isovolumes)
         dbname: (optional), string, name of folder to store created
             surface files. Must be absolute path!
+        sname: (optional), string, name of file to save written file
+            default = 'iso-geom.h5m'
     """
 
-    def __init__(self, filename, data, dbname=os.getcwd() + "/tmp"):
+    def __init__(self, filename, data, dbname=os.getcwd() + "/tmp", sname="iso-geom.h5m"):
         self.data = data
         self.f = filename
         self.db = dbname
+        self.sname = sname
 
 
     def assign_levels(self, levels):
@@ -260,13 +263,13 @@ class IsoVolume(object):
             # separate
             self._separate(iv_info)
 
-            # add ww min/max info (min, max)
+            # add value min/max info (min, max)
             if i == 0:
-                self.isovol_meshsets[iv_info]['ww_bounds'] = (None, self.levels[i])
+                self.isovol_meshsets[iv_info]['bounds'] = (None, self.levels[i])
             elif i == self.N:
-                self.isovol_meshsets[iv_info]['ww_bounds'] = (self.levels[i-1], None)
+                self.isovol_meshsets[iv_info]['bounds'] = (self.levels[i-1], None)
             else:
-                self.isovol_meshsets[iv_info]['ww_bounds'] = (self.levels[i-1], self.levels[i])
+                self.isovol_meshsets[iv_info]['bounds'] = (self.levels[i-1], self.levels[i])
 
 
     def _list_coords(self, eh):
@@ -364,7 +367,12 @@ class IsoVolume(object):
                     tris1 = self.mb.get_adjacencies(s1_match_eh, 2, op_type=1)
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
-                    self.mb.add_entities(surf, s2_match_eh)
+                    self.mb.add_entities(surf, s1_match_eh)
+
+                    # assign sense tag to surface [forward=v1, backward=v2]
+                    fwd = v1[1]
+                    bwd = v2[1]
+                    self.mb.tag_set_data(self.sense_tag, surf, [fwd, bwd])
 
                     # get s2 tris to delete (no new surface needed)
                     tris2 = self.mb.get_adjacencies(s2_match_eh, 2, op_type=1)
@@ -375,17 +383,15 @@ class IsoVolume(object):
                     self.mb.remove_entities(s2, tris1)
                     self.mb.remove_entities(s2, s2_match_eh)
 
-                    # tag the new surface with the shared WW value
-                    shared_ww = list(set(self.isovol_meshsets[v1]['ww_bounds']) & set(self.isovol_meshsets[v2]['ww_bounds']))
-                    if not(bool(shared_ww)):
-                        print('no matching ww value!', v1, v2)
-                        ww_val = 0.0
+                    # tag the new surface with the shared value
+                    shared = list(set(self.isovol_meshsets[v1]['bounds']) & set(self.isovol_meshsets[v2]['bounds']))
+                    if not(bool(shared)):
+                        print('no matching value!', v1, v2)
+                        val = 0.0
                     else:
-                        ww_val = float(shared_ww[0])
+                        val = float(shared[0])
 
-                    #ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
-                    #        storage_type=types.MB_TAG_DENSE, create_if_missing=True)
-                    self.mb.tag_set_data(self.ww_tag, surf, ww_val)
+                    self.mb.tag_set_data(self.val_tag, surf, val)
 
                     # add new surface to coincident surface list
                     match_surfs.append(surf)
@@ -412,12 +418,14 @@ class IsoVolume(object):
 
     def _imprint_merge(self):
         """Uses PyMOAB to check if surfaces are coincident. Creates a
-        single surface where surfaces are coincident. Weight-Window
-        values are tagged on each surface.
+        single surface where surfaces are coincident values are tagged
+        on each surface. Surface senses are also determined and tagged.
         """
-        # set up weight window tag information
-        self.ww_tag = self.mb.tag_get_handle('ww', size=1, tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_DENSE, create_if_missing=True)
+        # set up surface tag information (value and sense)
+        self.val_tag = self.mb.tag_get_handle('val', size=1, tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
+        self.sense_tag = self.mb.tag_get_handle('GEOM_SENSE_2', size=2, tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
 
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
@@ -428,17 +436,33 @@ class IsoVolume(object):
                 # will be checked against its neighbor already
                 self._compare_surfs(isovol, all_vols[i+1])
 
-        # if a surface doesn't have a WW tagged value after merging
-        # give it a ww value of 0
+        # if a surface doesn't have a value tagged after merging
+        # give it a value of 0 and tag forward sense
         for isovol in all_vols:
             for surf in self.isovol_meshsets[isovol]['surfs_EH']:
-                # determine if surf already tagged with ww data,
-                # if not then tag with 0
+
                 try:
-                    ww_val = self.mb.tag_get_data(self.ww_tag, surf)
+                    val = self.mb.tag_get_data(self.val_tag, surf)
                 except:
-                    ww_val = 0.0
-                    self.mb.tag_set_data(self.ww_tag, surf, ww_val)
+                    val = 0.0
+                    self.mb.tag_set_data(self.val_tag, surf, val)
+
+                try:
+                    sense = self.mb.tag_get_data(self.sense_tag, surf)
+                except:
+                    fwd = isovol[1]
+                    bwd = 0
+                    self.mb.tag_set_data(self.val_tag, surf, [fwd, bwd])
+
+
+    def _make_family(self):
+        """Makes the correct parent-child relationships with volumes
+        and surfaces.
+        """
+        for v in self.isovol_meshsets.keys():
+            vol_eh = v[1]
+            for surf_eh in self.isovol_meshsets[v]['surfs_EH']:
+                self.mb.add_parent_child(vol_eh, surf_eh)
 
 
     def create_geometry(self):
@@ -472,6 +496,21 @@ class IsoVolume(object):
         self._imprint_merge()
         print("...Merging complete!")
 
-        # Step 4: create parent-child meshsets for each isovolume
+        ############################################
+        # Step 4: Assign Parent-Child Relationship #
+        ############################################
+        self._make_family()
 
-        # Step 5: write out as single h5m
+
+    def write_geometry(self):
+        """Saves created DAGMC file.
+        """
+        # check file extension of save name:
+        ext = self.sname.split(".")[-1]
+        if ext.lower() not in ['h5m', 'vtk']:
+            print("File extension not recognized, will be saved as .h5m")
+            self.sname = self.sname.split(".")[0] + ".h5m"
+
+        save_location = self.db + "/" + self.sname
+
+        self.mb.write_file(save_location)
