@@ -459,7 +459,7 @@ class IsoVolume(object):
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
         self.sense_tag = self.mb.tag_get_handle('GEOM_SENSE_2', size=2,
-                        tag_type=types.MB_TYPE_DOUBLE,
+                        tag_type=types.MB_TYPE_HANDLE,
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
 
