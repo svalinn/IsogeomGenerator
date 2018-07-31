@@ -144,8 +144,7 @@ class IsoVolume(object):
         if os.path.isdir(self.db + "/vols/"):
             # make sure folder is empty by removing it first
             shutil.rmtree(self.db + "/vols/")
-            os.mkdir(self.db + "/vols/")
-
+        os.mkdir(self.db + "/vols/")
 
         # plot the pseudocolor data inorder to get volumes
         self._plot_pseudocolor()
