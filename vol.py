@@ -1,33 +1,28 @@
-import visit as v
 import sys
 import os
 import shutil
 import numpy as np
 import math as m
+
+import visit as v
 from pymoab import core, types
 from pymoab.rng import Range
 
 
 class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
-    isovolumes given any cartesian mesh with tagged data.
+    isovolumes given any Cartesian mesh with tagged data.
 
-    Parameters:
-    -----------
-        filename: string, path to vtk file with the mesh
-        data: string, name of the data whose values exist on the mesh
-            (will be used to generate isocontours and isovolumes)
-        dbname: (optional), string, name of folder to store created
-            surface files. Must be absolute path!
-        sname: (optional), string, name of file to save written file
-            default = 'iso-geom.h5m'
+    Users should follow the following sequence to completely build a
+    geometry file:
+        (1) Set contour levels with assign_levels() or generate_levels()
+        (2) Generate the isovolume files using generate_volumes()
+        (3) Create the MOAB geometry with create_geometry()
+        (4) Write to a file with write_geometry()
     """
 
-    def __init__(self, filename, data, dbname=os.getcwd() + "/tmp", sname="iso-geom.h5m"):
-        self.data = data
-        self.f = filename
-        self.db = dbname
-        self.sname = sname
+    def __init__(self):
+        pass
 
 
     def assign_levels(self, levels):
@@ -130,7 +125,7 @@ class IsoVolume(object):
         v.RemoveAllOperators()
 
 
-    def _generate_volumes(self):
+    def _generate_vols(self):
         """Generates the isosurface volumes between the contour levels.
         Data files are exported as STLs and saved in the folder dbname.
         Files will be named based on their index corresponding to their
@@ -180,6 +175,40 @@ class IsoVolume(object):
 
         # delete plots
         v.DeleteAllPlots()
+
+
+    def generate_volumes(self, filename, data, dbname=os.getcwd()+"/tmp"):
+        """Creates an STL file for each isovolume. N+1 files are created.
+
+        Input:
+        ------
+            filename: string, path to vtk file with the mesh
+            data: string, name of the data whose values exist on the
+                mesh (will be used to generate isocontours and
+                isovolumes)
+            dbname: (optional), string, name of folder to store created
+                surface files. Must be absolute path!
+                default: a folder called 'tmp' in the current directory
+        """
+
+        self.data = data
+        self.db = dbname
+
+        # make sure levels and other variables have been set:
+        try:
+            self.levels
+        except:
+            print("ERROR: Data values for levels not set! Please set using " +\
+                "assign_levels or generate_levels.")
+            return
+
+        # Generate isovolumes using VisIT
+        v.LaunchNowin()
+        v.OpenDatabase(filename)
+        print("Generating isovolumes...")
+        self._generate_vols()
+        print("...Isovolumes files generated!")
+        v.Close()
 
 
     def _separate(self, iv_info):
@@ -328,12 +357,13 @@ class IsoVolume(object):
         return sA_match_eh, sA_match_coords
 
 
-
     def _compare_surfs(self, v1, v2):
         """finds coincident surfaces between two isovolumes.
 
+        Input:
+        ------
             v1/2: tuple, corresponds to the dictionary keys for two
-                isovolumes in self.isovol_meshsets
+                isovolumes in self.isovol_meshsets that will be compared
         """
 
         print("comparing surfaces in isovolumes {} and {}.".format(v1[0], v2[0]))
@@ -423,11 +453,16 @@ class IsoVolume(object):
         single surface where surfaces are coincident values are tagged
         on each surface. Surface senses are also determined and tagged.
         """
+
         # set up surface tag information (value and sense)
-        self.val_tag = self.mb.tag_get_handle('val', size=1, tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
-        self.sense_tag = self.mb.tag_get_handle('GEOM_SENSE_2', size=2, tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
+        self.val_tag = self.mb.tag_get_handle(self.data, size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        self.sense_tag = self.mb.tag_get_handle('GEOM_SENSE_2', size=2,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
 
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
@@ -465,10 +500,14 @@ class IsoVolume(object):
         volumes.
         """
         # create geometry dimension and category tags
-        geom_dim = self.mb.tag_get_handle('GEOM_DIMENSION', size=1, tag_type=types.MB_TYPE_INTEGER,
-                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
-        category = self.mb.tag_get_handle('CATEGORY', size=32, tag_type=types.MB_TYPE_OPAQUE,
-                        storage_type=types.MB_TAG_SPARSE, create_if_missing=True)
+        geom_dim = self.mb.tag_get_handle('GEOM_DIMENSION', size=1,
+                        tag_type=types.MB_TYPE_INTEGER,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        category = self.mb.tag_get_handle('CATEGORY', size=32,
+                        tag_type=types.MB_TYPE_OPAQUE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
 
         for v in self.isovol_meshsets.keys():
             vol_eh = v[1]
@@ -486,63 +525,72 @@ class IsoVolume(object):
                 self.mb.tag_set_data(category, surf_eh, 'Surface')
 
 
-    def _tag_metadata(self):
-        """tags data value as metadata on surface
-        """
-
-
-    def create_geometry(self, tag_metadata=False):
+    def create_geometry(self):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
         """
+        # check that database is identified
+        try:
+            self.db
+        except:
+            print("ERROR: Database not found. " +\
+                "Please run generate_volumes first.")
+            return
 
-        ###########################################
-        # Step 1: Generate Isovolumes using VisIT #
-        ###########################################
-        v.LaunchNowin()
-        v.OpenDatabase(self.f)
-        print("Generating isovolumes...")
-        self._generate_volumes()
-        print("...Isovolumes files generated!")
-        v.Close()
-
-        #######################################
-        # Step 2: Separate Isovolume Surfaces #
-        #######################################
+        # Step 1: Separate Isovolume Surfaces
         self.mb = core.Core()
         self.isovol_meshsets = {}
         print("Separating isovolumes...")
         self._separate_isovols()
         print("...Separation complete!")
 
-        #####################################
-        # Step 3: Merge Coincident Surfaces #
-        #####################################
+        # Step 2: Merge Coincident Surfaces
         print("Merging surfaces...")
         self._imprint_merge()
         print("...Merging complete!")
 
-        ############################################
-        # Step 4: Assign Parent-Child Relationship #
-        ############################################
+        # Step 3: Assign Parent-Child Relationship
         self._make_family()
 
-        ###################################
-        # Step 5: Tag Metadata (Optional) #
-        ###################################
-        if tag_metadata:
-            self._tag_metadata()
 
+    def write_geometry(self, sname="", sdir=self.db):
+        """Writes out the geometry stored in memory.
 
-    def write_geometry(self):
-        """Saves created DAGMC file.
+        Input:
+        ------
+            sname: (optional), string, name of file to save written file
+                default: 'geom-DATA.h5m' where DATA is the name of the
+                data used to create the geometry (if known).
         """
+
+        # check that there is a geometry in memory
+        try:
+            self.mb
+        except:
+            print("ERROR: No geometry in memory to write to file. " + \
+                "Please run create_geometry first.")
+            return
+
+        # create default filename if unassigned.
+        if sname == "":
+            try:
+                self.data
+            except:
+                print("WARNING: Data name is unknown! " + \
+                    "File will be saved as geom-isovols.h5m.")
+                sname="geom-isovols.h5m"
+            else:
+                sname="geom-{}.h5m".format(self.data)
+
         # check file extension of save name:
-        ext = self.sname.split(".")[-1]
+        ext = sname.split(".")[-1]
         if ext.lower() not in ['h5m', 'vtk']:
-            print("File extension not recognized, will be saved as .h5m")
-            self.sname = self.sname.split(".")[0] + ".h5m"
+            print("WARNING: File extension {} ".format(ext) +\
+                " not recognized. File will be saved as type .h5m.")
+            self.sname = sname.split(".")[0] + ".h5m"
 
-        save_location = self.db + "/" + self.sname
-
+        # save the file
+        save_location = sdir + "/" + sname
         self.mb.write_file(save_location)
+
+        print("Geometry file written to {}.".format(save_location))
