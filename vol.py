@@ -359,7 +359,8 @@ class IsoVolume(object):
                 isovolumes in self.isovol_meshsets that will be compared
         """
 
-        print("comparing surfaces in isovolumes {} and {}.".format(v1[0], v2[0]))
+        print("comparing surfaces in isovolumes {} and {}.".format(
+            v1[0], v2[0]))
 
         match_surfs = []
 
@@ -375,32 +376,38 @@ class IsoVolume(object):
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords = self._get_matches(verts1, verts2)
+                s1_match_eh, s1_match_coords = self._get_matches(verts1,
+                                                                 verts2)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
 
-                    # must also collect the corresponding entity handles for
-                    # s2 so they can be properly updated
-                    s2_match_eh, s2_match_coords = self._get_matches(verts2, verts1)
+                    # must also collect the corresponding entity handles
+                    # for s2 so they can be properly updated
+                    s2_match_eh, s2_match_coords = self._get_matches(
+                                                    verts2, verts1)
 
                     # check that the set of coordinates match for each
                     if set(s1_match_coords) != set(s2_match_coords):
-                        print("Sets of coincident coords do not match!!")
+                        print("Sets of coincident coords do not match!")
 
                     # create new coincident surface
-                    tris1 = self.mb.get_adjacencies(s1_match_eh, 2, op_type=1)
+                    tris1 = self.mb.get_adjacencies(s1_match_eh, 2,
+                                                    op_type=1)
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
                     self.mb.add_entities(surf, s1_match_eh)
 
-                    # assign sense tag to surface [forward=v1, backward=v2]
+                    # assign sense tag to surface
+                    # [forward=v1, backward=v2]
                     fwd = v1[1]
                     bwd = v2[1]
-                    self.mb.tag_set_data(self.sense_tag, surf, [fwd, bwd])
+                    self.mb.tag_set_data(self.sense_tag, surf,
+                                            [fwd, bwd])
 
                     # get s2 tris to delete (no new surface needed)
-                    tris2 = self.mb.get_adjacencies(s2_match_eh, 2, op_type=1)
+                    tris2 = self.mb.get_adjacencies(s2_match_eh, 2,
+                                                    op_type=1)
 
                     # delete verts/tris from original surfaces
                     self.mb.remove_entities(s1, tris1)
@@ -409,7 +416,9 @@ class IsoVolume(object):
                     self.mb.remove_entities(s2, s2_match_eh)
 
                     # tag the new surface with the shared value
-                    shared = list(set(self.isovol_meshsets[v1]['bounds']) & set(self.isovol_meshsets[v2]['bounds']))
+                    shared = \
+                        list(set(self.isovol_meshsets[v1]['bounds']) \
+                        & set(self.isovol_meshsets[v2]['bounds']))
                     if not(bool(shared)):
                         print('no matching value!', v1, v2)
                         val = 0.0
@@ -422,17 +431,18 @@ class IsoVolume(object):
                     match_surfs.append(surf)
 
                     # check if original surfaces are empty (no vertices)
-                    # if so delete empty surf meshset and remove from list
-                    s2_remaining = self.mb.get_entities_by_type(s2, types.MBVERTEX)
+                    # if so delete empty meshset and remove from list
+                    s2_remaining = self.mb.get_entities_by_type(s2,
+                                                        types.MBVERTEX)
                     if len(s2_remaining) == 0:
                         # delete surface from list and mb instance
-                        #self.mb.delete_entities(s2)
                         self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
 
-                    s1_remaining = self.mb.get_entities_by_type(s1, types.MBVERTEX)
+                    s1_remaining = self.mb.get_entities_by_type(s1,
+                                                        types.MBVERTEX)
                     if len(s1_remaining) == 0:
-                        # delete from list and mb instance and move to next surf
-                        #self.mb.delete_entities(s1)
+                        # delete from list and mb instance and move to
+                        # next surf
                         self.isovol_meshsets[v1]['surfs_EH'].remove(s1)
                         break
 
