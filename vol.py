@@ -553,7 +553,7 @@ class IsoVolume(object):
         self._make_family()
 
 
-    def write_geometry(self, sname="", sdir=self.db):
+    def write_geometry(self, sname="", sdir=""):
         """Writes out the geometry stored in memory.
 
         Input:
@@ -581,6 +581,16 @@ class IsoVolume(object):
                 sname="geom-isovols.h5m"
             else:
                 sname="geom-{}.h5m".format(self.data)
+
+        if sdir == "":
+            try:
+                self.db
+            except:
+                print("WARNING: Database location is unknown! " + \
+                    "File will be saved in tmp/ folder.")
+                sdir = os.getcwd() + "/tmp"
+            else:
+                sdir = self.db
 
         # check file extension of save name:
         ext = sname.split(".")[-1]
