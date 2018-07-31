@@ -133,9 +133,11 @@ class IsoVolume(object):
         """
 
         # make sure levels have been set before proceding
-        if self.levels is None or []:
-            print("No contour levels have been set!")
-            print("Please use assign_levels or generate_levels to set levels.")
+        try:
+            self.levels
+        except:
+            print("ERROR: No contour levels have been set. " +\
+                "Please use assign_levels or generate_levels to set.")
             return
 
         # create folder to store data if it does not already exist
