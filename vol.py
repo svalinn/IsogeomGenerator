@@ -132,14 +132,6 @@ class IsoVolume(object):
         level values (0.stl is lowest values).
         """
 
-        # make sure levels have been set before proceding
-        try:
-            self.levels
-        except:
-            print("ERROR: No contour levels have been set. " +\
-                "Please use assign_levels or generate_levels to set.")
-            return
-
         # create folder to store data if it does not already exist
         if not os.path.isdir(self.db):
             os.mkdir(self.db)
@@ -195,13 +187,13 @@ class IsoVolume(object):
         self.data = data
         self.db = dbname
 
-        # make sure levels and other variables have been set:
+        # make sure levels have been set before proceding
         try:
             self.levels
         except:
-            print("ERROR: Data values for levels not set! Please set using " +\
-                "assign_levels or generate_levels.")
-            return
+            print("ERROR: No contour levels have been set. " +\
+                "Please use assign_levels or generate_levels to set.")
+            sys.exit()
 
         # Generate isovolumes using VisIT
         v.LaunchNowin()
@@ -536,7 +528,7 @@ class IsoVolume(object):
         except:
             print("ERROR: Database not found. " +\
                 "Please run generate_volumes first.")
-            return
+            sys.exit()
 
         # Step 1: Separate Isovolume Surfaces
         self.mb = core.Core()
@@ -570,7 +562,7 @@ class IsoVolume(object):
         except:
             print("ERROR: No geometry in memory to write to file. " + \
                 "Please run create_geometry first.")
-            return
+            sys.exit()
 
         # create default filename if unassigned.
         if sname == "":
