@@ -493,8 +493,8 @@ class IsoVolume(object):
                     sense = self.mb.tag_get_data(self.sense_tag, surf)
                 except:
                     fwd = isovol[1]
-                    bwd = 0
-                    self.mb.tag_set_data(self.val_tag, surf, [fwd, bwd])
+                    bwd = long(0) # this needs to be a valid EH... fix TBD
+                    self.mb.tag_set_data(self.sense_tag, surf, [fwd, bwd])
 
 
     def _make_family(self):
