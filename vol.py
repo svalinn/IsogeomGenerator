@@ -170,8 +170,10 @@ class IsoVolume(object):
         v.DeleteAllPlots()
 
 
-    def generate_volumes(self, filename, data, dbname=os.getcwd()+"/tmp"):
-        """Creates an STL file for each isovolume. N+1 files are created.
+    def generate_volumes(self, filename, data,
+                            dbname=os.getcwd()+"/tmp"):
+        """Creates an STL file for each isovolume. N+1 files are
+        generated and stored in the dbname folder.
 
         Input:
         ------
@@ -289,11 +291,14 @@ class IsoVolume(object):
 
             # add value min/max info (min, max)
             if i == 0:
-                self.isovol_meshsets[iv_info]['bounds'] = (None, self.levels[i])
+                self.isovol_meshsets[iv_info]['bounds'] =\
+                    (None, self.levels[i])
             elif i == self.N:
-                self.isovol_meshsets[iv_info]['bounds'] = (self.levels[i-1], None)
+                self.isovol_meshsets[iv_info]['bounds'] =\
+                    (self.levels[i-1], None)
             else:
-                self.isovol_meshsets[iv_info]['bounds'] = (self.levels[i-1], self.levels[i])
+                self.isovol_meshsets[iv_info]['bounds'] =\
+                    (self.levels[i-1], self.levels[i])
 
 
     def _list_coords(self, eh):
