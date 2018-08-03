@@ -641,9 +641,12 @@ class IsoVolume(object):
         if tag_groups:
             print('Tagging data groups...')
             self._tag_groups()
-            print('... Data groups complete')
+            print('... tags complete')
 
         if tag_for_viz:
+            print('Tagging triangles with data...')
+            self._tag_for_viz()
+            print('... tags complete')
 
 
 
