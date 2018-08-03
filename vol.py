@@ -580,7 +580,25 @@ class IsoVolume(object):
 
 
     def _tag_for_viz(self):
-        pass
+        """Tags all triangles on all surfaces with the data value for
+        that surface. This is for vizualization purposes.
+        """
+        for isovol in self.isovol_meshsets.keys():
+            for surf in self.isovol_meshsets[isovol]:
+                # get the tagged data
+                val = tag_get_data(self.val_tag, surf)
+
+                # get the triangles
+                verts = self.mb.get_entities_by_type(surf,
+                            types.MBVERTEX, recur=True)
+                tris = self.mb.get_adjacencies(verts, 2, op_type=1)
+
+                # create data array
+                num = len(tris)
+                data = np.full((1, num), val)
+
+                # tag the data
+                self.mb.tag_set_data(self.val_tag, tris, data)
 
 
     def create_geometry(self, tag_groups=False, tag_for_viz=False):
