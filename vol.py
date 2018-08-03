@@ -559,15 +559,15 @@ class IsoVolume(object):
         data_groups = {}
 
         data_groups[0.0] = self.mb.create_meshset()
-        self.mb.tag_set_data(category, data_group[0.0], 'Group')
+        self.mb.tag_set_data(category, data_groups[0.0], 'Group')
         name = '{}_{}'.format(data, 0.0)
-        self.mb.tag_set_data(tag_name, data_group[0.0], name)
+        self.mb.tag_set_data(tag_name, data_groups[0.0], name)
 
         for val in self.levels:
             data_groups[val] = self.mb.create_meshset()
-            self.mb.tag_set_data(category, data_group[val], 'Group')
+            self.mb.tag_set_data(category, data_groups[val], 'Group')
             name = '{}_{}'.format(data, val)
-            self.mb.tag_set_data(tag_name, data_group[val], name)
+            self.mb.tag_set_data(tag_name, data_groups[val], name)
 
         # add surfs to groups
         for isovol in self.isovol_meshsets.keys():
