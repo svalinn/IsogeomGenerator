@@ -532,10 +532,71 @@ class IsoVolume(object):
                 self.mb.tag_set_data(category, surf_eh, 'Surface')
 
 
-    def create_geometry(self):
+    def _tag_groups(self):
+        """Tags the surfaces with metadata as a group with value
+            {data}_{value}. Example: 'wwn_0.005'. The original data
+            name will be stripped of any underscores.
+        """
+
+        # create group entity set per data value & tag as a 'Group'
+
+        # category tag
+        category = self.mb.tag_get_handle('CATEGORY', size=32,
+                        tag_type=types.MB_TYPE_OPAQUE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+
+        # tag for group metadata
+        tag_name = self.mb.tag_get_handle('NAME', size=32,
+                                tag_type=types.MB_TYPE_OPAQUE,
+                                storage_type=types.MB_TAG_SPARSE,
+                                create_if_missing=True)
+
+        # strip underscores from base data name
+        data = self.data.replace('_', '')
+
+        # create meshsets (starting w/ 0.0)
+        data_groups = {}
+
+        data_groups[0.0] = self.mb.create_meshset()
+        self.mb.tag_set_data(category, data_group[0.0], 'Group')
+        name = '{}_{}'.format(data, 0.0)
+        self.mb.tag_set_data(tag_name, data_group[0.0], name)
+
+        for val in self.levels:
+            data_groups[val] = self.mb.create_meshset()
+            self.mb.tag_set_data(category, data_group[val], 'Group')
+            name = '{}_{}'.format(data, val)
+            self.mb.tag_set_data(tag_name, data_group[val], name)
+
+        # add surfs to groups
+        for isovol in self.isovol_meshsets.keys():
+            for surf in self.isovol_meshsets[isovol]:
+                # get the tagged data
+                val_data = tag_get_data(self.val_tag, surf)
+
+                # add to group with that same data
+                self.add_entities(data_groups[val_data], surf)
+
+
+    def _tag_for_viz(self):
+        pass
+
+
+    def create_geometry(self, tag_groups=False, tag_for_viz=False):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
+
+        Input:
+        ------
+            tag_groups: bool (optional), True to tag surfaces in groups
+                with NAMES '{data}_{value}' where data is the data name
+                and value is the value for that surface. Default=False.
+            tag_for_viz: bool (optional), True to tag each triangle on
+                every surface with the data value. Needed to visualize
+                values in VisIt. Default=False.
         """
+
         # check that database is identified
         try:
             self.db
@@ -558,6 +619,14 @@ class IsoVolume(object):
 
         # Step 3: Assign Parent-Child Relationship
         self._make_family()
+
+        if tag_groups:
+            print('Tagging data groups...')
+            self._tag_groups()
+            print('... Data groups complete')
+
+        if tag_for_viz:
+
 
 
     def write_geometry(self, sname="", sdir=""):
