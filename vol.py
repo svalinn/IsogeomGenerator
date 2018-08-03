@@ -573,7 +573,7 @@ class IsoVolume(object):
         for isovol in self.isovol_meshsets.keys():
             for surf in self.isovol_meshsets[isovol]:
                 # get the tagged data
-                val_data = tag_get_data(self.val_tag, surf)
+                val_data = self.mb.tag_get_data(self.val_tag, surf)
 
                 # add to group with that same data
                 self.add_entities(data_groups[val_data], surf)
