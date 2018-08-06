@@ -497,8 +497,9 @@ class IsoVolume(object):
                     sense = self.mb.tag_get_data(self.sense_tag, surf)
                 except:
                     fwd = isovol[1]
-                    bwd = np.uint64(0) # this needs to be a valid EH... fix TBD
-                    self.mb.tag_set_data(self.sense_tag, surf, [fwd, bwd])
+                    bwd = np.uint64(0)
+                    self.mb.tag_set_data(self.sense_tag,
+                                        surf, [fwd, bwd])
 
 
     def _make_family(self):
@@ -571,12 +572,12 @@ class IsoVolume(object):
 
         # add surfs to groups
         for isovol in self.isovol_meshsets.keys():
-            for surf in self.isovol_meshsets[isovol]:
+            for surf in self.isovol_meshsets[isovol]['surfs_EH']:
                 # get the tagged data
                 val_data = self.mb.tag_get_data(self.val_tag, surf)
 
                 # add to group with that same data
-                self.add_entities(data_groups[val_data], surf)
+                self.mb.add_entities(data_groups[val_data], surf)
 
 
     def _tag_for_viz(self):
@@ -584,9 +585,9 @@ class IsoVolume(object):
         that surface. This is for vizualization purposes.
         """
         for isovol in self.isovol_meshsets.keys():
-            for surf in self.isovol_meshsets[isovol]:
+            for surf in self.isovol_meshsets[isovol]['surfs_EH']:
                 # get the tagged data
-                val = tag_get_data(self.val_tag, surf)
+                val = self.mb.tag_get_data(self.val_tag, surf)
 
                 # get the triangles
                 verts = self.mb.get_entities_by_type(surf,
