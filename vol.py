@@ -600,7 +600,6 @@ class IsoVolume(object):
                 data = np.full((num), val)
 
                 # tag the data
-
                 self.mb.tag_set_data(self.val_tag, tris, data)
 
 
