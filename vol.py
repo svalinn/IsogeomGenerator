@@ -573,11 +573,12 @@ class IsoVolume(object):
         # add surfs to groups
         for isovol in self.isovol_meshsets.keys():
             for surf in self.isovol_meshsets[isovol]['surfs_EH']:
-                # get the tagged data
+                # get the tagged data (get one value from the array)
                 val_data = self.mb.tag_get_data(self.val_tag, surf)
+                val = float(val_data[0])
 
                 # add to group with that same data
-                self.mb.add_entities(data_groups[val_data], surf)
+                self.mb.add_entities(data_groups[val], [surf])
 
 
     def _tag_for_viz(self):
@@ -596,9 +597,10 @@ class IsoVolume(object):
 
                 # create data array
                 num = len(tris)
-                data = np.full((1, num), val)
+                data = np.full((num), val)
 
                 # tag the data
+
                 self.mb.tag_set_data(self.val_tag, tris, data)
 
 
