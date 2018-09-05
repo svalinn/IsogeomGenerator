@@ -254,6 +254,7 @@ class IsoVolume(object):
             # get the connected set of triangles that make the single
             # surface and store into a unique meshset
             tris = self.mb.get_adjacencies(verts, 2, op_type=1)
+            tris = self._strip_triangles(tris, verts)
             surf = self.mb.create_meshset()
             self.mb.add_entities(surf, tris)
             self.mb.add_entities(surf, verts)
@@ -430,7 +431,7 @@ class IsoVolume(object):
                     tris1 = self.mb.get_adjacencies(s1_match_eh, 2,
                                                     op_type=1)
                     # get only tris1 that have all match vertices
-                    tris1 = self._strip_triangles(tris1, s1_match_coords)
+                    tris1 = self._strip_triangles(tris1, s1_match_eh)
 
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
@@ -446,7 +447,7 @@ class IsoVolume(object):
                     # get s2 tris to delete (no new surface needed)
                     tris2 = self.mb.get_adjacencies(s2_match_eh, 2,
                                                     op_type=1)
-                    tris2 = self._strip_triangles(tris2, s2_match_coords)
+                    tris2 = self._strip_triangles(tris2, s2_match_eh)
 
                     # delete verts/tris from original surfaces
                     # remove entities from surf 1 (entities still exist)
@@ -637,6 +638,8 @@ class IsoVolume(object):
                 verts = self.mb.get_entities_by_type(surf,
                             types.MBVERTEX, recur=True)
                 tris = self.mb.get_adjacencies(verts, 2, op_type=1)
+
+                tris = self._strip_triangles(tris, verts)
 
                 # create data array
                 num = len(tris)
