@@ -6,6 +6,7 @@ import math as m
 
 import visit as v
 from pymoab import core, types
+from pymoab.rng import Range
 
 
 class IsoVolume(object):
@@ -354,6 +355,36 @@ class IsoVolume(object):
         return sA_match_eh, sA_match_coords
 
 
+    def _strip_triangles(self, tris, verts):
+        """This function will take a set of triangle entity handles and
+        return the set for which all vertices that make a triangle are
+        in the set of vertices.
+
+        Input:
+        ------
+            tris: list of entity handles, EHs for triangles to check
+            verts: list of entity handles, list of vertices to compare
+                against. Only triangles will be returned whose complete
+                set of vertices are in this list.
+
+        Returns:
+        --------
+            tris: list of entity handles, EHs for the triangles for
+                which all three vertices are in the verts list.
+        """
+        tris_strip = []
+
+        for tri in tris:
+            # get vertices in triangle
+            tri_verts = self.mb.get_connectivity(tri)
+
+            # check if all verts are in set of verts
+            if set(tri_verts).issubset(set(verts)):
+                tris_strip.append(tri)
+
+        return tris_strip
+
+
     def _compare_surfs(self, v1, v2):
         """finds coincident surfaces between two isovolumes.
 
@@ -398,6 +429,9 @@ class IsoVolume(object):
                     # create new coincident surface
                     tris1 = self.mb.get_adjacencies(s1_match_eh, 2,
                                                     op_type=1)
+                    # get only tris1 that have all match vertices
+                    tris1 = self._strip_triangles(tris1, s1_match_coords)
+
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
                     self.mb.add_entities(surf, s1_match_eh)
@@ -412,12 +446,21 @@ class IsoVolume(object):
                     # get s2 tris to delete (no new surface needed)
                     tris2 = self.mb.get_adjacencies(s2_match_eh, 2,
                                                     op_type=1)
+                    tris2 = self._strip_triangles(tris2, s2_match_coords)
 
                     # delete verts/tris from original surfaces
+                    # remove entities from surf 1 (entities still exist)
+                    # but delete entities from surf 2 because they are
+                    # repeats
+
+                    # remove from both sets (already in new surface)
                     self.mb.remove_entities(s1, tris1)
                     self.mb.remove_entities(s1, s1_match_eh)
-                    self.mb.remove_entities(s2, tris1)
+                    self.mb.remove_entities(s2, tris2)
                     self.mb.remove_entities(s2, s2_match_eh)
+
+                    # delete surf 2 (repeats)
+                    self.mb.delete_entities(tris2)
 
                     # tag the new surface with the shared value
                     shared = \
@@ -700,6 +743,9 @@ class IsoVolume(object):
 
         # save the file
         save_location = sdir + "/" + sname
+
+        # write out only the ranges stored
+
         self.mb.write_file(save_location)
 
         print("Geometry file written to {}.".format(save_location))
