@@ -234,27 +234,35 @@ class IsoVolume(object):
         while len(all_verts) > 0:
             # get full set of connected verts starting from a seed
             verts = [all_verts[0]]
+            verts_check = [all_verts[0]]
+            vtmp_all = set(verts[:])
 
             # gather set of all vertices that are connected to the seed
             while True:
                 # this step takes too long for large surfaces
-                # check adjancency and connectedness of vertices
+                # check adjancency and connectedness of new vertices
                 vtmp = self.mb.get_adjacencies(self.mb.get_adjacencies(
-                                               verts, 2, op_type=1),
+                                               verts_check, 2, op_type=1),
                                                0, op_type=1)
-                if len(vtmp) == len(verts):
+
+                # add newly found verts to all list
+                vtmp_all.update(set(vtmp))
+
+                # check if different from already found verts
+                if len(list(vtmp_all)) == len(verts):
                     # no more vertices are connected, so full surface
                     # has been found
                     break
                 else:
-                    # update vertices list to include newly found
-                    # connected vertices
-                    verts = vtmp
+                    # update vertices list to check only newly found
+                    # vertices
+                    verts_check = vtmp_all.difference(verts)
+                    verts = list(vtmp_all)
 
             # get the connected set of triangles that make the single
             # surface and store into a unique meshset
-            tris = self.mb.get_adjacencies(verts, 2, op_type=1)
-            tris = self._strip_triangles(tris, verts)
+            #tris = self.mb.get_adjacencies(verts, 2, op_type=1)
+            tris = self._strip_triangles(verts)
             surf = self.mb.create_meshset()
             self.mb.add_entities(surf, tris)
             self.mb.add_entities(surf, verts)
@@ -356,7 +364,7 @@ class IsoVolume(object):
         return sA_match_eh, sA_match_coords
 
 
-    def _strip_triangles(self, tris, verts):
+    def _strip_triangles(self, verts_good):
         """This function will take a set of triangle entity handles and
         return the set for which all vertices that make a triangle are
         in the set of vertices.
@@ -373,17 +381,19 @@ class IsoVolume(object):
             tris: list of entity handles, EHs for the triangles for
                 which all three vertices are in the verts list.
         """
-        tris_strip = []
 
-        for tri in tris:
-            # get vertices in triangle
-            tri_verts = self.mb.get_connectivity(tri)
+        tris_all = self.mb.get_adjacencies(verts_good, 2, op_type=1)
+        verts_all = self.mb.get_connectivity(tris_all)
+        verts_bad = set(verts_all) - set(verts_good)
 
-            # check if all verts are in set of verts
-            if set(tri_verts).issubset(set(verts)):
-                tris_strip.append(tri)
-
-        return tris_strip
+        if verts_bad:
+            # not an empty set
+            tris_bad = self.mb.get_adjacencies(list(verts_bad), 2, op_type=1)
+            tris_good = set(tris_all) - set(tris_bad)
+            return list(tris_good)
+        else:
+            # empty set so all tris are good
+            return tris_all
 
 
     def _compare_surfs(self, v1, v2):
@@ -428,10 +438,8 @@ class IsoVolume(object):
                         print("Sets of coincident coords do not match!")
 
                     # create new coincident surface
-                    tris1 = self.mb.get_adjacencies(s1_match_eh, 2,
-                                                    op_type=1)
                     # get only tris1 that have all match vertices
-                    tris1 = self._strip_triangles(tris1, s1_match_eh)
+                    tris1 = self._strip_triangles(s1_match_eh)
 
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
@@ -445,14 +453,7 @@ class IsoVolume(object):
                                             [fwd, bwd])
 
                     # get s2 tris to delete (no new surface needed)
-                    tris2 = self.mb.get_adjacencies(s2_match_eh, 2,
-                                                    op_type=1)
-                    tris2 = self._strip_triangles(tris2, s2_match_eh)
-
-                    # delete verts/tris from original surfaces
-                    # remove entities from surf 1 (entities still exist)
-                    # but delete entities from surf 2 because they are
-                    # repeats
+                    tris2 = self._strip_triangles(s2_match_eh)
 
                     # remove from both sets (already in new surface)
                     self.mb.remove_entities(s1, tris1)
@@ -583,8 +584,6 @@ class IsoVolume(object):
             name will be stripped of any underscores.
         """
 
-        # create group entity set per data value & tag as a 'Group'
-
         # category tag
         category = self.mb.tag_get_handle('CATEGORY', size=32,
                         tag_type=types.MB_TYPE_OPAQUE,
@@ -636,10 +635,8 @@ class IsoVolume(object):
 
                 # get the triangles
                 verts = self.mb.get_entities_by_type(surf,
-                            types.MBVERTEX, recur=True)
-                tris = self.mb.get_adjacencies(verts, 2, op_type=1)
-
-                tris = self._strip_triangles(tris, verts)
+                            types.MBVERTEX)
+                tris = self._strip_triangles(verts)
 
                 # create data array
                 num = len(tris)
@@ -697,7 +694,6 @@ class IsoVolume(object):
             print('... tags complete')
 
 
-
     def write_geometry(self, sname="", sdir=""):
         """Writes out the geometry stored in memory.
 
@@ -748,7 +744,6 @@ class IsoVolume(object):
         save_location = sdir + "/" + sname
 
         # write out only the ranges stored
-
         self.mb.write_file(save_location)
 
         print("Geometry file written to {}.".format(save_location))
