@@ -207,6 +207,10 @@ class IsoVolume(object):
         # write out only the ranges stored
         self.mb.write_file(save_location)
 
+        for isovol in self.isovol_meshsets.keys():
+            for surf in self.isovol_meshsets[isovol]['surfs_EH']:
+                self.mb.write_file(sdir + '/surf-{}-{}.vtk'.format(isovol[0],surf), [surf])
+
         print("Geometry file written to {}.".format(save_location))
 
 
@@ -463,16 +467,40 @@ class IsoVolume(object):
                 corresponding coordinate for the EH in sA_match_eh
         """
 
+        tol = 1.e-6
+
         sA_match_eh = []
         sA_match_coords = []
-        for vert in vertsA.items():
-            eh = vert[0]
-            coord = vert[1]
-            if coord in vertsB.values():
-                sA_match_eh.append(eh)
-                sA_match_coords.append(coord)
+        sB_match_eh = []
+        #sB_match_coords = []
 
-        return sA_match_eh, sA_match_coords
+        for vertA in vertsA.items():
+            ehA = vertA[0]
+            coordA = vertA[1]
+            for vertB in vertsB.items():
+                ehB = vertB[0]
+                coordB = vertB[1]
+
+                if np.allclose(coordA, coordB):
+                    sA_match_eh.append(ehA)
+                    sA_match_coords.append(coordA)
+                    sB_match_eh.append(ehB)
+                    break
+
+                #sqA = coordA[0]**2 + coordA[1]**2 + coordA[2]**2
+                #sqB = coordB[0]**2 + coordB[1]**2 + coordB[2]**2
+                #
+                #
+                #if abs(sqA - sqB) <= tol:
+                #    if abs(sqA - sqB) != 0.0:
+                #        print(abs(sqA - sqB))
+                #
+                #    sA_match_eh.append(ehA)
+                #    sA_match_coords.append(coordA)
+                #    sB_match_eh.append(ehB)
+                #    break
+
+        return sA_match_eh, sB_match_eh
 
 
     def _get_surf_triangles(self, verts_good):
@@ -532,7 +560,7 @@ class IsoVolume(object):
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords = self._get_matches(verts1,
+                s1_match_eh, s2_match_eh = self._get_matches(verts1,
                                                                  verts2)
 
                 if s1_match_eh != []:
@@ -540,12 +568,12 @@ class IsoVolume(object):
 
                     # must also collect the corresponding entity handles
                     # for s2 so they can be properly updated
-                    s2_match_eh, s2_match_coords = self._get_matches(
-                                                    verts2, verts1)
+                    #s2_match_eh, s2_match_coords = self._get_matches(
+                    #                                verts2, verts1)
 
                     # check that the set of coordinates match for each
-                    if set(s1_match_coords) != set(s2_match_coords):
-                        print("Sets of coincident coords do not match!")
+                    # if set(s1_match_coords) != set(s2_match_coords):
+                    #     print("Sets of coincident coords do not match!")
 
                     # create new coincident surface
                     # get only tris1 that have all match vertices
@@ -570,6 +598,8 @@ class IsoVolume(object):
                     self.mb.remove_entities(s1, s1_match_eh)
                     self.mb.remove_entities(s2, tris2)
                     self.mb.remove_entities(s2, s2_match_eh)
+
+                    print(len(tris1), len(tris2))
 
                     # delete surf 2 (repeats)
                     self.mb.delete_entities(tris2)
@@ -640,12 +670,16 @@ class IsoVolume(object):
         for isovol in all_vols:
             for surf in self.isovol_meshsets[isovol]['surfs_EH']:
 
-                # tag val=0
+                # tag val=0 and add tris to surface
                 try:
                     val = self.mb.tag_get_data(self.val_tag, surf)
                 except:
                     val = 0.0
                     self.mb.tag_set_data(self.val_tag, surf, val)
+                    verts = self.mb.get_entities_by_type(surf,
+                            types.MBVERTEX)
+                    tris = self._get_surf_triangles(verts)
+                    self.mb.add_entities(surf, tris)
 
                 # tag fwd sense
                 try:
@@ -739,14 +773,15 @@ class IsoVolume(object):
         that surface. This is for vizualization purposes.
         """
         for isovol in self.isovol_meshsets.keys():
+            print(isovol, len(self.isovol_meshsets[isovol]['surfs_EH']))
             for surf in self.isovol_meshsets[isovol]['surfs_EH']:
                 # get the tagged data
                 val = self.mb.tag_get_data(self.val_tag, surf)
 
                 # get the triangles
-                verts = self.mb.get_entities_by_type(surf,
-                            types.MBVERTEX)
-                tris = self._get_surf_triangles(verts)
+                tris = self.mb.get_entities_by_type(surf,
+                            types.MBTRI)
+                #tris = self._get_surf_triangles(verts)
 
                 # create data array
                 num = len(tris)
