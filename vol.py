@@ -467,12 +467,10 @@ class IsoVolume(object):
                 corresponding coordinate for the EH in sA_match_eh
         """
 
-        tol = 1.e-6
+        tol = 1.e-6 # make optional to supply to np.allclose()
 
         sA_match_eh = []
-        sA_match_coords = []
         sB_match_eh = []
-        #sB_match_coords = []
 
         for vertA in vertsA.items():
             ehA = vertA[0]
@@ -483,22 +481,8 @@ class IsoVolume(object):
 
                 if np.allclose(coordA, coordB):
                     sA_match_eh.append(ehA)
-                    sA_match_coords.append(coordA)
                     sB_match_eh.append(ehB)
                     break
-
-                #sqA = coordA[0]**2 + coordA[1]**2 + coordA[2]**2
-                #sqB = coordB[0]**2 + coordB[1]**2 + coordB[2]**2
-                #
-                #
-                #if abs(sqA - sqB) <= tol:
-                #    if abs(sqA - sqB) != 0.0:
-                #        print(abs(sqA - sqB))
-                #
-                #    sA_match_eh.append(ehA)
-                #    sA_match_coords.append(coordA)
-                #    sB_match_eh.append(ehB)
-                #    break
 
         return sA_match_eh, sB_match_eh
 
