@@ -646,6 +646,10 @@ class IsoVolume(object):
                 except:
                     val = 0.0
                     self.mb.tag_set_data(self.val_tag, surf, val)
+                    verts = self.mb.get_entities_by_type(surf,
+                            types.MBVERTEX)
+                    tris = self._get_surf_triangles(verts)
+                    self.mb.add_entities(surf, tris)
 
                 # tag fwd sense
                 try:
@@ -744,9 +748,8 @@ class IsoVolume(object):
                 val = self.mb.tag_get_data(self.val_tag, surf)
 
                 # get the triangles
-                verts = self.mb.get_entities_by_type(surf,
-                            types.MBVERTEX)
-                tris = self._get_surf_triangles(verts)
+                tris = self.mb.get_entities_by_type(surf,
+                            types.MBTRI)
 
                 # create data array
                 num = len(tris)
