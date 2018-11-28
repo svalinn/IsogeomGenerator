@@ -663,10 +663,10 @@ class IsoVolume(object):
 
     def _make_family(self):
         """Makes the correct parent-child relationships with volumes
-        and surfaces. Tags geometry type and category on surfaces and
-        volumes.
+        and surfaces. Tags geometry type, category, and ID on surfaces
+        and volumes.
         """
-        # create geometry dimension and category tags
+        # create geometry dimension, category, and global id tags
         geom_dim = self.mb.tag_get_handle('GEOM_DIMENSION', size=1,
                         tag_type=types.MB_TYPE_INTEGER,
                         storage_type=types.MB_TAG_SPARSE,
@@ -675,6 +675,13 @@ class IsoVolume(object):
                         tag_type=types.MB_TYPE_OPAQUE,
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
+        global_id = self.mb.tag_get_handle('GLOBAL_ID', size=1,
+                        tag_type=types.MB_TYPE_INTEGER,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+
+        vol_id = 0
+        surf_id = 0
 
         for v in self.isovol_meshsets.keys():
             vol_eh = v[1]
@@ -682,6 +689,9 @@ class IsoVolume(object):
             # tag volume
             self.mb.tag_set_data(geom_dim, vol_eh, 3)
             self.mb.tag_set_data(category, vol_eh, 'Volume')
+            vol_id += 1
+            self.mb.tag_set_data(global_id, vol_eh, vol_id)
+
 
             for surf_eh in self.isovol_meshsets[v]['surfs_EH']:
                 # create relationship
@@ -690,6 +700,8 @@ class IsoVolume(object):
                 # tag surfaces
                 self.mb.tag_set_data(geom_dim, surf_eh, 2)
                 self.mb.tag_set_data(category, surf_eh, 'Surface')
+                surf_id += 1
+                self.mb.tag_set_data(global_id, surf_eh, surf_id)
 
 
     def _tag_groups(self):
