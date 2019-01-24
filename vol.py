@@ -794,7 +794,6 @@ class IsoVolume(object):
 
         # add all volumes to group
         for isovol in self.isovol_meshsets.keys():
-            print('vol EH: ', isovol[1])
             self.mb.add_entities(group_ms, [isovol[1]])
 
         # assign as a group and assign material 0
