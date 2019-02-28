@@ -107,7 +107,7 @@ class IsoVolume(object):
         v.Close()
 
 
-    def create_geometry(self, tag_groups=False, tag_for_viz=False):
+    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
@@ -119,7 +119,11 @@ class IsoVolume(object):
             tag_for_viz: bool (optional), True to tag each triangle on
                 every surface with the data value. Needed to visualize
                 values in VisIt. Default=False.
+            norm: float (optional), default=1. All ww values will be
+                multiplied by the normalization factor.
         """
+
+        self.norm = norm
 
         # check that database is identified
         try:
@@ -585,7 +589,7 @@ class IsoVolume(object):
                         print('no matching value!', v1, v2)
                         val = 0.0
                     else:
-                        val = shared[0]
+                        val = shared[0]*self.norm
 
                     self.mb.tag_set_data(self.val_tag, surf, val)
 
@@ -737,6 +741,7 @@ class IsoVolume(object):
         self.mb.tag_set_data(tag_name, data_groups[0.0], name)
 
         for val in self.levels:
+            val = val*self.norm
             data_groups[val] = self.mb.create_meshset()
             self.mb.tag_set_data(category, data_groups[val], 'Group')
             name = '{}_{}'.format(data, val)
@@ -748,6 +753,7 @@ class IsoVolume(object):
                 # get the tagged data (get one value from the array)
                 val_data = self.mb.tag_get_data(self.val_tag, surf)
                 val = float(val_data[0])
+                print("surf val data", val)
 
                 # add to group with that same data
                 self.mb.add_entities(data_groups[val], [surf])
