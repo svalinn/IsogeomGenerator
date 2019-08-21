@@ -41,34 +41,59 @@ class IsoVolume(object):
         self.N = len(self.levels)
 
 
-    def generate_levels(self, N, minN, maxN, log=True):
+    def generate_levels(self, N, minN, maxN, log=True, ratio=False):
         """Auto-generate evenly-spaced level values to use given a
         user-defined maximum, minimum, and number of levels to use.
 
         Input:
         ------
-            N: int, number of levels generate
+            N: int or float, number of levels (int) to generate
+                (ratio=False); or the ratio (float) to use to separate
+                levels (ratio=True).
             minN: float, minimum level value
             maxN: float, maximum level value
             log: bool (optional), True to generate evenly spaced levels
                 on a log scale (default), False to use linear scale.
+            ratio: bool (optional), True to generate levels that are
+                spaced by some constant ratio N. If True, log input is
+                ignored. If True, minN will be used as minimum level
+                value, maximum level value is less than or equal to
+                maxN.
         """
 
-        # set min/max values
+        # set min value
         self.minN = minN
-        self.maxN = maxN
-        self.N = N
 
-        # generate evenly spaced values
-        if log:
-            base = 10.
-            start = m.log(self.minN, base)
-            stop = m.log(self.maxN, base)
-            self.levels = list(np.logspace(start, stop, num=self.N,
-                                      endpoint=True, base=base))
+        if not ratio:
+            # ratio not being used
+            # set max value
+            self.maxN = maxN
+            self.N = int(N)
+
+            # generate evenly spaced values
+            if log:
+                base = 10.
+                start = m.log(self.minN, base)
+                stop = m.log(self.maxN, base)
+                self.levels = list(np.logspace(start, stop, num=self.N,
+                                        endpoint=True, base=base))
+            else:
+                self.levels = list(np.linspace(self.minN, self.maxN,
+                                        num=self.N, endpoint=True))
+
         else:
-            self.levels = list(np.linspace(self.minN, self.maxN,
-                                      num=self.N, endpoint=True))
+            # ratio being used
+            # set minN as the minimum value and get all other values
+            # until maxN
+            self.maxN = 0.
+            self.levels = [self.minN]
+
+            while self.maxN <= maxN:
+                next_val = self.levels[-1]*float(N)
+                self.levels.append(next_val)
+                self.maxN = next_val
+
+            self.N = len(self.levels)
 
 
     def generate_volumes(self, filename, data,
