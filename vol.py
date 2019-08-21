@@ -107,7 +107,7 @@ class IsoVolume(object):
         v.Close()
 
 
-    def create_geometry(self, tag_groups=False, tag_for_viz=False):
+    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
@@ -119,7 +119,11 @@ class IsoVolume(object):
             tag_for_viz: bool (optional), True to tag each triangle on
                 every surface with the data value. Needed to visualize
                 values in VisIt. Default=False.
+            norm: float (optional), default=1. All ww values will be
+                multiplied by the normalization factor.
         """
+
+        self.norm = norm
 
         # check that database is identified
         try:
@@ -153,6 +157,9 @@ class IsoVolume(object):
             print('Tagging triangles with data...')
             self._tag_for_viz()
             print('... tags complete')
+
+        # add void materials
+        self._add_mats()
 
 
     def write_geometry(self, sname="", sdir=""):
@@ -582,7 +589,7 @@ class IsoVolume(object):
                         print('no matching value!', v1, v2)
                         val = 0.0
                     else:
-                        val = shared[0]
+                        val = shared[0]*self.norm
 
                     self.mb.tag_set_data(self.val_tag, surf, val)
 
@@ -734,6 +741,7 @@ class IsoVolume(object):
         self.mb.tag_set_data(tag_name, data_groups[0.0], name)
 
         for val in self.levels:
+            val = val*self.norm
             data_groups[val] = self.mb.create_meshset()
             self.mb.tag_set_data(category, data_groups[val], 'Group')
             name = '{}_{}'.format(data, val)
@@ -745,6 +753,7 @@ class IsoVolume(object):
                 # get the tagged data (get one value from the array)
                 val_data = self.mb.tag_get_data(self.val_tag, surf)
                 val = float(val_data[0])
+                print("surf val data", val)
 
                 # add to group with that same data
                 self.mb.add_entities(data_groups[val], [surf])
@@ -770,3 +779,31 @@ class IsoVolume(object):
                 # tag the data
                 self.mb.tag_set_data(self.val_tag, tris, data)
 
+
+    def _add_mats(self):
+        """Assign material void to all volumes.
+        """
+
+        print("Assigning void materials..")
+
+        # create tags for adding materials to groups
+        name_tag = self.mb.tag_get_handle('NAME', size=32,
+                    tag_type=types.MB_TYPE_OPAQUE,
+                    storage_type=types.MB_TAG_SPARSE,
+                    create_if_missing=True)
+        category = self.mb.tag_get_handle('CATEGORY', size=32,
+                    tag_type=types.MB_TYPE_OPAQUE,
+                    storage_type=types.MB_TAG_SPARSE,
+                    create_if_missing=True)
+        mat = 'mat:Vacuum'
+        group_ms = self.mb.create_meshset()
+
+        # add all volumes to group
+        for isovol in self.isovol_meshsets.keys():
+            self.mb.add_entities(group_ms, [isovol[1]])
+
+        # assign as a group and assign material 0
+        self.mb.tag_set_data(name_tag, group_ms, mat)
+        self.mb.tag_set_data(category, group_ms, 'Group')
+
+        print("... Done assigning materials!")
