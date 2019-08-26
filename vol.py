@@ -94,6 +94,8 @@ class IsoVolume(object):
                 if next_val <= maxN:
                     self.levels.append(next_val)
                     self.maxN = next_val
+                else:
+                    break
 
             self.N = len(self.levels)
 
