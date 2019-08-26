@@ -89,7 +89,7 @@ class IsoVolume(object):
             self.maxN = 0.
             self.levels = [self.minN]
 
-            while self.maxN <= maxN:
+            while self.maxN < maxN:
                 next_val = self.levels[-1]*float(N)
                 if next_val <= maxN:
                     self.levels.append(next_val)
