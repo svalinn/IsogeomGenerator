@@ -1,10 +1,14 @@
 #!/usr/bin/python
 
 import os
+from os import listdir
+from os.path import isfile, join
 import nose.tools
 from nose.plugins.skip import SkipTest
 from nose.tools import *
 import vol as v
+import filecmp
+import shutil
 
 ww_file = "cwwm.vtk"
 
@@ -117,8 +121,25 @@ def test_generate_levels_ratio_3():
     assert_equal(4, g.N)
 
 
-def test_generate_volumes():
-    pass
+def test_generate_volumes_in_range():
+    g = v.IsoVolume()
+    g.generate_levels(4, 8.e-7, 1.7e-6, log=False)
+    db = os.getcwd()+"/test-1"
+    g.generate_volumes(ww_file, 'ww_n', dbname=db)
+
+    comp_vols = os.getcwd() + "/vols-1/vols"
+    comp_files = [f for f in listdir(comp_vols) if isfile(join(comp_vols, f))]
+    gen_vols = db + "/vols"
+
+    # check that files produced are the same
+    res = filecmp.cmpfiles(comp_vols, gen_vols, comp_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert_equal(match_list, comp_files)
+    assert_equal(non_match, [])
+
+    shutil.rmtree(db)
+
     # assert number of files, assert names of files, assert not empty?
     # too difficult? assert file contents?
     # Test in different scenarios:
@@ -128,36 +149,97 @@ def test_generate_volumes():
     #   4. single level
 
 
-def test_create_geometry():
-    # geom file creation starting from existing STL level files
-    # no mat or viz tags
-    pass
+def test_generate_volumes_min_in_range():
+    g = v.IsoVolume()
+    g.generate_levels(4, 8.e-7, 3.e-6, log=False)
+    db = os.getcwd()+"/test-2"
+    g.generate_volumes(ww_file, 'ww_n', dbname=db)
+
+    comp_vols = os.getcwd() + "/vols-2/vols"
+    comp_files = [f for f in listdir(comp_vols) if isfile(join(comp_vols, f))]
+    gen_vols = db + "/vols"
+
+    # check that files produced are the same
+    res = filecmp.cmpfiles(comp_vols, gen_vols, comp_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert_equal(match_list, comp_files)
+    assert_equal(non_match, [])
+
+    shutil.rmtree(db)
 
 
-def test_create_geometry_full():
-    # beginning to end geom creation (assigning levels)
-    # no mat or viz tags
-    pass
+def test_generate_volumes_max_in_range():
+    g = v.IsoVolume()
+    g.generate_levels(4, 5.e-7, 1.7e-6, log=False)
+    db = os.getcwd()+"/test-3"
+    g.generate_volumes(ww_file, 'ww_n', dbname=db)
+
+    comp_vols = os.getcwd() + "/vols-3/vols"
+    comp_files = [f for f in listdir(comp_vols) if isfile(join(comp_vols, f))]
+    gen_vols = db + "/vols"
+
+    # check that files produced are the same
+    res = filecmp.cmpfiles(comp_vols, gen_vols, comp_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert_equal(match_list, comp_files)
+    assert_equal(non_match, [])
+
+    shutil.rmtree(db)
 
 
-def test_create_geometry_full_norm():
-    # add normalization factor
-    pass
+def test_generate_volumes_not_in_range():
+    g = v.IsoVolume()
+    g.generate_levels(4, 5.e-7, 3.e-6, log=False)
+    db = os.getcwd()+"/test-4"
+    g.generate_volumes(ww_file, 'ww_n', dbname=db)
+
+    comp_vols = os.getcwd() + "/vols-4/vols"
+    comp_files = [f for f in listdir(comp_vols) if isfile(join(comp_vols, f))]
+    gen_vols = db + "/vols"
+
+    # check that files produced are the same
+    res = filecmp.cmpfiles(comp_vols, gen_vols, comp_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert_equal(match_list, comp_files)
+    assert_equal(non_match, [])
+
+    shutil.rmtree(db)
 
 
-def test_separate_volumes():
-    pass
 
-
-def test_merge():
-    pass
-
-
-def test_add_mats():
-    # full geom w/ mats
-    pass
-
-
-def test_viz_tag():
-    # full geom w/ visualization tags
-    pass
+# def test_create_geometry():
+#     # geom file creation starting from existing STL level files
+#     # no mat or viz tags
+#     pass
+#
+#
+# def test_create_geometry_full():
+#     # beginning to end geom creation (assigning levels)
+#     # no mat or viz tags
+#     pass
+#
+#
+# def test_create_geometry_full_norm():
+#     # add normalization factor
+#     pass
+#
+#
+# def test_separate_volumes():
+#     pass
+#
+#
+# def test_merge():
+#     pass
+#
+#
+# def test_add_mats():
+#     # full geom w/ mats
+#     pass
+#
+#
+# def test_viz_tag():
+#     # full geom w/ visualization tags
+#     pass
