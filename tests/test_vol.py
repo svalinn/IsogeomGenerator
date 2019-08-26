@@ -208,7 +208,10 @@ def test_generate_volumes_not_in_range():
 
     shutil.rmtree(db)
 
-
+# def test_generate_volumes_single_level():
+#     # test that two levels are generated if a single value is passed
+#     # (code needs work to accomplish this)
+#     pass
 
 # def test_create_geometry():
 #     # geom file creation starting from existing STL level files
