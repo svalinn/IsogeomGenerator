@@ -12,7 +12,6 @@ ww_file = "cwwm.vtk"
 def test_assign_levels():
     """Test if values are being assigned properly when passed an
     unsorted list of values."""
-
     levels = [0.1, 0.15, 0.05]
 
     g = v.IsoVolume()
@@ -30,7 +29,6 @@ def test_generate_levels_linear():
     """Test if levels are correctly generated in a linear fashion when
     specifying a min/max value and a number of levels.
     """
-
     minN = 0.1
     maxN = 1.0
     N = 5
@@ -50,7 +48,6 @@ def test_generate_levels_log():
     """Test if levels are correctly generated in a log fashion when
     specifying a min/max value and a number of levels.
     """
-
     minN = 0.1
     maxN = 1.e3
     N = 5
@@ -68,8 +65,56 @@ def test_generate_levels_log():
     assert_equal(N, g.N)
 
 
-def test_generate_levels_ratio():
-    pass
+def test_generate_levels_ratio_1():
+    """Test if levels are generated properly when assigned a spacing
+    ratio. First test: max value should be included in list of levels.
+    """
+    minN = 1.0
+    maxN = 125.0
+    N = 5.
+    levels_expected = [1., 5., 25., 125.]
+
+    g = v.IsoVolume()
+    g.generate_levels(N, minN, maxN, ratio=True)
+    assert_equal(levels_expected, g.levels)
+    assert_equal(minN, g.minN)
+    assert_equal(maxN, g.maxN)
+    assert_equal(4, g.N)
+
+
+def test_generate_levels_ratio_2():
+    """Test if levels are generated properly when assigned a spacing
+    ratio. Second test: max value should not be included in list of
+    levels.
+    """
+    minN = 1.0
+    maxN = 122.0
+    N = 5.
+    levels_expected = [1., 5., 25.]
+
+    g = v.IsoVolume()
+    g.generate_levels(N, minN, maxN, ratio=True)
+    assert_equal(levels_expected, g.levels)
+    assert_equal(minN, g.minN)
+    assert_equal(25., g.maxN)
+    assert_equal(3, g.N)
+
+
+def test_generate_levels_ratio_3():
+    """Test if levels are generated properly when assigned a spacing
+    ratio. Third test: make sure that log=True is overrided.
+    """
+    minN = 1.0
+    maxN = 125.0
+    N = 5.
+    levels_expected = [1., 5., 25., 125.]
+
+    g = v.IsoVolume()
+    g.generate_levels(N, minN, maxN, ratio=True, log=True)
+    assert_equal(levels_expected, g.levels)
+    assert_equal(minN, g.minN)
+    assert_equal(maxN, g.maxN)
+    assert_equal(4, g.N)
 
 
 def test_generate_volumes():
