@@ -28,7 +28,6 @@ def test_assign_levels():
     assert_equal(3, g.N)
 
 
-
 def test_generate_levels_linear():
     """Test if levels are correctly generated in a linear fashion when
     specifying a min/max value and a number of levels.
@@ -140,14 +139,6 @@ def test_generate_volumes_in_range():
 
     shutil.rmtree(db)
 
-    # assert number of files, assert names of files, assert not empty?
-    # too difficult? assert file contents?
-    # Test in different scenarios:
-    #   1. both min and max are within range of data in the mesh
-    #   2. min within range, max out of range
-    #   3. min out of range, max within range
-    #   4. single level
-
 
 def test_generate_volumes_min_in_range():
     g = v.IsoVolume()
@@ -208,17 +199,21 @@ def test_generate_volumes_not_in_range():
 
     shutil.rmtree(db)
 
+
 # def test_generate_volumes_single_level():
 #     # test that two levels are generated if a single value is passed
 #     # (code needs work to accomplish this)
 #     pass
 
-# def test_create_geometry():
-#     # geom file creation starting from existing STL level files
-#     # no mat or viz tags
-#     pass
-#
-#
+
+def test_create_geometry():
+    """Test geom creation from existing STL files."""
+    # all levels are within range of data
+
+    g = v.IsoVolume()
+    g.db = os.getcwd()+"/vols-1"
+
+
 # def test_create_geometry_full():
 #     # beginning to end geom creation (assigning levels)
 #     # no mat or viz tags
