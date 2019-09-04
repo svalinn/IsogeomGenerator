@@ -128,12 +128,15 @@ class IsoVolume(object):
             sys.exit()
 
         # Generate isovolumes using VisIT
-        v.LaunchNowin()
+        try:
+            v.LaunchNowin()
+        except:
+            print("VisIt already launched.")
         v.OpenDatabase(filename)
         print("Generating isovolumes...")
         self._generate_vols()
         print("...Isovolumes files generated!")
-        v.Close()
+        v.CloseComputeEngine()
 
 
     def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0):
