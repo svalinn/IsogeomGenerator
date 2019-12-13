@@ -271,6 +271,16 @@ class IsoVolume(object):
         v.DrawPlots()
 
 
+    def _update_levels(self, value):
+        """In the event that there is no data to export, removes the
+        upper bound from the levels list and resets bound to the next
+        level.
+        """
+
+        self.levels.remove(value)
+        self.N = len(self.levels)
+
+
     def _get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
         outer surface of the volume as STL.
@@ -293,7 +303,9 @@ class IsoVolume(object):
         v.AddOperator("ExternalSurface")
 
         # draw plot
-        v.DrawPlots()
+        draw_res = v.DrawPlots()
+        if draw_res == 0:
+            sys.exit("Error with producing isovolume")
 
         # export current volume to folder
         e = v.ExportDBAttributes()
@@ -301,10 +313,24 @@ class IsoVolume(object):
         e.db_type = "STL"
         e.filename = str(i)
         e.variables = self.data
-        v.ExportDatabase(e)
+        export_res = v.ExportDatabase(e)
+
+        if export_res == 0:
+            # export not successful because there was no data
+            # get new upper bound
+            warn_message = "Warning: no data to export between {} and {}.\n".format(lbound, ubound) \
+                + "Increasing upper bound to next selected level."
+            print(warn_message)
+            if ubound in self.levels:
+                self._update_levels(ubound)
+            else:
+                # it is the arbitrary upper level set and is not needed
+                self._update_levels(self.levels[-1])
 
         # delete the operators
         v.RemoveAllOperators()
+
+        return export_res, ubound
 
 
     def _generate_vols(self):
@@ -332,20 +358,22 @@ class IsoVolume(object):
 
         # iterate over all isovolume levels
         for l in self.levels[1:]:
+            res = 0
+            while res == 0:
+                # get index of current level
+                i = self.levels.index(l)
 
-            # get index of current level
-            i = self.levels.index(l)
+                # assign bounds
+                lbound = self.levels[i-1]
+                ubound = l
 
-            # assign bounds
-            lbound = self.levels[i-1]
-            ubound = l
-
-            # get volume
-            self._get_isovol(lbound, ubound, i)
+                # get volume
+                # res = 0 if no level found (should update to next level)
+                res = self._get_isovol(lbound, ubound, i)
 
         # get maximum isovolume level
         lbound = self.levels[-1]
-        ubound = 1.e50
+        ubound = 1.e200
         self._get_isovol(lbound, ubound, i+1)
 
         # delete plots
