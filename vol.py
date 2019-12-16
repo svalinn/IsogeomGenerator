@@ -272,9 +272,11 @@ class IsoVolume(object):
 
 
     def _update_levels(self, value):
-        """In the event that there is no data to export, removes the
-        upper bound from the levels list and resets bound to the next
-        level.
+        """Removes a value from the levels list and resets N.
+
+        Input:
+        ------
+            value: float, value to remove
         """
 
         self.levels.remove(value)
