@@ -514,7 +514,23 @@ class IsoVolume(object):
         return coords
 
 
-    def _get_matches(self, vertsA, vertsB):
+    def _round_coords(self, vert, tol):
+        """Round to the tolerance value to use for approximate comparison
+
+        """
+        if tol == 0.:
+            # do not round
+            return vert
+
+        # get num digits from the tolerance
+        ndigits = m.abs(m.log(tol))
+        vert[0] = round(vert[0], ndigits)
+        vert[1] = round(vert[1], ndigits)
+        vert[2] = round(vert[2], ndigits)
+
+        return vert
+
+    def _get_matches(self, vertsA, vertsB, tol=.1):
         """Collects the set of entity handles in set of vertsA and their
         coordinates that exist in vertsB.
 
@@ -523,6 +539,7 @@ class IsoVolume(object):
             vertsA/B: dictionary, key is the MOAB entity handle for the
                 vertice and the value is a tuple of the coordinate
                 (x, y, z)
+            tol: float < 1, tolerance used for matching vertices.
 
         Returns:
         --------
@@ -534,12 +551,34 @@ class IsoVolume(object):
 
         sA_match_eh = []
         sA_match_coords = []
+
+        bx = zip(*vertsB.values())[:][0] # all x values
+        by = zip(*vertsB.values())[:][1] # all y values
+        bz = zip(*vertsB.values())[:][2] # all z values
+
+        # get exact matches
         for vert in vertsA.items():
             eh = vert[0]
             coord = vert[1]
             if coord in vertsB.values():
+                # exact match
                 sA_match_eh.append(eh)
                 sA_match_coords.append(coord)
+
+            else:
+                # check approx
+                tf0 = np.isclose(coord[0], bx, rtol=0, atol=tol)
+                tf1 = np.isclose(coord[1], by, rtol=0, atol=tol)
+                tf2 = np.isclose(coord[2], bz, rtol=0, atol=tol)
+                i0 = np.where(np.array(tf0) == True)[0]
+                i1 = np.where(np.array(tf1) == True)[0]
+                i2 = np.where(np.array(tf2) == True)[0]
+
+                index = set(i0) & set(i1) & set(i2)
+
+                if index != set([]): # there is a common set
+                    sA_match_eh.append(eh)
+                    sA_match_coords.append(coord)
 
         return sA_match_eh, sA_match_coords
 
@@ -613,8 +652,8 @@ class IsoVolume(object):
                                                     verts2, verts1)
 
                     # check that the set of coordinates match for each
-                    if set(s1_match_coords) != set(s2_match_coords):
-                        print("Sets of coincident coords do not match!")
+                    #if set(s1_match_coords) != set(s2_match_coords):
+                    #    print("Sets of coincident coords do not match!")
 
                     # create new coincident surface
                     # get only tris1 that have all match vertices
