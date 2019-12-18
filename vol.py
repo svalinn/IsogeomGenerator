@@ -139,7 +139,7 @@ class IsoVolume(object):
         v.CloseComputeEngine()
 
 
-    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0):
+    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0, tol=1e5):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
@@ -153,9 +153,13 @@ class IsoVolume(object):
                 values in VisIt. Default=False.
             norm: float (optional), default=1. All ww values will be
                 multiplied by the normalization factor.
+            tol: float (option), default=1e-5 cm. Merge tolerance for mesh
+                based merge of coincident surfaces. Recommended to be
+                1/10th the mesh voxel size.
         """
 
         self.norm = norm
+        self.tol = tol
 
         # check that database is identified
         try:
@@ -514,23 +518,7 @@ class IsoVolume(object):
         return coords
 
 
-    def _round_coords(self, vert, tol):
-        """Round to the tolerance value to use for approximate comparison
-
-        """
-        if tol == 0.:
-            # do not round
-            return vert
-
-        # get num digits from the tolerance
-        ndigits = m.abs(m.log(tol))
-        vert[0] = round(vert[0], ndigits)
-        vert[1] = round(vert[1], ndigits)
-        vert[2] = round(vert[2], ndigits)
-
-        return vert
-
-    def _get_matches(self, vertsA, vertsB, tol=.1):
+    def _get_matches(self, vertsA, vertsB):
         """Collects the set of entity handles in set of vertsA and their
         coordinates that exist in vertsB.
 
@@ -539,7 +527,6 @@ class IsoVolume(object):
             vertsA/B: dictionary, key is the MOAB entity handle for the
                 vertice and the value is a tuple of the coordinate
                 (x, y, z)
-            tol: float < 1, tolerance used for matching vertices.
 
         Returns:
         --------
@@ -567,9 +554,9 @@ class IsoVolume(object):
 
             else:
                 # check approx
-                tf0 = np.isclose(coord[0], bx, rtol=0, atol=tol)
-                tf1 = np.isclose(coord[1], by, rtol=0, atol=tol)
-                tf2 = np.isclose(coord[2], bz, rtol=0, atol=tol)
+                tf0 = np.isclose(coord[0], bx, rtol=0, atol=self.tol)
+                tf1 = np.isclose(coord[1], by, rtol=0, atol=self.tol)
+                tf2 = np.isclose(coord[2], bz, rtol=0, atol=self.tol)
                 i0 = np.where(np.array(tf0) == True)[0]
                 i1 = np.where(np.array(tf1) == True)[0]
                 i2 = np.where(np.array(tf2) == True)[0]
