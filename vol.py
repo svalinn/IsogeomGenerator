@@ -494,26 +494,38 @@ class IsoVolume(object):
                     (self.levels[i-1], self.levels[i])
 
 
-    def _list_coords(self, eh):
+    def _list_coords(self, eh, invert=False):
         """Gets list of all coords as a list of tuples for an entity
         handle eh.
 
         Input:
         ------
             eh: MOAB entity handle for meshset to retrieve coordinates
+            invert: bool, default=False, True to invert keys and values
+                in returned coords dict
 
         Returns:
         --------
             coords: dictionary, key is the MOAB entity handle for the
                 vertice and the value is a tuple of the coordinate
-                (x, y, z)
+                (x, y, z). If invert=True, keys and values are switched.
         """
 
         # list of all entity handles for all vertices
         all_verts_eh = self.mb.get_entities_by_type(eh, types.MBVERTEX)
         coords = {}
         for v in all_verts_eh:
-            coords[v] = tuple(self.mb.get_coords(v))
+            coord = tuple(self.mb.get_coords(v))
+
+            if invert:
+                # invert is true
+                key = coord
+                value = v
+            else:
+                key = v
+                value = coord
+
+            coords[key] = value
 
         return coords
 
