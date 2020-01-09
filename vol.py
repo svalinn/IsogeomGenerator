@@ -445,7 +445,6 @@ class IsoVolume(object):
 
             # get the connected set of triangles that make the single
             # surface and store into a unique meshset
-            #tris = self.mb.get_adjacencies(verts, 2, op_type=1)
             tris = self._get_surf_triangles(verts)
             surf = self.mb.create_meshset()
             self.mb.add_entities(surf, tris)
@@ -531,14 +530,17 @@ class IsoVolume(object):
 
 
     def _get_matches(self, vertsA, vertsB):
-        """Collects the set of entity handles in set of vertsA and their
-        coordinates that exist in vertsB.
+        """Collects the set of entity handles and coordinates in set of
+        vertsA and vertsB that match within the specified absolute
+        tolerance (self.tol).
 
         Input:
         ------
-            vertsA/B: dictionary, key is the MOAB entity handle for the
+            vertsA: dictionary, key is the MOAB entity handle for the
                 vertice and the value is a tuple of the coordinate
                 (x, y, z)
+            vertsB: dictionary, key is a tuple of the coordinate and the
+                value is the MOAB entity handle for the coordinate
 
         Returns:
         --------
@@ -546,40 +548,56 @@ class IsoVolume(object):
                 for set vertsA that exist is vertsB
             sA_match_coords: list of tuples, each entry is the
                 corresponding coordinate for the EH in sA_match_eh
+            sB_match_eh: list of MOAB entity handles, the entity handles
+                for set vertsB that exist is vertsA
+            sB_match_coords: list of tuples, each entry is the
+                corresponding coordinate for the EH in sB_match_eh
         """
 
         sA_match_eh = []
         sA_match_coords = []
+        sB_match_eh = []
+        sB_match_coords = []
 
-        bx = zip(*vertsB.values())[:][0] # all x values
-        by = zip(*vertsB.values())[:][1] # all y values
-        bz = zip(*vertsB.values())[:][2] # all z values
+        bcoords = vertsB.keys()
 
         # get exact matches
         for vert in vertsA.items():
             eh = vert[0]
             coord = vert[1]
-            if coord in vertsB.values():
+            if coord in bcoords:
                 # exact match
                 sA_match_eh.append(eh)
                 sA_match_coords.append(coord)
+                sB_match_coords.append(coord)
+                sB_match_eh.append(vertsB[coord])
 
             else:
                 # check approx
-                tf0 = np.isclose(coord[0], bx, rtol=0, atol=self.tol)
-                tf1 = np.isclose(coord[1], by, rtol=0, atol=self.tol)
-                tf2 = np.isclose(coord[2], bz, rtol=0, atol=self.tol)
-                i0 = np.where(np.array(tf0) == True)[0]
-                i1 = np.where(np.array(tf1) == True)[0]
-                i2 = np.where(np.array(tf2) == True)[0]
+                tf = np.isclose(coord, bcoords, rtol=0, atol=self.tol)
 
-                index = set(i0) & set(i1) & set(i2)
+                # get index of matches if they exist
+                ix = np.where(zip(*tf)[0])[0]
+                iy = np.where(zip(*tf)[1])[0]
+                iz = np.where(zip(*tf)[2])[0]
 
-                if index != set([]): # there is a common set
+                # get index if only x y and z match
+                index_set = list(set(ix) & set(iy) & set(iz))
+
+                if index_set != []:
+                    index = index_set[0]
+
+                    # get the close match coordinate in the bcoords list
+                    bcoord = bcoords[index]
+                    ehB = vertsB[bcoord]
+
                     sA_match_eh.append(eh)
                     sA_match_coords.append(coord)
+                    sB_match_eh.append(ehB)
+                    sB_match_coords.append(bcoord)
 
-        return sA_match_eh, sA_match_coords
+
+        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords
 
 
     def _get_surf_triangles(self, verts_good):
@@ -634,25 +652,16 @@ class IsoVolume(object):
 
             for s2 in self.isovol_meshsets[v2]['surfs_EH']:
 
-                # get list of all coordinates in s2
-                verts2 = self._list_coords(s2)
+                # get list of all coordinates in s2 (inverted)
+                verts2_inv = self._list_coords(s2, invert=True)
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords = self._get_matches(verts1,
-                                                                 verts2)
+                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords =\
+                    self._get_matches(verts1, verts2_inv)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
-
-                    # must also collect the corresponding entity handles
-                    # for s2 so they can be properly updated
-                    s2_match_eh, s2_match_coords = self._get_matches(
-                                                    verts2, verts1)
-
-                    # check that the set of coordinates match for each
-                    #if set(s1_match_coords) != set(s2_match_coords):
-                    #    print("Sets of coincident coords do not match!")
 
                     # create new coincident surface
                     # get only tris1 that have all match vertices
@@ -853,7 +862,6 @@ class IsoVolume(object):
                 # get the tagged data (get one value from the array)
                 val_data = self.mb.tag_get_data(self.val_tag, surf)
                 val = float(val_data[0])
-                print("surf val data", val)
 
                 # add to group with that same data
                 self.mb.add_entities(data_groups[val], [surf])
