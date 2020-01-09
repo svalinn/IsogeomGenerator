@@ -89,11 +89,13 @@ class IsoVolume(object):
             self.maxN = 0.
             self.levels = [self.minN]
 
-            while self.maxN <= maxN:
+            while self.maxN < maxN:
                 next_val = self.levels[-1]*float(N)
                 if next_val <= maxN:
                     self.levels.append(next_val)
                     self.maxN = next_val
+                else:
+                    break
 
             self.N = len(self.levels)
 
@@ -126,15 +128,18 @@ class IsoVolume(object):
             sys.exit()
 
         # Generate isovolumes using VisIT
-        v.LaunchNowin()
+        try:
+            v.LaunchNowin()
+        except:
+            print("VisIt already launched.")
         v.OpenDatabase(filename)
         print("Generating isovolumes...")
         self._generate_vols()
         print("...Isovolumes files generated!")
-        v.Close()
+        v.CloseComputeEngine()
 
 
-    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0):
+    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0, tol=1e5):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
@@ -148,9 +153,13 @@ class IsoVolume(object):
                 values in VisIt. Default=False.
             norm: float (optional), default=1. All ww values will be
                 multiplied by the normalization factor.
+            tol: float (option), default=1e-5 cm. Merge tolerance for mesh
+                based merge of coincident surfaces. Recommended to be
+                1/10th the mesh voxel size.
         """
 
         self.norm = norm
+        self.tol = tol
 
         # check that database is identified
         try:
@@ -266,6 +275,18 @@ class IsoVolume(object):
         v.DrawPlots()
 
 
+    def _update_levels(self, value):
+        """Removes a value from the levels list and resets N.
+
+        Input:
+        ------
+            value: float, value to remove
+        """
+
+        self.levels.remove(value)
+        self.N = len(self.levels)
+
+
     def _get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
         outer surface of the volume as STL.
@@ -288,7 +309,9 @@ class IsoVolume(object):
         v.AddOperator("ExternalSurface")
 
         # draw plot
-        v.DrawPlots()
+        draw_res = v.DrawPlots()
+        if draw_res == 0:
+            sys.exit("Error with producing isovolume")
 
         # export current volume to folder
         e = v.ExportDBAttributes()
@@ -296,10 +319,24 @@ class IsoVolume(object):
         e.db_type = "STL"
         e.filename = str(i)
         e.variables = self.data
-        v.ExportDatabase(e)
+        export_res = v.ExportDatabase(e)
+
+        if export_res == 0:
+            # export not successful because there was no data
+            # get new upper bound
+            warn_message = "Warning: no data to export between {} and {}.\n".format(lbound, ubound) \
+                + "Increasing upper bound to next selected level."
+            print(warn_message)
+            if ubound in self.levels:
+                self._update_levels(ubound)
+            else:
+                # it is the arbitrary upper level set and is not needed
+                self._update_levels(self.levels[-1])
 
         # delete the operators
         v.RemoveAllOperators()
+
+        return export_res, ubound
 
 
     def _generate_vols(self):
@@ -327,20 +364,22 @@ class IsoVolume(object):
 
         # iterate over all isovolume levels
         for l in self.levels[1:]:
+            res = 0
+            while res == 0:
+                # get index of current level
+                i = self.levels.index(l)
 
-            # get index of current level
-            i = self.levels.index(l)
+                # assign bounds
+                lbound = self.levels[i-1]
+                ubound = l
 
-            # assign bounds
-            lbound = self.levels[i-1]
-            ubound = l
-
-            # get volume
-            self._get_isovol(lbound, ubound, i)
+                # get volume
+                # res = 0 if no level found (should update to next level)
+                res = self._get_isovol(lbound, ubound, i)
 
         # get maximum isovolume level
         lbound = self.levels[-1]
-        ubound = 1.e50
+        ubound = 1.e200
         self._get_isovol(lbound, ubound, i+1)
 
         # delete plots
@@ -406,7 +445,6 @@ class IsoVolume(object):
 
             # get the connected set of triangles that make the single
             # surface and store into a unique meshset
-            #tris = self.mb.get_adjacencies(verts, 2, op_type=1)
             tris = self._get_surf_triangles(verts)
             surf = self.mb.create_meshset()
             self.mb.add_entities(surf, tris)
@@ -455,39 +493,54 @@ class IsoVolume(object):
                     (self.levels[i-1], self.levels[i])
 
 
-    def _list_coords(self, eh):
+    def _list_coords(self, eh, invert=False):
         """Gets list of all coords as a list of tuples for an entity
         handle eh.
 
         Input:
         ------
             eh: MOAB entity handle for meshset to retrieve coordinates
+            invert: bool, default=False, True to invert keys and values
+                in returned coords dict
 
         Returns:
         --------
             coords: dictionary, key is the MOAB entity handle for the
                 vertice and the value is a tuple of the coordinate
-                (x, y, z)
+                (x, y, z). If invert=True, keys and values are switched.
         """
 
         # list of all entity handles for all vertices
         all_verts_eh = self.mb.get_entities_by_type(eh, types.MBVERTEX)
         coords = {}
         for v in all_verts_eh:
-            coords[v] = tuple(self.mb.get_coords(v))
+            coord = tuple(self.mb.get_coords(v))
+
+            if invert:
+                # invert is true
+                key = coord
+                value = v
+            else:
+                key = v
+                value = coord
+
+            coords[key] = value
 
         return coords
 
 
     def _get_matches(self, vertsA, vertsB):
-        """Collects the set of entity handles in set of vertsA and their
-        coordinates that exist in vertsB.
+        """Collects the set of entity handles and coordinates in set of
+        vertsA and vertsB that match within the specified absolute
+        tolerance (self.tol).
 
         Input:
         ------
-            vertsA/B: dictionary, key is the MOAB entity handle for the
+            vertsA: dictionary, key is the MOAB entity handle for the
                 vertice and the value is a tuple of the coordinate
                 (x, y, z)
+            vertsB: dictionary, key is a tuple of the coordinate and the
+                value is the MOAB entity handle for the coordinate
 
         Returns:
         --------
@@ -495,18 +548,56 @@ class IsoVolume(object):
                 for set vertsA that exist is vertsB
             sA_match_coords: list of tuples, each entry is the
                 corresponding coordinate for the EH in sA_match_eh
+            sB_match_eh: list of MOAB entity handles, the entity handles
+                for set vertsB that exist is vertsA
+            sB_match_coords: list of tuples, each entry is the
+                corresponding coordinate for the EH in sB_match_eh
         """
 
         sA_match_eh = []
         sA_match_coords = []
+        sB_match_eh = []
+        sB_match_coords = []
+
+        bcoords = vertsB.keys()
+
+        # get exact matches
         for vert in vertsA.items():
             eh = vert[0]
             coord = vert[1]
-            if coord in vertsB.values():
+            if coord in bcoords:
+                # exact match
                 sA_match_eh.append(eh)
                 sA_match_coords.append(coord)
+                sB_match_coords.append(coord)
+                sB_match_eh.append(vertsB[coord])
 
-        return sA_match_eh, sA_match_coords
+            else:
+                # check approx
+                tf = np.isclose(coord, bcoords, rtol=0, atol=self.tol)
+
+                # get index of matches if they exist
+                ix = np.where(zip(*tf)[0])[0]
+                iy = np.where(zip(*tf)[1])[0]
+                iz = np.where(zip(*tf)[2])[0]
+
+                # get index if only x y and z match
+                index_set = list(set(ix) & set(iy) & set(iz))
+
+                if index_set != []:
+                    index = index_set[0]
+
+                    # get the close match coordinate in the bcoords list
+                    bcoord = bcoords[index]
+                    ehB = vertsB[bcoord]
+
+                    sA_match_eh.append(eh)
+                    sA_match_coords.append(coord)
+                    sB_match_eh.append(ehB)
+                    sB_match_coords.append(bcoord)
+
+
+        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords
 
 
     def _get_surf_triangles(self, verts_good):
@@ -561,25 +652,16 @@ class IsoVolume(object):
 
             for s2 in self.isovol_meshsets[v2]['surfs_EH']:
 
-                # get list of all coordinates in s2
-                verts2 = self._list_coords(s2)
+                # get list of all coordinates in s2 (inverted)
+                verts2_inv = self._list_coords(s2, invert=True)
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords = self._get_matches(verts1,
-                                                                 verts2)
+                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords =\
+                    self._get_matches(verts1, verts2_inv)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
-
-                    # must also collect the corresponding entity handles
-                    # for s2 so they can be properly updated
-                    s2_match_eh, s2_match_coords = self._get_matches(
-                                                    verts2, verts1)
-
-                    # check that the set of coordinates match for each
-                    if set(s1_match_coords) != set(s2_match_coords):
-                        print("Sets of coincident coords do not match!")
 
                     # create new coincident surface
                     # get only tris1 that have all match vertices
@@ -780,7 +862,6 @@ class IsoVolume(object):
                 # get the tagged data (get one value from the array)
                 val_data = self.mb.tag_get_data(self.val_tag, surf)
                 val = float(val_data[0])
-                print("surf val data", val)
 
                 # add to group with that same data
                 self.mb.add_entities(data_groups[val], [surf])
