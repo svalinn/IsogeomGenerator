@@ -198,9 +198,6 @@ class IsoVolume(object):
         # add void materials
         self._add_mats()
 
-        # add faceting tol tag
-        #self._tag_facet_tol()
-
 
     def write_geometry(self, sname="", sdir=""):
         """Writes out the geometry stored in memory.
@@ -935,18 +932,3 @@ class IsoVolume(object):
         self.mb.tag_set_data(category, group_ms, 'Group')
 
         print("... Done assigning materials!")
-
-
-    def _tag_facet_tol(self, facet_tol=1e-3):
-        """Tags each fileset in the geometry with the faceting tolerance
-        to use with make_watertight.
-        """
-
-        facet_tol_tag = self.mb.tag_get_handle('FACETING_TOL', size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
-
-        for isovol in self.isovol_meshsets.keys():
-            fs = isovol[1]
-            self.mb.tag_set_data(facet_tol_tag, fs, facet_tol)
