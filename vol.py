@@ -7,7 +7,7 @@ import math as m
 import visit as v
 from pymoab import core, types
 from pymoab.rng import Range
-
+from pymoab.skinner import Skinner
 
 class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
@@ -794,6 +794,24 @@ class IsoVolume(object):
                                         surf, [fwd, bwd])
 
 
+    #def _get_curves(self):
+    #    """Get the curves from the skins of surfaces and their vertices
+    #    to create as meshsets.
+    #    """
+    #
+    #    vol_keys = self.isovol_meshsets.keys()
+    #
+    #    for i, v1 in enumerate(vol_keys):
+    #        vol_eh = v1[1]
+    #
+    #            for s1 in self.isovol_meshsets[v1]['surfs']:
+    #                # get the skin ("outline") of each surface
+    #                skinner.find_skin(s1,
+    #
+    #        for v2 in vol_keys[i:]:
+
+
+
     def _make_family(self):
         """Makes the correct parent-child relationships with volumes
         and surfaces. Tags geometry type, category, and ID on surfaces
@@ -812,6 +830,8 @@ class IsoVolume(object):
                         tag_type=types.MB_TYPE_INTEGER,
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
+
+
 
         vol_id = 0
         surf_id = 0
@@ -835,6 +855,17 @@ class IsoVolume(object):
                 self.mb.tag_set_data(category, surf_eh, 'Surface')
                 surf_id += 1
                 self.mb.tag_set_data(global_id, surf_eh, surf_id)
+
+                sk = Skinner(self.mb)
+                tris = self.mb.get_entities_by_type(surf_eh, types.MBTRI)
+                skin_verts = sk.find_skin(surf_eh, tris, True, False)
+                skin_edges = sk.find_skin(surf_eh, tris, False, False)
+
+                print("!!!!!! surf eh: {}".format(surf_eh))
+                print(skin_verts)
+                print(skin_edges)
+
+
 
 
     def _tag_groups(self):
