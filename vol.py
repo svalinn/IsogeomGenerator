@@ -139,7 +139,7 @@ class IsoVolume(object):
         v.CloseComputeEngine()
 
 
-    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0, tol=1e5):
+    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0, merge_tol=1e-5, facet_tol=1e-3):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
@@ -153,13 +153,14 @@ class IsoVolume(object):
                 values in VisIt. Default=False.
             norm: float (optional), default=1. All ww values will be
                 multiplied by the normalization factor.
-            tol: float (option), default=1e-5 cm. Merge tolerance for mesh
+            merge_tol: float (option), default=1e-5 cm. Merge tolerance for mesh
                 based merge of coincident surfaces. Recommended to be
                 1/10th the mesh voxel size.
         """
 
         self.norm = norm
-        self.tol = tol
+        self.merge_tol = merge_tol
+        self.facet_tol = facet_tol
 
         # check that database is identified
         try:
@@ -198,7 +199,7 @@ class IsoVolume(object):
         self._add_mats()
 
         # add faceting tol tag
-        self._tag_facet_tol()
+        #self._tag_facet_tol()
 
 
     def write_geometry(self, sname="", sdir=""):
@@ -468,6 +469,16 @@ class IsoVolume(object):
         surfaces into unique single surfaces.
         """
 
+        tol_set = False
+        facet_tol_tag = self.mb.tag_get_handle('FACETING_TOL', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        resabs_tag = self.mb.tag_get_handle('GEOMETRY_RESABS', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+
         for f in sorted(os.listdir(self.db + "/vols/")):
             # get file name
             fpath = self.db + "/vols/" + f
@@ -476,6 +487,12 @@ class IsoVolume(object):
             # load file and create EH for file-set
             fs = self.mb.create_meshset()
             self.mb.load_file(fpath, file_set=fs)
+
+            if not tol_set:
+                # only tag on one fileset
+                self.mb.tag_set_data(facet_tol_tag, fs, self.facet_tol)
+                self.mb.tag_set_data(resabs_tag, fs, 1e-6)
+                tol_set = True
 
             # initiate dictionary
             iv_info = (i, fs)
@@ -535,7 +552,7 @@ class IsoVolume(object):
     def _get_matches(self, vertsA, vertsB):
         """Collects the set of entity handles and coordinates in set of
         vertsA and vertsB that match within the specified absolute
-        tolerance (self.tol).
+        tolerance (self.merge_tol).
 
         Input:
         ------
@@ -577,7 +594,7 @@ class IsoVolume(object):
 
             else:
                 # check approx
-                tf = np.isclose(coord, bcoords, rtol=0, atol=self.tol)
+                tf = np.isclose(coord, bcoords, rtol=0, atol=self.merge_tol)
 
                 # get index of matches if they exist
                 ix = np.where(zip(*tf)[0])[0]
