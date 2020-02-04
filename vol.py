@@ -578,6 +578,8 @@ class IsoVolume(object):
         sB_match_eh = []
         sB_match_coords = []
 
+        match_dict = {}
+
         bcoords = vertsB.keys()
 
         # get exact matches
@@ -590,6 +592,8 @@ class IsoVolume(object):
                 sA_match_coords.append(coord)
                 sB_match_coords.append(coord)
                 sB_match_eh.append(vertsB[coord])
+
+                match_dict[vertsB[coord]] = eh
 
             else:
                 # check approx
@@ -615,8 +619,10 @@ class IsoVolume(object):
                     sB_match_eh.append(ehB)
                     sB_match_coords.append(bcoord)
 
+                    match_dict[ehB] = vertsB[eh]
 
-        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords
+
+        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, match_dict
 
 
     def _get_surf_triangles(self, verts_good):
@@ -669,36 +675,60 @@ class IsoVolume(object):
             # get list of all coordinates in s1
             verts1 = self._list_coords(s1)
 
+            # initialize list of curves
+            if s1 not in self.surf_curve.keys():
+                self.surf_curve[s1] = []
+
             for s2 in self.isovol_meshsets[v2]['surfs_EH']:
+                if s2 not in self.surf_curve.keys():
+                    self.surf_curve[s2] = []
 
                 # get list of all coordinates in s2 (inverted)
                 verts2_inv = self._list_coords(s2, invert=True)
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords =\
+                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, match_dict =\
                     self._get_matches(verts1, verts2_inv)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
 
-                    # create new coincident surface
                     # get only tris1 that have all match vertices
                     tris1 = self._get_surf_triangles(s1_match_eh)
 
+                    # get s2 tris to delete (no new surface needed)
+                    tris2 = self._get_surf_triangles(s2_match_eh)
+
+                    # create new coincident surface
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
                     self.mb.add_entities(surf, s1_match_eh)
+                    self.surf_curve[surf] = []
 
-                    # assign sense tag to surface
-                    # [forward=v1, backward=v2]
-                    fwd = v1[1]
-                    bwd = v2[1]
-                    self.mb.tag_set_data(self.sense_tag, surf,
-                                            [fwd, bwd])
+                    # get skin of new merged surf (gets curve)
+                    curve_verts = sk.find_skin(surf, tris1, True, False)
+                    curve_edges = sk.find_skin(surf, tris1, False, False)
 
-                    # get s2 tris to delete (no new surface needed)
-                    tris2 = self._get_surf_triangles(s2_match_eh)
+                    # if curve_verts/edges is empty, closed surf is created
+                    # so no new curve is needed
+                    if len(skin_verts) > 0:
+                        # if not empty, make new curve
+                        curve = self.mb.create_meshset()
+                        self.mb.add_entities(curve, curve_verts)
+                        self.mb.add_entities(curve, curve_edges)
+                        self.surf_curve[s1].append(curve)
+                        self.surf_curve[s2].append(curve)
+                        self.surf_curve[surf].append(curve)
+
+                        # remove merged verts and tris from each already existing surf
+                        for vert_delete in s2_match_eh:
+                            tri = self.mb.get_adjacencies(vert_delete, 2, op_type=1)
+
+                            # get vert replacement
+                            replacement = match_dict[vert_delete]
+
+                            # need to replace vert in triangle
 
                     # remove from both sets (already in new surface)
                     self.mb.remove_entities(s1, tris1)
@@ -708,6 +738,15 @@ class IsoVolume(object):
 
                     # delete surf 2 (repeats)
                     self.mb.delete_entities(tris2)
+
+                    # TAG INFORMATION
+
+                    # assign sense tag to surface
+                    # [forward=v1, backward=v2]
+                    fwd = v1[1]
+                    bwd = v2[1]
+                    self.mb.tag_set_data(self.sense_tag, surf,
+                                            [fwd, bwd])
 
                     # tag the new surface with the shared value
                     shared = \
@@ -760,6 +799,10 @@ class IsoVolume(object):
                         tag_type=types.MB_TYPE_HANDLE,
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
+
+        # create dictionary of curves to match to surfaces:
+        # key = surf eh, value = list of child curve eh
+        self.surf_curve = {}
 
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
