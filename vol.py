@@ -184,7 +184,7 @@ class IsoVolume(object):
         print("...Merging complete!")
 
         # Step 3: Assign Parent-Child Relationship
-        self._get_skins()
+        #self._get_skins()
         self._make_family()
 
         if tag_groups:
@@ -584,16 +584,16 @@ class IsoVolume(object):
 
         # get exact matches
         for vert in vertsA.items():
-            eh = vert[0]
+            ehA = vert[0]
             coord = vert[1]
             if coord in bcoords:
                 # exact match
-                sA_match_eh.append(eh)
+                sA_match_eh.append(ehA)
                 sA_match_coords.append(coord)
                 sB_match_coords.append(coord)
                 sB_match_eh.append(vertsB[coord])
 
-                match_dict[vertsB[coord]] = eh
+                match_dict[vertsB[coord]] = ehA
 
             else:
                 # check approx
@@ -614,12 +614,12 @@ class IsoVolume(object):
                     bcoord = bcoords[index]
                     ehB = vertsB[bcoord]
 
-                    sA_match_eh.append(eh)
+                    sA_match_eh.append(ehA)
                     sA_match_coords.append(coord)
                     sB_match_eh.append(ehB)
                     sB_match_coords.append(bcoord)
 
-                    match_dict[ehB] = vertsB[eh]
+                    match_dict[ehB] = ehA
 
 
         return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, match_dict
@@ -669,6 +669,7 @@ class IsoVolume(object):
             v1[0], v2[0]))
 
         match_surfs = []
+        sk = Skinner(self.mb)
 
         # compare all surfaces in v1 (s1) to all surfaces in v2 (s2)
         for s1 in self.isovol_meshsets[v1]['surfs_EH']:
@@ -707,12 +708,13 @@ class IsoVolume(object):
                     self.surf_curve[surf] = []
 
                     # get skin of new merged surf (gets curve)
+
                     curve_verts = sk.find_skin(surf, tris1, True, False)
                     curve_edges = sk.find_skin(surf, tris1, False, False)
 
                     # if curve_verts/edges is empty, closed surf is created
                     # so no new curve is needed
-                    if len(skin_verts) > 0:
+                    if len(curve_verts) > 0:
                         # if not empty, make new curve
                         curve = self.mb.create_meshset()
                         self.mb.add_entities(curve, curve_verts)
@@ -723,12 +725,25 @@ class IsoVolume(object):
 
                         # remove merged verts and tris from each already existing surf
                         for vert_delete in s2_match_eh:
-                            tri = self.mb.get_adjacencies(vert_delete, 2, op_type=1)
 
-                            # get vert replacement
+                            # get all triangles connected to the vert to be deleted
+                            tris_adjust = self.mb.get_adjacencies(vert_delete, 2, op_type=1)
+
+                            # get the vert that will replace the deleted vert
                             replacement = match_dict[vert_delete]
 
-                            # need to replace vert in triangle
+                            # for every tri to be deleted, replace vert by setting connectivity
+                            for tri in tris_adjust:
+                                tri_verts = self.mb.get_connectivity(tri)
+                                new_verts = [0, 0, 0]
+                                for i, tv in enumerate(tri_verts):
+                                    if tv == vert_delete:
+                                        new_verts[i] = replacement
+                                    else:
+                                        new_verts[i] = tv
+
+                                # set connectivity
+                                self.mb.set_connectivity(tri, new_verts)
 
                     # remove from both sets (already in new surface)
                     self.mb.remove_entities(s1, tris1)
@@ -738,6 +753,7 @@ class IsoVolume(object):
 
                     # delete surf 2 (repeats)
                     self.mb.delete_entities(tris2)
+                    #self.mb.delete_entities(s2_match_eh)
 
                     # TAG INFORMATION
 
@@ -953,13 +969,25 @@ class IsoVolume(object):
                 self.mb.tag_set_data(global_id, surf_eh, surf_id)
 
                 # tag the curve of the surface
-                curve_eh = self.isovol_meshsets[v]['curves'][surf_eh]
-                if curve_eh != []:
-                    self.mb.tag_set_data(geom_dim, curve_eh, 1)
-                    self.mb.tag_set_data(category, curve_eh, 'Curve')
-                    curve_id += 1
-                    self.mb.tag_set_data(global_id, curve_eh, curve_id)
-                    self.mb.add_parent_child(surf_eh, curve_eh[0])
+                #curve_eh = self.isovol_meshsets[v]['curves'][surf_eh]
+                #if curve_eh != []:
+                #    self.mb.tag_set_data(geom_dim, curve_eh, 1)
+                #    self.mb.tag_set_data(category, curve_eh, 'Curve')
+                #    curve_id += 1
+                #    self.mb.tag_set_data(global_id, curve_eh, curve_id)
+                #    self.mb.add_parent_child(surf_eh, curve_eh[0])
+
+        curve_id = 0
+        for s in self.surf_curve.keys():
+            for c in self.surf_curve[s]:
+                # create relationship
+                self.mb.add_parent_child(s, c)
+
+                 # tag curves
+                self.mb.tag_set_data(geom_dim, c, 1)
+                self.mb.tag_set_data(category, c, 'Curve')
+                curve_id += 1
+                self.mb.tag_set_data(global_id, c, curve_id)
 
 
     def _tag_groups(self):
