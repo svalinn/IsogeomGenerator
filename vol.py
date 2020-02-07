@@ -490,7 +490,7 @@ class IsoVolume(object):
             if not tol_set:
                 # only tag on one fileset
                 self.mb.tag_set_data(facet_tol_tag, fs, self.facet_tol)
-                self.mb.tag_set_data(resabs_tag, fs, 1e-6)
+                self.mb.tag_set_data(resabs_tag, fs, self.merge_tol)
                 tol_set = True
 
             # initiate dictionary
