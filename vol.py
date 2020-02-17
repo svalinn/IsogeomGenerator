@@ -165,8 +165,8 @@ class IsoVolume(object):
         self.norm = norm
         self.merge_tol = merge_tol
         self.facet_tol = facet_tol
-        self.el = e_lower
-        self.eu = e_upper
+        #self.el = e_lower
+        #self.eu = e_upper
 
         # check that database is identified
         try:
@@ -210,11 +210,13 @@ class IsoVolume(object):
                         tag_type=types.MB_TYPE_DOUBLE,
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
-        ep_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
+        eu_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
                         tag_type=types.MB_TYPE_DOUBLE,
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
-
+        rs = self.mb.get_root_set()
+        self.mb.tag_set_data(el_tag, rs, e_lower)
+        self.mb.tag_set_data(eu_tag, rs, e_upper)
 
 
     def write_geometry(self, sname="", sdir=""):
