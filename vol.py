@@ -140,12 +140,15 @@ class IsoVolume(object):
         v.CloseComputeEngine()
 
 
-    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0, merge_tol=1e-5, facet_tol=1e-3):
+    def create_geometry(self, elower, eupper, tag_groups=False, tag_for_viz=False, norm=1.0,
+                        merge_tol=1e-5, facet_tol=1e-3):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
         Input:
         ------
+            e_lower: double, energy group lower bound
+            e_upper: double, energy group upper bound
             tag_groups: bool (optional), True to tag surfaces in groups
                 with NAMES '{data}_{value}' where data is the data name
                 and value is the value for that surface. Default=False.
@@ -162,6 +165,8 @@ class IsoVolume(object):
         self.norm = norm
         self.merge_tol = merge_tol
         self.facet_tol = facet_tol
+        self.el = e_lower
+        self.eu = e_upper
 
         # check that database is identified
         try:
@@ -199,6 +204,17 @@ class IsoVolume(object):
 
         # add void materials
         self._add_mats()
+
+        # tag energy bounds on the root set
+        el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        ep_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+
 
 
     def write_geometry(self, sname="", sdir=""):
