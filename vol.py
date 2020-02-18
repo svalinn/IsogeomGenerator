@@ -203,7 +203,7 @@ class IsoVolume(object):
             print('... tags complete')
 
         # add void materials
-        self._add_mats()
+        #self._add_mats()
 
         # tag energy bounds on the root set
         el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
