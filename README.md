@@ -25,7 +25,7 @@ values defined on each mesh voxel.
 
 ### Steps:
 
-    1. Set contour levels with `assign_levels()` or `generate_levels()`
-    2. Generate the isovolume files using `generate_volumes()`
-    3. Create the MOAB geometry with `create_geometry()`
-    4. Write to a file with `write_geometry()`
+1. Set contour levels with `assign_levels()` or `generate_levels()`
+2. Generate the isovolume files using `generate_volumes()`
+3. Create the MOAB geometry with `create_geometry()`
+4. Write to a file with `write_geometry()`
