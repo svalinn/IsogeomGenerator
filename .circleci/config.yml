@@ -3,7 +3,7 @@ version: 2.1
 jobs:
     install_test:
         docker:
-            - image: svalinn/pymoab-visit-py2-18.04
+            - image: kkiesling/pymoab-visit-py2-18.04
         steps:
             - checkout
             - run:  pip install -e . --user
