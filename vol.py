@@ -6,7 +6,6 @@ import math as m
 
 import visit as v
 from pymoab import core, types
-from pymoab import rng
 from pymoab.rng import Range
 from pymoab.skinner import Skinner
 
