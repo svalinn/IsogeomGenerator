@@ -11,4 +11,4 @@ class TestIsogeom(unittest.TestCase):
         exp = sorted(levels)
 
         v.assign_levels(levels)
-        assert(inst.levels == exp)
+        assert(v.levels == exp)
