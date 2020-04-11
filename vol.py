@@ -165,8 +165,6 @@ class IsoVolume(object):
         self.norm = norm
         self.merge_tol = merge_tol
         self.facet_tol = facet_tol
-        #self.el = e_lower
-        #self.eu = e_upper
 
         # check that database is identified
         try:
@@ -189,7 +187,6 @@ class IsoVolume(object):
         print("...Merging complete!")
 
         # Step 3: Assign Parent-Child Relationship
-        #self._get_skins()
         self._make_family()
 
         if tag_groups:
@@ -201,9 +198,6 @@ class IsoVolume(object):
             print('Tagging triangles with data...')
             self._tag_for_viz()
             print('... tags complete')
-
-        # add void materials
-        #self._add_mats()
 
         # tag energy bounds on the root set
         el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
@@ -771,7 +765,6 @@ class IsoVolume(object):
 
                     # delete surf 2 (repeats)
                     self.mb.delete_entities(tris2)
-                    #self.mb.delete_entities(s2_match_eh)
 
                     # TAG INFORMATION
 
@@ -873,76 +866,6 @@ class IsoVolume(object):
                                         surf, [fwd, bwd])
 
 
-    def _get_skins(self):
-        """Get the curves from the skins of surfaces and their vertices
-        to create as meshsets.
-        """
-        sk = Skinner(self.mb)
-
-        vol_keys = self.isovol_meshsets.keys()
-
-        # get skins of all surfaces (unmerged)
-        for v1 in vol_keys:
-            print("*!*!*!*! Volume {} {}".format(v1[0], v1[1]))
-            self.isovol_meshsets[v1]['curves'] = {}
-            for s1 in self.isovol_meshsets[v1]['surfs_EH']:
-                # get skin of surface
-                tris = self.mb.get_entities_by_type(s1, types.MBTRI)
-                skin_verts = sk.find_skin(s1, tris, True, False)
-                skin_edges = sk.find_skin(s1, tris, False, False)
-
-
-
-                # create curve from skin
-                # create meshset, add verts, add edges, tag w/ geom dimension
-                if len(skin_verts) > 0:
-                    print("!!!!!! surf eh: {}".format(s1))
-                    print("verts: ", list(skin_verts))
-                    print("edges: ", list(skin_edges))
-                    curve = self.mb.create_meshset()
-                    self.mb.add_entities(curve, skin_verts)
-                    self.mb.add_entities(curve, skin_edges)
-
-                    # save skin information
-                    self.isovol_meshsets[v1]['curves'][s1] = [curve]
-                else:
-                    # no curves, give default value -1
-                    self.isovol_meshsets[v1]['curves'][s1] = []
-
-    #def _imprint_merge_curves(self):
-    #
-    #    # imprint and merge curves
-    #    for iv, v1 in enumerate(vols_keys):
-    #        # compare curves of each surface of a volume to all the other
-    #        # surfaces in that volume
-    #        for iss, s1 in enumerate(self.isovol_meshsets[v1]['surfs']):
-    #
-    #            for curve in self.isovol_meshsets[v1]['skins'][s1]
-    #            curve1 = self.isovol_meshsets[v1]['skins'][s1]
-    #            if curve1 != -1:
-    #                for jss, s2 in enumerate(self.isovol_meshsets[v1]['surfs'][iss+1:]):
-    #                    curve2 = self.isovol_meshsets[v1]['skins'][s2]
-    #                    if curve2 != -1:
-    #
-    #                        # find if any verts/edges have identical handles
-    #                        verts1 = self.mb.get_entities_by_type(curve1, types.MBVERTEX)
-    #                        edges1 = self.mb.get_entities_by_type(curve1, types.MBEDGE)
-    #
-    #                        verts2 = self.mb.get_entities_by_type(curve2, types.MBVERTEX)
-    #                        edges2 = self.mb.get_entities_by_type(curve2, types.MBEDGE)
-    #
-    #                        edge_match = rng.intersect(edges1, edges2)
-    #                        verts_match = rng.intersect(
-    #
-    #
-    #                        # imprint - get matches and get diffs
-    #                        # separate matches -> create new curves
-    #                        # add curve to each curve list
-    #                        # separate diffs -> create new curves
-
-
-
-
     def _make_family(self):
         """Makes the correct parent-child relationships with volumes
         and surfaces. Tags geometry type, category, and ID on surfaces
@@ -985,15 +908,6 @@ class IsoVolume(object):
                 self.mb.tag_set_data(category, surf_eh, 'Surface')
                 surf_id += 1
                 self.mb.tag_set_data(global_id, surf_eh, surf_id)
-
-                # tag the curve of the surface
-                #curve_eh = self.isovol_meshsets[v]['curves'][surf_eh]
-                #if curve_eh != []:
-                #    self.mb.tag_set_data(geom_dim, curve_eh, 1)
-                #    self.mb.tag_set_data(category, curve_eh, 'Curve')
-                #    curve_id += 1
-                #    self.mb.tag_set_data(global_id, curve_eh, curve_id)
-                #    self.mb.add_parent_child(surf_eh, curve_eh[0])
 
         curve_id = 0
         for s in self.surf_curve.keys():
@@ -1074,32 +988,3 @@ class IsoVolume(object):
 
                 # tag the data
                 self.mb.tag_set_data(self.val_tag, tris, data)
-
-
-    def _add_mats(self):
-        """Assign material void to all volumes.
-        """
-
-        print("Assigning void materials..")
-
-        # create tags for adding materials to groups
-        name_tag = self.mb.tag_get_handle('NAME', size=32,
-                    tag_type=types.MB_TYPE_OPAQUE,
-                    storage_type=types.MB_TAG_SPARSE,
-                    create_if_missing=True)
-        category = self.mb.tag_get_handle('CATEGORY', size=32,
-                    tag_type=types.MB_TYPE_OPAQUE,
-                    storage_type=types.MB_TAG_SPARSE,
-                    create_if_missing=True)
-        mat = 'mat:Vacuum'
-        group_ms = self.mb.create_meshset()
-
-        # add all volumes to group
-        for isovol in self.isovol_meshsets.keys():
-            self.mb.add_entities(group_ms, [isovol[1]])
-
-        # assign as a group and assign material 0
-        self.mb.tag_set_data(name_tag, group_ms, mat)
-        self.mb.tag_set_data(category, group_ms, 'Group')
-
-        print("... Done assigning materials!")
