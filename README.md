@@ -9,5 +9,9 @@ values.
 ## Dependencies:
 
 * Python 2.7
-* VisIt
-* MOAB 5.1 with PyMOAB enabled
+* [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/)
+* [MOAB](https://sigma.mcs.anl.gov/moab-library/) v5.1+ with PyMOAB enabled
+
+## Installation:
+
+From the source directory, run `pip install -e . --user`
