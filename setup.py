@@ -11,7 +11,7 @@ setup(
     description="A package for generating meshed isosurface geometries",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/kkiesling/IaogeomGenerator",
+    url="https://github.com/kkiesling/IsogeomGenerator",
     packages=setuptools.find_packages(),
     python_requires='2.7',
 )
