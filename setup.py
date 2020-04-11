@@ -13,5 +13,4 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/kkiesling/IsogeomGenerator",
     packages=setuptools.find_packages(),
-    python_requires='2.7',
 )
