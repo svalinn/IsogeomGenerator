@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="isosurface-generator",
+    name="Isosurface Geometry Generator",
     version="0.0.1",
     author="Kalin R. Kiesling",
     author_email="krkiesling@gmail.com",
