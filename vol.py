@@ -6,8 +6,9 @@ import math as m
 
 import visit as v
 from pymoab import core, types
+from pymoab import rng
 from pymoab.rng import Range
-
+from pymoab.skinner import Skinner
 
 class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
@@ -139,12 +140,15 @@ class IsoVolume(object):
         v.CloseComputeEngine()
 
 
-    def create_geometry(self, tag_groups=False, tag_for_viz=False, norm=1.0, tol=1e5):
+    def create_geometry(self, e_lower, e_upper, tag_groups=False, tag_for_viz=False, norm=1.0,
+                        merge_tol=1e-5, facet_tol=1e-3):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
         Input:
         ------
+            e_lower: double, energy group lower bound
+            e_upper: double, energy group upper bound
             tag_groups: bool (optional), True to tag surfaces in groups
                 with NAMES '{data}_{value}' where data is the data name
                 and value is the value for that surface. Default=False.
@@ -153,13 +157,14 @@ class IsoVolume(object):
                 values in VisIt. Default=False.
             norm: float (optional), default=1. All ww values will be
                 multiplied by the normalization factor.
-            tol: float (option), default=1e-5 cm. Merge tolerance for mesh
+            merge_tol: float (option), default=1e-5 cm. Merge tolerance for mesh
                 based merge of coincident surfaces. Recommended to be
                 1/10th the mesh voxel size.
         """
 
         self.norm = norm
-        self.tol = tol
+        self.merge_tol = merge_tol
+        self.facet_tol = facet_tol
 
         # check that database is identified
         try:
@@ -194,8 +199,18 @@ class IsoVolume(object):
             self._tag_for_viz()
             print('... tags complete')
 
-        # add void materials
-        self._add_mats()
+        # tag energy bounds on the root set
+        el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        eu_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        rs = self.mb.get_root_set()
+        self.mb.tag_set_data(el_tag, rs, e_lower)
+        self.mb.tag_set_data(eu_tag, rs, e_upper)
 
 
     def write_geometry(self, sname="", sdir=""):
@@ -465,6 +480,16 @@ class IsoVolume(object):
         surfaces into unique single surfaces.
         """
 
+        tol_set = False
+        facet_tol_tag = self.mb.tag_get_handle('FACETING_TOL', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        resabs_tag = self.mb.tag_get_handle('GEOMETRY_RESABS', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+
         for f in sorted(os.listdir(self.db + "/vols/")):
             # get file name
             fpath = self.db + "/vols/" + f
@@ -473,6 +498,12 @@ class IsoVolume(object):
             # load file and create EH for file-set
             fs = self.mb.create_meshset()
             self.mb.load_file(fpath, file_set=fs)
+
+            if not tol_set:
+                # only tag on one fileset
+                self.mb.tag_set_data(facet_tol_tag, fs, self.facet_tol)
+                self.mb.tag_set_data(resabs_tag, fs, self.merge_tol)
+                tol_set = True
 
             # initiate dictionary
             iv_info = (i, fs)
@@ -532,7 +563,7 @@ class IsoVolume(object):
     def _get_matches(self, vertsA, vertsB):
         """Collects the set of entity handles and coordinates in set of
         vertsA and vertsB that match within the specified absolute
-        tolerance (self.tol).
+        tolerance (self.merge_tol).
 
         Input:
         ------
@@ -559,22 +590,26 @@ class IsoVolume(object):
         sB_match_eh = []
         sB_match_coords = []
 
+        match_dict = {}
+
         bcoords = vertsB.keys()
 
         # get exact matches
         for vert in vertsA.items():
-            eh = vert[0]
+            ehA = vert[0]
             coord = vert[1]
             if coord in bcoords:
                 # exact match
-                sA_match_eh.append(eh)
+                sA_match_eh.append(ehA)
                 sA_match_coords.append(coord)
                 sB_match_coords.append(coord)
                 sB_match_eh.append(vertsB[coord])
 
+                match_dict[vertsB[coord]] = ehA
+
             else:
                 # check approx
-                tf = np.isclose(coord, bcoords, rtol=0, atol=self.tol)
+                tf = np.isclose(coord, bcoords, rtol=0, atol=self.merge_tol)
 
                 # get index of matches if they exist
                 ix = np.where(zip(*tf)[0])[0]
@@ -591,13 +626,15 @@ class IsoVolume(object):
                     bcoord = bcoords[index]
                     ehB = vertsB[bcoord]
 
-                    sA_match_eh.append(eh)
+                    sA_match_eh.append(ehA)
                     sA_match_coords.append(coord)
                     sB_match_eh.append(ehB)
                     sB_match_coords.append(bcoord)
 
+                    match_dict[ehB] = ehA
 
-        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords
+
+        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, match_dict
 
 
     def _get_surf_triangles(self, verts_good):
@@ -644,42 +681,81 @@ class IsoVolume(object):
             v1[0], v2[0]))
 
         match_surfs = []
+        sk = Skinner(self.mb)
 
         # compare all surfaces in v1 (s1) to all surfaces in v2 (s2)
         for s1 in self.isovol_meshsets[v1]['surfs_EH']:
             # get list of all coordinates in s1
             verts1 = self._list_coords(s1)
 
+            # initialize list of curves
+            if s1 not in self.surf_curve.keys():
+                self.surf_curve[s1] = []
+
             for s2 in self.isovol_meshsets[v2]['surfs_EH']:
+                if s2 not in self.surf_curve.keys():
+                    self.surf_curve[s2] = []
 
                 # get list of all coordinates in s2 (inverted)
                 verts2_inv = self._list_coords(s2, invert=True)
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords =\
+                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, match_dict =\
                     self._get_matches(verts1, verts2_inv)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
 
-                    # create new coincident surface
                     # get only tris1 that have all match vertices
                     tris1 = self._get_surf_triangles(s1_match_eh)
 
+                    # get s2 tris to delete (no new surface needed)
+                    tris2 = self._get_surf_triangles(s2_match_eh)
+
+                    # create new coincident surface
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
                     self.mb.add_entities(surf, s1_match_eh)
+                    self.surf_curve[surf] = []
 
-                    # assign sense tag to surface
-                    # [forward=v1, backward=v2]
-                    fwd = v1[1]
-                    bwd = v2[1]
-                    self.mb.tag_set_data(self.sense_tag, surf,
-                                            [fwd, bwd])
+                    # get skin of new merged surf (gets curve)
 
-                    # get s2 tris to delete (no new surface needed)
-                    tris2 = self._get_surf_triangles(s2_match_eh)
+                    curve_verts = sk.find_skin(surf, tris1, True, False)
+                    curve_edges = sk.find_skin(surf, tris1, False, False)
+
+                    # if curve_verts/edges is empty, closed surf is created
+                    # so no new curve is needed
+                    if len(curve_verts) > 0:
+                        # if not empty, make new curve
+                        curve = self.mb.create_meshset()
+                        self.mb.add_entities(curve, curve_verts)
+                        self.mb.add_entities(curve, curve_edges)
+                        self.surf_curve[s1].append(curve)
+                        self.surf_curve[s2].append(curve)
+                        self.surf_curve[surf].append(curve)
+
+                        # remove merged verts and tris from each already existing surf
+                        for vert_delete in s2_match_eh:
+
+                            # get all triangles connected to the vert to be deleted
+                            tris_adjust = self.mb.get_adjacencies(vert_delete, 2, op_type=1)
+
+                            # get the vert that will replace the deleted vert
+                            replacement = match_dict[vert_delete]
+
+                            # for every tri to be deleted, replace vert by setting connectivity
+                            for tri in tris_adjust:
+                                tri_verts = self.mb.get_connectivity(tri)
+                                new_verts = [0, 0, 0]
+                                for i, tv in enumerate(tri_verts):
+                                    if tv == vert_delete:
+                                        new_verts[i] = replacement
+                                    else:
+                                        new_verts[i] = tv
+
+                                # set connectivity
+                                self.mb.set_connectivity(tri, new_verts)
 
                     # remove from both sets (already in new surface)
                     self.mb.remove_entities(s1, tris1)
@@ -689,6 +765,15 @@ class IsoVolume(object):
 
                     # delete surf 2 (repeats)
                     self.mb.delete_entities(tris2)
+
+                    # TAG INFORMATION
+
+                    # assign sense tag to surface
+                    # [forward=v1, backward=v2]
+                    fwd = v1[1]
+                    bwd = v2[1]
+                    self.mb.tag_set_data(self.sense_tag, surf,
+                                            [fwd, bwd])
 
                     # tag the new surface with the shared value
                     shared = \
@@ -741,6 +826,10 @@ class IsoVolume(object):
                         tag_type=types.MB_TYPE_HANDLE,
                         storage_type=types.MB_TAG_SPARSE,
                         create_if_missing=True)
+
+        # create dictionary of curves to match to surfaces:
+        # key = surf eh, value = list of child curve eh
+        self.surf_curve = {}
 
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
@@ -798,6 +887,7 @@ class IsoVolume(object):
 
         vol_id = 0
         surf_id = 0
+        curve_id = 0
 
         for v in self.isovol_meshsets.keys():
             vol_eh = v[1]
@@ -818,6 +908,18 @@ class IsoVolume(object):
                 self.mb.tag_set_data(category, surf_eh, 'Surface')
                 surf_id += 1
                 self.mb.tag_set_data(global_id, surf_eh, surf_id)
+
+        curve_id = 0
+        for s in self.surf_curve.keys():
+            for c in self.surf_curve[s]:
+                # create relationship
+                self.mb.add_parent_child(s, c)
+
+                 # tag curves
+                self.mb.tag_set_data(geom_dim, c, 1)
+                self.mb.tag_set_data(category, c, 'Curve')
+                curve_id += 1
+                self.mb.tag_set_data(global_id, c, curve_id)
 
 
     def _tag_groups(self):
@@ -886,32 +988,3 @@ class IsoVolume(object):
 
                 # tag the data
                 self.mb.tag_set_data(self.val_tag, tris, data)
-
-
-    def _add_mats(self):
-        """Assign material void to all volumes.
-        """
-
-        print("Assigning void materials..")
-
-        # create tags for adding materials to groups
-        name_tag = self.mb.tag_get_handle('NAME', size=32,
-                    tag_type=types.MB_TYPE_OPAQUE,
-                    storage_type=types.MB_TAG_SPARSE,
-                    create_if_missing=True)
-        category = self.mb.tag_get_handle('CATEGORY', size=32,
-                    tag_type=types.MB_TYPE_OPAQUE,
-                    storage_type=types.MB_TAG_SPARSE,
-                    create_if_missing=True)
-        mat = 'mat:Vacuum'
-        group_ms = self.mb.create_meshset()
-
-        # add all volumes to group
-        for isovol in self.isovol_meshsets.keys():
-            self.mb.add_entities(group_ms, [isovol[1]])
-
-        # assign as a group and assign material 0
-        self.mb.tag_set_data(name_tag, group_ms, mat)
-        self.mb.tag_set_data(category, group_ms, 'Group')
-
-        print("... Done assigning materials!")
