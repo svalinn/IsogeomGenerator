@@ -1,17 +1,22 @@
 version: 2.1
 
 jobs:
-    install_test:
+    install:
         docker:
-            - image: kkiesling/pymoab-visit-py2-18.04
+            - image: svalinn/pymoab-visit-py2-18.04
         steps:
             - checkout
-            - run:  pip install -e . --user
-            - run:
-                working_directory: tests/
-                command: pytest
+            - run:  pip install . --user
+
+    test:
+        docker:
+            - image: svalinn/pymoab-visit-py2-18.04
+        steps:
+            - checkout
+            - run: pytest
 
 workflows:
     build:
         jobs:
-            - install_test
+            - install
+            - test
