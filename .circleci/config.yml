@@ -1,0 +1,22 @@
+version: 2.1
+
+jobs:
+    install:
+        docker:
+            - image: svalinn/pymoab-visit-py2-18.04
+        steps:
+            - checkout
+            - run:  pip install . --user
+
+    test:
+        docker:
+            - image: svalinn/pymoab-visit-py2-18.04
+        steps:
+            - checkout
+            - run: pytest
+
+workflows:
+    build:
+        jobs:
+            - install
+            - test
