@@ -71,3 +71,17 @@ class TestIsogeom(unittest.TestCase):
         assert(v.minN == min(exp))
         assert(v.maxN == max(exp))
         assert(v.N == len(exp))
+
+    def test_generate_levels_ratio_3(self):
+        """generate levels by ratio, override log=True"""
+        v = vol.IsoVolume()
+        N = 5
+        minN = 1.0
+        maxN = 125.0
+        exp = [1., 5., 25., 125.]
+
+        v.generate_levels(N, minN, maxN, ratio=True, log=True)
+        assert(v.levels == exp)
+        assert(v.minN == min(exp))
+        assert(v.maxN == max(exp))
+        assert(v.N == len(exp))
