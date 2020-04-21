@@ -296,7 +296,6 @@ class IsoVolume(object):
         ------
             value: float, value to remove
         """
-
         self.levels.remove(value)
         self.N = len(self.levels)
 
@@ -334,6 +333,7 @@ class IsoVolume(object):
         e.filename = str(i)
         e.variables = self.data
         export_res = v.ExportDatabase(e)
+        print(export_res)
 
         if export_res == 0:
             # export not successful because there was no data
@@ -342,7 +342,10 @@ class IsoVolume(object):
                 + "Increasing upper bound to next selected level."
             print(warn_message)
             if ubound in self.levels:
-                self._update_levels(ubound)
+                index = self.levels.index(ubound)
+                ubound_old = ubound
+                ubound = self.levels[index + 1]
+                self._update_levels(ubound_old)
             else:
                 # it is the arbitrary upper level set and is not needed
                 self._update_levels(self.levels[-1])
@@ -371,25 +374,25 @@ class IsoVolume(object):
         # plot the pseudocolor data inorder to get volumes
         self._plot_pseudocolor()
 
-        # get the minimum isovolume level
-        lbound = 0.0
-        ubound = self.levels[0]
-        self._get_isovol(lbound, ubound, 0)
-
         # iterate over all isovolume levels
-        for l in self.levels[1:]:
+        for i, l in enumerate(self.levels):
             res = 0
             while res == 0:
-                # get index of current level
-                i = self.levels.index(l)
 
-                # assign bounds
-                lbound = self.levels[i-1]
-                ubound = l
+                # lower bound
+                if i == 0:
+                    lbound = 0.0
+                elif i == len(self.levels):
+                    lbound = self.levels[i]
+                else:
+                    lbound = self.levels[i-1]
+
+                # upper bound
+                ubound = self.levels[i]
 
                 # get volume
                 # res = 0 if no level found (should update to next level)
-                res = self._get_isovol(lbound, ubound, i)
+                res, ubound = self._get_isovol(lbound, ubound, i)
 
         # get maximum isovolume level
         lbound = self.levels[-1]
