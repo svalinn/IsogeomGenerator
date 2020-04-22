@@ -139,11 +139,15 @@ class IsoVolume(object):
 
         # make sure levels have been set before proceding
         try:
-            self.levels
+            assert(self.levels != None)
+            assert(self.minN != None)
+            assert(self.maxN != None)
+            assert(self.N != None)
         except:
-            print("ERROR: No contour levels have been set. " +\
-                "Please use assign_levels or generate_levels to set.")
-            sys.exit()
+            message = "ERROR: Isosurface level values have not been " +\
+                  " properly set. " +\
+                  "Please use assign_levels or generate_levels to set."
+            sys.exit(message)
 
         # Generate isovolumes using VisIT
         try:
@@ -185,11 +189,13 @@ class IsoVolume(object):
 
         # check that database is identified
         try:
-            self.db
+            assert(self.db != None)
+            assert(self.data != None)
         except:
-            print("ERROR: Database not found. " +\
-                "Please run generate_volumes first.")
-            sys.exit()
+            message = "ERROR: Database unknown. " +\
+                "Please run generate_volumes first " +\
+                "or provide database information."
+            sys.exit(message)
 
         # Step 1: Separate Isovolume Surfaces
         self.mb = core.Core()
@@ -242,16 +248,16 @@ class IsoVolume(object):
 
         # check that there is a geometry in memory
         try:
-            self.mb
+            assert(self.mb != None)
         except:
-            print("ERROR: No geometry in memory to write to file. " + \
-                "Please run create_geometry first.")
-            sys.exit()
+            message = "ERROR: No geometry in memory to write. " +\
+                "Please run create_geometry first."
+            sys.exit(message)
 
         # create default filename if unassigned.
         if sname == "":
             try:
-                self.data
+                assert(self.data != None)
             except:
                 print("WARNING: Data name is unknown! " + \
                     "File will be saved as geom-isovols.h5m.")
@@ -261,7 +267,7 @@ class IsoVolume(object):
 
         if sdir == "":
             try:
-                self.db
+                assert(self.db != None)
             except:
                 print("WARNING: Database location is unknown! " + \
                     "File will be saved in tmp/ folder.")
