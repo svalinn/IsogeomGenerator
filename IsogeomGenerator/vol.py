@@ -22,7 +22,25 @@ class IsoVolume(object):
     """
 
     def __init__(self):
-        pass
+        """Initialize global class variables"""
+
+        # information for user defined isosurface values
+        self.levels = None
+        self.minN = None
+        self.maxN = None
+        self.N = None
+
+        # database information
+        self.data = None
+        self.db = None
+
+        # geometry creation information
+        self.norm = None
+        self.merge_tol = None
+        self.facet_tol = None
+
+        self.mb = None
+        self.isovol_meshsets = None
 
 
     def assign_levels(self, levels):
