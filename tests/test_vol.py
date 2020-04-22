@@ -114,7 +114,7 @@ class TestIsogeom(unittest.TestCase):
         shutil.rmtree(db)
 
 
-    def test_generate_volumes_min_in_range(self):
+    def test_generate_volumes_max_out_of_range(self):
         g = vol.IsoVolume()
         g.generate_levels(4, 8.e-7, 3.e-6, log=False)
         db = test_dir + "/test-2"
@@ -134,7 +134,7 @@ class TestIsogeom(unittest.TestCase):
         shutil.rmtree(db)
 
 
-    def test_generate_volumes_max_in_range(self):
+    def test_generate_volumes_min_out_of_range(self):
         g = vol.IsoVolume()
         g.generate_levels(4, 5.e-7, 1.7e-6, log=False)
         db = test_dir + "/test-3"
