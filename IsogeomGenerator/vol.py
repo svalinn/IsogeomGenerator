@@ -333,8 +333,8 @@ class IsoVolume(object):
         e.filename = str(i)
         e.variables = self.data
         export_res = v.ExportDatabase(e)
-        print(export_res)
 
+        skip_max = False
         if export_res == 0:
             # export not successful because there was no data
             # get new upper bound
@@ -344,7 +344,10 @@ class IsoVolume(object):
             if ubound in self.levels:
                 index = self.levels.index(ubound)
                 ubound_old = ubound
-                ubound = self.levels[index + 1]
+                if ubound == max(self.levels):
+                    skip_max = True
+                else:
+                    ubound = self.levels[index + 1]
                 self._update_levels(ubound_old)
             else:
                 # it is the arbitrary upper level set and is not needed
@@ -353,7 +356,7 @@ class IsoVolume(object):
         # delete the operators
         v.RemoveAllOperators()
 
-        return export_res, ubound
+        return export_res, ubound, skip_max
 
 
     def _generate_vols(self):
@@ -382,8 +385,6 @@ class IsoVolume(object):
                 # lower bound
                 if i == 0:
                     lbound = 0.0
-                elif i == len(self.levels):
-                    lbound = self.levels[i]
                 else:
                     lbound = self.levels[i-1]
 
@@ -392,12 +393,15 @@ class IsoVolume(object):
 
                 # get volume
                 # res = 0 if no level found (should update to next level)
-                res, ubound = self._get_isovol(lbound, ubound, i)
+                res, ubound, skip_max = self._get_isovol(lbound, ubound, i)
+                if skip_max == True:
+                    res = 1
 
         # get maximum isovolume level
-        lbound = self.levels[-1]
-        ubound = 1.e200
-        self._get_isovol(lbound, ubound, i+1)
+        if not skip_max:
+            lbound = self.levels[-1]
+            ubound = 1.e200
+            self._get_isovol(lbound, ubound, i+1)
 
         # delete plots
         v.DeleteAllPlots()
