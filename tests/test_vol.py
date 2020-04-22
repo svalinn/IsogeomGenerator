@@ -190,9 +190,16 @@ class TestIsogeom(unittest.TestCase):
         pass
 
     ## Can these only be run if all the other above tests pass?
-    def test_create_geometry(self):
+    def test_create_and_write_geometry(self):
         """Test geom creation from existing STL files."""
-        pass
+        g = vol.IsoVolume()
+        g.generate_levels(4, 8.e-7, 1.7e-6, log=False)
+        db = test_dir + "/test-5"
+        g.generate_volumes(ww_file, 'ww_n', dbname=db)
+        g.create_geometry(0.1, 1.0, tag_groups=True, tag_for_viz=False, norm=2.)
+        g.write_geometry(sname="test-5-geom.h5m")
+
+        # need to add assertions that the file generated is correct. to be added.
 
     def test_create_geometry_no_database(self):
         """Try to create geometry without a database from VisIt."""
