@@ -8,8 +8,8 @@ import unittest
 
 from IsogeomGenerator import vol
 
-ww_file = "tests/cwwm.vtk"
 test_dir = os.getcwd() + "/tests/test_files/"
+ww_file = test_dir + "cwwm.vtk"
 
 class TestIsogeom(unittest.TestCase):
 
