@@ -184,39 +184,24 @@ class TestIsogeom(unittest.TestCase):
     #     # (code needs work to accomplish this)
     #     pass
 
+    def test_generate_volumes_no_levels(self):
+        """Try to generate volumes without assigning levels first and
+        catch error."""
+        pass
 
+    ## Can these only be run if all the other above tests pass?
     def test_create_geometry(self):
         """Test geom creation from existing STL files."""
-        # all levels are within range of data
+        pass
 
-        g = vol.IsoVolume()
-        g.db = test_dir + "/vols-1"
+    def test_create_geometry_no_database(self):
+        """Try to create geometry without a database from VisIt."""
+        pass
 
+    def test_create_geometry_out_of_range(self):
+        """Create a geometry when some levels were out of range"""
+        pass
 
-    # def test_create_geometry_full():
-    #     # beginning to end geom creation (assigning levels)
-    #     # no mat or viz tags
-    #     pass
-    #
-    #
-    # def test_create_geometry_full_norm():
-    #     # add normalization factor
-    #     pass
-    #
-    #
-    # def test_separate_volumes():
-    #     pass
-    #
-    #
-    # def test_merge():
-    #     pass
-    #
-    #
-    # def test_add_mats():
-    #     # full geom w/ mats
-    #     pass
-    #
-    #
-    # def test_viz_tag():
-    #     # full geom w/ visualization tags
-    #     pass
+    def test_create_geometry_with_tags(self):
+        """Create geometry with the tags and viz"""
+        pass
