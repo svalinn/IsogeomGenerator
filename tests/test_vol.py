@@ -24,7 +24,6 @@ class TestIsogeom(unittest.TestCase):
         assert(v.maxN == max(levels))
         assert(v.N == len(levels))
 
-
     def test_generate_levels_linear(self):
         """generate linearly spaced levels"""
         v = vol.IsoVolume()
@@ -37,7 +36,6 @@ class TestIsogeom(unittest.TestCase):
         assert(v.minN == min(exp))
         assert(v.maxN == max(exp))
         assert(v.N == len(exp))
-
 
     def test_generate_levels_log(self):
         """generate lograthmically spaced levels"""
@@ -95,6 +93,8 @@ class TestIsogeom(unittest.TestCase):
         assert(v.N == len(exp))
 
     def test_generate_volumes_in_range(self):
+        """Generate all volume files when min and max are both within
+        range of the data"""
         g = vol.IsoVolume()
         g.generate_levels(4, 8.e-7, 1.7e-6, log=False)
         db = test_dir + "/test-1"
@@ -113,8 +113,9 @@ class TestIsogeom(unittest.TestCase):
 
         shutil.rmtree(db)
 
-
     def test_generate_volumes_max_out_of_range(self):
+        """Generate all volume files when max is out of range of the
+        data"""
         g = vol.IsoVolume()
         g.generate_levels(4, 8.e-7, 3.e-6, log=False)
         db = test_dir + "/test-2"
@@ -135,6 +136,8 @@ class TestIsogeom(unittest.TestCase):
 
 
     def test_generate_volumes_min_out_of_range(self):
+        """Generate all volume files when min is out of range of the
+        data"""
         g = vol.IsoVolume()
         g.generate_levels(4, 5.e-7, 1.7e-6, log=False)
         db = test_dir + "/test-3"
@@ -155,6 +158,8 @@ class TestIsogeom(unittest.TestCase):
 
 
     def test_generate_volumes_not_in_range(self):
+        """Generate all volume files when min and max are out of range
+        of the data"""
         g = vol.IsoVolume()
         g.generate_levels(4, 5.e-7, 3.e-6, log=False)
         db = test_dir + "/test-4"
