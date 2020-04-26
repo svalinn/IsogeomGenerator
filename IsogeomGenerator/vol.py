@@ -22,15 +22,19 @@ class IsoVolume(object):
 
     Attributes:
     -----------
-        levels:
-        minN:
-        maxN:
-        N:
+        levels: list of floats, values to use for the isosurface values
+        data: string, name of the data whose values exist on the
+            mesh (will be used to generate isosurfaces)
+        db: string, absolute path to folder to store created
+            surface files from VisIt.
+        norm: float, all isosurface values will be multiplied by the
+            normalization factor.
+        merge_tol: float, merge tolerance for mesh based merge of
+            coincident surfaces.
     """
 
-    def __init__(self, levels=None,
-                 data=None, db=None, merge_tol=None, facet_tol=None):
-        """Initialize global class variables"""
+    def __init__(self, levels=None, data=None, db=None, merge_tol=None,
+                facet_tol=None):
 
         # information for user defined isosurface values
         self.levels = levels
@@ -119,8 +123,7 @@ class IsoVolume(object):
         ------
             filename: string, path to vtk file with the mesh
             data: string, name of the data whose values exist on the
-                mesh (will be used to generate isocontours and
-                isovolumes)
+                mesh (will be used to generate isosurfaces)
             dbname: (optional), string, name of folder to store created
                 surface files. Must be absolute path!
                 default: a folder called 'tmp' in the current directory
