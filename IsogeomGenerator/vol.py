@@ -11,7 +11,7 @@ from pymoab.skinner import Skinner
 
 class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
-    isovolumes given any Cartesian mesh with tagged data.
+    isosurfaces given any Cartesian mesh with tagged scalar data.
 
     Users should follow the following sequence to completely build a
     geometry file:
@@ -19,28 +19,34 @@ class IsoVolume(object):
         (2) Generate the isovolume files using generate_volumes()
         (3) Create the MOAB geometry with create_geometry()
         (4) Write to a file with write_geometry()
+
+    Attributes:
+    -----------
+        levels:
+        minN:
+        maxN:
+        N:
     """
 
-    def __init__(self):
+    def __init__(self, levels=None, minN=None, maxN=None, N=None,
+                 data=None, db=None, merge_tol=None, facet_tol=None):
         """Initialize global class variables"""
 
         # information for user defined isosurface values
-        self.levels = None
-        self.minN = None
-        self.maxN = None
-        self.N = None
+        self.levels = levels
+        self.minN = minN
+        self.maxN = maxN
+        self.N = N
 
         # database information
-        self.data = None
-        self.db = None
+        self.data = data
+        self.db = db
 
         # geometry creation information
-        self.norm = None
-        self.merge_tol = None
-        self.facet_tol = None
+        self.norm = norm
+        self.merge_tol = merge_tol
+        self.facet_tol = facet_tol
 
-        self.mb = None
-        self.isovol_meshsets = None
 
 
     def assign_levels(self, levels):
@@ -236,7 +242,7 @@ class IsoVolume(object):
         self.mb.tag_set_data(eu_tag, rs, e_upper)
 
 
-    def write_geometry(self, sname="", sdir=""):
+    def __write_geometry(self, sname="", sdir=""):
         """Writes out the geometry stored in memory.
 
         Input:
