@@ -150,8 +150,7 @@ class IsoVisit(IsoVolume):
                     break
 
 
-    def generate_volumes(self, filename, data,
-                            dbname=os.getcwd()+"/tmp"):
+    def generate_volumes(self, filename, data=None, db=None):
         """Creates an STL file for each isovolume. N+1 files are
         generated and stored in the dbname folder.
 
@@ -160,13 +159,24 @@ class IsoVisit(IsoVolume):
             filename: string, path to vtk file with the mesh
             data: string, name of the data whose values exist on the
                 mesh (will be used to generate isosurfaces)
-            dbname: (optional), string, name of folder to store created
+            db: (optional), string, name of folder to store created
                 surface files. Must be absolute path!
                 default: a folder called 'tmp' in the current directory
         """
 
+        warn_msg = "WARNING: {} has already been assigned. Overwriting with new value."
+
+        if self.data != None && data != None:
+            print(warn_msg.format("data"))
+        elif data == None:
+            raise RuntimeError("No data name specified.")
         self.data = data
-        self.db = dbname
+
+        if self.db != None && db != None:
+            print(warn_msg.format("db"))
+        elif db == None:
+            db = os.getcwd()+"/tmp"
+        self.db = db
 
         # make sure levels have been set before proceding
         try:
