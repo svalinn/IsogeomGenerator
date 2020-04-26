@@ -45,7 +45,6 @@ class IsoVolume(object):
         self.facet_tol = facet_tol
 
 
-
     def assign_levels(self, levels):
         """User defines the contour levels to be used in the isovolumes.
 
@@ -57,9 +56,6 @@ class IsoVolume(object):
         # make sure values are floats
         levels = [float(i) for i in levels]
         self.levels = sorted(levels)
-        #self.minN = min(self.levels)
-        #self.maxN = max(self.levels)
-        #self.N = len(self.levels)
 
 
     def generate_levels(self, N, minN, maxN, log=True, ratio=False):
@@ -83,13 +79,8 @@ class IsoVolume(object):
                 maxN.
         """
 
-        # set min value
-        #self.minN = minN
-
         if not ratio:
             # ratio not being used
-            # set max value
-            #self.maxN = maxN
             N = int(N)
 
             # generate evenly spaced values
@@ -118,8 +109,6 @@ class IsoVolume(object):
                 else:
                     break
 
-            #self.N = len(self.levels)
-
 
     def generate_volumes(self, filename, data,
                             dbname=os.getcwd()+"/tmp"):
@@ -143,9 +132,6 @@ class IsoVolume(object):
         # make sure levels have been set before proceding
         try:
             assert(self.levels != None)
-            #assert(self.minN != None)
-            #assert(self.maxN != None)
-            #assert(self.N != None)
         except:
             message = "ERROR: Isosurface level values have not been " +\
                   " properly set. " +\
@@ -324,7 +310,6 @@ class IsoVolume(object):
             value: float, value to remove
         """
         self.levels.remove(value)
-        #self.N = len(self.levels)
 
 
     def __get_isovol(self, lbound, ubound, i):
