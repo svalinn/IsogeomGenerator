@@ -198,7 +198,7 @@ class IsoVisit(IsoVolume):
 
 
     ################################################################
-    ################# Extra functions for VisIT step ###############
+    ############### Private functions for VisIt steps ##############
     ################################################################
 
     def __plot_pseudocolor(self):
@@ -338,6 +338,8 @@ class IsoVisit(IsoVolume):
 
 
 class IsoMoab(IsoVolume):
+    """Need a class docstring
+    """
 
     def __init__(self):
         pass
@@ -345,7 +347,7 @@ class IsoMoab(IsoVolume):
     def create_geometry(self, e_lower, e_upper, tag_groups=False, tag_for_viz=False, norm=1.0,
                         merge_tol=1e-5, facet_tol=1e-3):
         """Over-arching function to do all steps to create a single
-        isovolume geometry for DAGMC.
+        DAGMC-compliant isosurface geometry.
 
         Input:
         ------
@@ -473,7 +475,7 @@ class IsoMoab(IsoVolume):
 
 
     ##############################################################
-    ############## Functions for PyMOAB step #####################
+    ############ Private functions for PyMOAB step ###############
     ##############################################################
 
     def __separate(self, iv_info):
