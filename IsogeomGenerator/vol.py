@@ -3,11 +3,40 @@ import os
 import shutil
 import numpy as np
 import math as m
+import argparse
 
 import visit as v
 from pymoab import core, types
 from pymoab.rng import Range
 from pymoab.skinner import Skinner
+
+
+def parse_arguments():
+    """parse user args
+    """
+
+    parser = argparse.ArgumentParser(description="Generate isosurface geometry with VisIt and MOAB")
+
+    # select mode: start-to-finsih, VisIt only, MOAB only
+    parser.add_argument("-m", "--mode",
+                        action='store_const',
+                        nargs = 1,
+                        choices = ['full', 'visit', 'moab'],
+                        default = 'full',
+                        required = False,
+                        type = str,
+                        help = "Mode for generating geometry:\n" +\
+                                "    full (default): start-to-finish generation " +\
+                                "from a Cartesian mesh file to a " +\
+                                "DAGMC-compliant geometry.\n" +\
+                                "    visit: only generate the isosurface meshes using VisIt.\n" +\
+                                "    moab: only generate the geometry with MOAB starting from the VisIt mesh files."
+
+                        )
+    full_group = parser.add_argument_group("Full generation mode")
+    visit_group = parser.add_argument_group("VisIt-only mode")
+    moab_group = parser.add_argument_group("MOAB-only mode")
+
 
 class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
