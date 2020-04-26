@@ -18,12 +18,14 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate isosurface geometry with VisIt and MOAB")
 
     # select mode: start-to-finsih, VisIt only, MOAB only
-    parser.add_argument("-m", "--mode",
-                        action='store_const',
+    parser.add_argument('-m', '--mode',
+                        action = 'store_const',
                         nargs = 1,
                         choices = ['full', 'visit', 'moab'],
                         default = 'full',
                         required = False,
+                        metavar = 'MODE',
+                        dest = 'mode',
                         type = str,
                         help = "Mode for generating geometry:\n" +\
                                 "    full (default): start-to-finish generation " +\
@@ -31,12 +33,52 @@ def parse_arguments():
                                 "DAGMC-compliant geometry.\n" +\
                                 "    visit: only generate the isosurface meshes using VisIt.\n" +\
                                 "    moab: only generate the geometry with MOAB starting from the VisIt mesh files."
-
                         )
-    full_group = parser.add_argument_group("Full generation mode")
-    visit_group = parser.add_argument_group("VisIt-only mode")
-    moab_group = parser.add_argument_group("MOAB-only mode")
 
+    parser.add_argument('-f', '--filename',
+                        action = 'store_const',
+                        nargs = 1,
+                        required = False,
+                        metavar = 'MESH_FILENAME',
+                        dest = 'mesh_file',
+                        type = str,
+                        help = 'Relative path to the cartesian mesh file used to generate isosurfaces. ' +\
+                            'Required for full mode or visit-only mode.'
+                        )
+
+    parser.add_argument('-d', '--data',
+                        action = 'store_const',
+                        nargs = 1,
+                        required = False,
+                        metavar = 'NAME',
+                        dest = 'data',
+                        type = str,
+                        help = 'String representing the name of the data on the Cartesian ' +\
+                            'mesh file used to generate the isosurfaces. ' +\
+                            'Required for full mode or visit-only mode.',
+                        )
+
+    parser.add_argument('-lv', '--levelvalues',
+                        action = 'store',
+                        nargs = '+',
+                        required = False,
+                        metavar = 'val1 val2 ...',
+                        dest = 'levels',
+                        type = float,
+                        help = 'List of values used to generate isosurfaces in VisIt. ' +\
+                            'Not required for full or visit-only modes if levels are not generated or provided from a file. ' +\
+                            'Only required for moab-only mode if levels are not provided in a file.'
+                        )
+    parser.add_argument('-lf', '--levelfile',
+                        action = 'store_const',
+                        nargs = 1,
+                        required = False,
+                        metavar = 'LEVELS_FILE',
+                        dest = 'level_file',
+                        type = str,
+                        help = 'Relative path to file containing values to use for the isosurface levels. ' +\
+                            'File should be structured to have one value (float) per line.'
+                        )
 
 class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
