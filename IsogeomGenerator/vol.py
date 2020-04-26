@@ -28,15 +28,12 @@ class IsoVolume(object):
         N:
     """
 
-    def __init__(self, levels=None, minN=None, maxN=None, N=None,
+    def __init__(self, levels=None,
                  data=None, db=None, merge_tol=None, facet_tol=None):
         """Initialize global class variables"""
 
         # information for user defined isosurface values
         self.levels = levels
-        self.minN = minN
-        self.maxN = maxN
-        self.N = N
 
         # database information
         self.data = data
@@ -60,9 +57,9 @@ class IsoVolume(object):
         # make sure values are floats
         levels = [float(i) for i in levels]
         self.levels = sorted(levels)
-        self.minN = min(self.levels)
-        self.maxN = max(self.levels)
-        self.N = len(self.levels)
+        #self.minN = min(self.levels)
+        #self.maxN = max(self.levels)
+        #self.N = len(self.levels)
 
 
     def generate_levels(self, N, minN, maxN, log=True, ratio=False):
@@ -87,41 +84,41 @@ class IsoVolume(object):
         """
 
         # set min value
-        self.minN = minN
+        #self.minN = minN
 
         if not ratio:
             # ratio not being used
             # set max value
-            self.maxN = maxN
-            self.N = int(N)
+            #self.maxN = maxN
+            N = int(N)
 
             # generate evenly spaced values
             if log:
                 base = 10.
-                start = m.log(self.minN, base)
-                stop = m.log(self.maxN, base)
-                self.levels = list(np.logspace(start, stop, num=self.N,
+                start = m.log(minN, base)
+                stop = m.log(maxN, base)
+                self.levels = list(np.logspace(start, stop, num=N,
                                         endpoint=True, base=base))
             else:
-                self.levels = list(np.linspace(self.minN, self.maxN,
-                                        num=self.N, endpoint=True))
+                self.levels = list(np.linspace(minN, maxN,
+                                        num=N, endpoint=True))
 
         else:
             # ratio being used
             # set minN as the minimum value and get all other values
             # until maxN
-            self.maxN = 0.
-            self.levels = [self.minN]
+            tmpmax = 0.
+            self.levels = [minN]
 
-            while self.maxN < maxN:
+            while tmpmsx < maxN:
                 next_val = self.levels[-1]*float(N)
                 if next_val <= maxN:
                     self.levels.append(next_val)
-                    self.maxN = next_val
+                    tmpmax = next_val
                 else:
                     break
 
-            self.N = len(self.levels)
+            #self.N = len(self.levels)
 
 
     def generate_volumes(self, filename, data,
@@ -146,9 +143,9 @@ class IsoVolume(object):
         # make sure levels have been set before proceding
         try:
             assert(self.levels != None)
-            assert(self.minN != None)
-            assert(self.maxN != None)
-            assert(self.N != None)
+            #assert(self.minN != None)
+            #assert(self.maxN != None)
+            #assert(self.N != None)
         except:
             message = "ERROR: Isosurface level values have not been " +\
                   " properly set. " +\
@@ -242,7 +239,7 @@ class IsoVolume(object):
         self.mb.tag_set_data(eu_tag, rs, e_upper)
 
 
-    def __write_geometry(self, sname="", sdir=""):
+    def write_geometry(self, sname="", sdir=""):
         """Writes out the geometry stored in memory.
 
         Input:
@@ -310,9 +307,9 @@ class IsoVolume(object):
 
         # min/max for the pseudocolor plot
         att.minFlag = True
-        att.min = self.minN
+        att.min = min(self.levels)
         att.maxFlag = True
-        att.max = self.maxN
+        att.max = max(self.levels)
 
         # plot
         v.SetPlotOptions(att)
@@ -327,7 +324,7 @@ class IsoVolume(object):
             value: float, value to remove
         """
         self.levels.remove(value)
-        self.N = len(self.levels)
+        #self.N = len(self.levels)
 
 
     def __get_isovol(self, lbound, ubound, i):
@@ -553,7 +550,7 @@ class IsoVolume(object):
             if i == 0:
                 self.isovol_meshsets[iv_info]['bounds'] =\
                     (None, self.levels[i])
-            elif i == self.N:
+            elif i == len(self.levels):
                 self.isovol_meshsets[iv_info]['bounds'] =\
                     (self.levels[i-1], None)
             else:
@@ -872,7 +869,7 @@ class IsoVolume(object):
         all_vols = sorted(self.isovol_meshsets.keys())
         for i, isovol in enumerate(all_vols):
 
-            if i != self.N:
+            if i != len(self.levels):
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
                 self.__compare_surfs(isovol, all_vols[i+1])
