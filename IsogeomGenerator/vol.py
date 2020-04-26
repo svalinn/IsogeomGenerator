@@ -248,6 +248,29 @@ def parse_arguments():
                             'Default location is the database location (-db).'
                         )
 
+    args = parser.parse_args()
+    return args
+
+
+def check_arguments(args):
+    """Check that the user has provided valid combinations of arguments
+    to perform tasks.
+    """
+    # check full mode
+
+    # check visit only mode
+
+    # check moab only mode
+    pass
+
+def main():
+
+    args = parse_arguments()
+
+
+if __name__ == "__main__":
+    main()
+
 
 class IsoVolume(object):
     """This class contains methods to create a DAGMC geometry of
