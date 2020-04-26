@@ -49,6 +49,8 @@ class IsoVolume(object):
         self.facet_tol = facet_tol
 
 
+class IsoVisit(IsoVolume):
+
     def assign_levels(self, levels):
         """User defines the contour levels to be used in the isovolumes.
 
@@ -151,136 +153,6 @@ class IsoVolume(object):
         self.__generate_vols()
         print("...Isovolumes files generated!")
         v.CloseComputeEngine()
-
-
-    def create_geometry(self, e_lower, e_upper, tag_groups=False, tag_for_viz=False, norm=1.0,
-                        merge_tol=1e-5, facet_tol=1e-3):
-        """Over-arching function to do all steps to create a single
-        isovolume geometry for DAGMC.
-
-        Input:
-        ------
-            e_lower: double, energy group lower bound
-            e_upper: double, energy group upper bound
-            tag_groups: bool (optional), True to tag surfaces in groups
-                with NAMES '{data}_{value}' where data is the data name
-                and value is the value for that surface. Default=False.
-            tag_for_viz: bool (optional), True to tag each triangle on
-                every surface with the data value. Needed to visualize
-                values in VisIt. Default=False.
-            norm: float (optional), default=1. All ww values will be
-                multiplied by the normalization factor.
-            merge_tol: float (option), default=1e-5 cm. Merge tolerance for mesh
-                based merge of coincident surfaces. Recommended to be
-                1/10th the mesh voxel size.
-        """
-
-        self.norm = norm
-        self.merge_tol = merge_tol
-        self.facet_tol = facet_tol
-
-        # check that database is identified
-        try:
-            assert(self.db != None)
-            assert(self.data != None)
-        except:
-            message = "ERROR: Database unknown. " +\
-                "Please run generate_volumes first " +\
-                "or provide database information."
-            sys.exit(message)
-
-        # Step 1: Separate Isovolume Surfaces
-        self.mb = core.Core()
-        self.isovol_meshsets = {}
-        print("Separating isovolumes...")
-        self.__separate_isovols()
-        print("...Separation complete!")
-
-        # Step 2: Merge Coincident Surfaces
-        print("Merging surfaces...")
-        self.__imprint_merge()
-        print("...Merging complete!")
-
-        # Step 3: Assign Parent-Child Relationship
-        self.__make_family()
-
-        if tag_groups:
-            print('Tagging data groups...')
-            self.__tag_groups()
-            print('... tags complete')
-
-        if tag_for_viz:
-            print('Tagging triangles with data...')
-            self.__tag_for_viz()
-            print('... tags complete')
-
-        # tag energy bounds on the root set
-        el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
-        eu_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
-        rs = self.mb.get_root_set()
-        self.mb.tag_set_data(el_tag, rs, e_lower)
-        self.mb.tag_set_data(eu_tag, rs, e_upper)
-
-
-    def write_geometry(self, sname="", sdir=""):
-        """Writes out the geometry stored in memory.
-
-        Input:
-        ------
-            sname: (optional), string, name of file to save written file
-                default: 'geom-DATA.h5m' where DATA is the name of the
-                data used to create the geometry (if known).
-        """
-
-        # check that there is a geometry in memory
-        try:
-            assert(self.mb != None)
-        except:
-            message = "ERROR: No geometry in memory to write. " +\
-                "Please run create_geometry first."
-            sys.exit(message)
-
-        # create default filename if unassigned.
-        if sname == "":
-            try:
-                assert(self.data != None)
-            except:
-                print("WARNING: Data name is unknown! " + \
-                    "File will be saved as geom-isovols.h5m.")
-                sname="geom-isovols.h5m"
-            else:
-                sname="geom-{}.h5m".format(self.data)
-
-        if sdir == "":
-            try:
-                assert(self.db != None)
-            except:
-                print("WARNING: Database location is unknown! " + \
-                    "File will be saved in tmp/ folder.")
-                sdir = os.getcwd() + "/tmp"
-            else:
-                sdir = self.db
-
-        # check file extension of save name:
-        ext = sname.split(".")[-1]
-        if ext.lower() not in ['h5m', 'vtk']:
-            print("WARNING: File extension {} ".format(ext) +\
-                " not recognized. File will be saved as type .h5m.")
-            self.sname = sname.split(".")[0] + ".h5m"
-
-        # save the file
-        save_location = sdir + "/" + sname
-
-        # write out only the ranges stored
-        self.mb.write_file(save_location)
-
-        print("Geometry file written to {}.".format(save_location))
 
 
     ################################################################
@@ -421,6 +293,138 @@ class IsoVolume(object):
 
         # delete plots
         v.DeleteAllPlots()
+
+
+class IsoMoab(IsoVolume):
+
+    def create_geometry(self, e_lower, e_upper, tag_groups=False, tag_for_viz=False, norm=1.0,
+                        merge_tol=1e-5, facet_tol=1e-3):
+        """Over-arching function to do all steps to create a single
+        isovolume geometry for DAGMC.
+
+        Input:
+        ------
+            e_lower: double, energy group lower bound
+            e_upper: double, energy group upper bound
+            tag_groups: bool (optional), True to tag surfaces in groups
+                with NAMES '{data}_{value}' where data is the data name
+                and value is the value for that surface. Default=False.
+            tag_for_viz: bool (optional), True to tag each triangle on
+                every surface with the data value. Needed to visualize
+                values in VisIt. Default=False.
+            norm: float (optional), default=1. All ww values will be
+                multiplied by the normalization factor.
+            merge_tol: float (option), default=1e-5 cm. Merge tolerance for mesh
+                based merge of coincident surfaces. Recommended to be
+                1/10th the mesh voxel size.
+        """
+
+        self.norm = norm
+        self.merge_tol = merge_tol
+        self.facet_tol = facet_tol
+
+        # check that database is identified
+        try:
+            assert(self.db != None)
+            assert(self.data != None)
+        except:
+            message = "ERROR: Database unknown. " +\
+                "Please run generate_volumes first " +\
+                "or provide database information."
+            sys.exit(message)
+
+        # Step 1: Separate Isovolume Surfaces
+        self.mb = core.Core()
+        self.isovol_meshsets = {}
+        print("Separating isovolumes...")
+        self.__separate_isovols()
+        print("...Separation complete!")
+
+        # Step 2: Merge Coincident Surfaces
+        print("Merging surfaces...")
+        self.__imprint_merge()
+        print("...Merging complete!")
+
+        # Step 3: Assign Parent-Child Relationship
+        self.__make_family()
+
+        if tag_groups:
+            print('Tagging data groups...')
+            self.__tag_groups()
+            print('... tags complete')
+
+        if tag_for_viz:
+            print('Tagging triangles with data...')
+            self.__tag_for_viz()
+            print('... tags complete')
+
+        # tag energy bounds on the root set
+        el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        eu_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
+                        tag_type=types.MB_TYPE_DOUBLE,
+                        storage_type=types.MB_TAG_SPARSE,
+                        create_if_missing=True)
+        rs = self.mb.get_root_set()
+        self.mb.tag_set_data(el_tag, rs, e_lower)
+        self.mb.tag_set_data(eu_tag, rs, e_upper)
+
+
+    def write_geometry(self, sname="", sdir=""):
+        """Writes out the geometry stored in memory.
+
+        Input:
+        ------
+            sname: (optional), string, name of file to save written file
+                default: 'geom-DATA.h5m' where DATA is the name of the
+                data used to create the geometry (if known).
+        """
+
+        # check that there is a geometry in memory
+        try:
+            assert(self.mb != None)
+        except:
+            message = "ERROR: No geometry in memory to write. " +\
+                "Please run create_geometry first."
+            sys.exit(message)
+
+        # create default filename if unassigned.
+        if sname == "":
+            try:
+                assert(self.data != None)
+            except:
+                print("WARNING: Data name is unknown! " + \
+                    "File will be saved as geom-isovols.h5m.")
+                sname="geom-isovols.h5m"
+            else:
+                sname="geom-{}.h5m".format(self.data)
+
+        if sdir == "":
+            try:
+                assert(self.db != None)
+            except:
+                print("WARNING: Database location is unknown! " + \
+                    "File will be saved in tmp/ folder.")
+                sdir = os.getcwd() + "/tmp"
+            else:
+                sdir = self.db
+
+        # check file extension of save name:
+        ext = sname.split(".")[-1]
+        if ext.lower() not in ['h5m', 'vtk']:
+            print("WARNING: File extension {} ".format(ext) +\
+                " not recognized. File will be saved as type .h5m.")
+            self.sname = sname.split(".")[0] + ".h5m"
+
+        # save the file
+        save_location = sdir + "/" + sname
+
+        # write out only the ranges stored
+        self.mb.write_file(save_location)
+
+        print("Geometry file written to {}.".format(save_location))
 
 
     ##############################################################
