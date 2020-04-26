@@ -51,6 +51,9 @@ class IsoVolume(object):
 
 class IsoVisit(IsoVolume):
 
+    def __init__(self):
+        pass
+
     def assign_levels(self, levels):
         """User defines the contour levels to be used in the isovolumes.
 
@@ -296,6 +299,9 @@ class IsoVisit(IsoVolume):
 
 
 class IsoMoab(IsoVolume):
+
+    def __init__(self):
+        pass
 
     def create_geometry(self, e_lower, e_upper, tag_groups=False, tag_for_viz=False, norm=1.0,
                         merge_tol=1e-5, facet_tol=1e-3):
