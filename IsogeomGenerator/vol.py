@@ -179,13 +179,11 @@ class IsoVisit(IsoVolume):
         self.db = db
 
         # make sure levels have been set before proceding
-        try:
-            assert(self.levels != None)
-        except:
+        if self.levels == None:
             message = "ERROR: Isosurface level values have not been " +\
                   " properly set. " +\
                   "Please use assign_levels or generate_levels to set."
-            sys.exit(message)
+            raise RuntimeError(message)
 
         # Generate isovolumes using VisIT
         try:
