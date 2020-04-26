@@ -50,11 +50,31 @@ class IsoVolume(object):
 
 
 class IsoVisit(IsoVolume):
+    """Need docstring
+    """
 
-    def __init__(self):
-        pass
+    def __init__(self, levels=None, data=None, db=None):
+        # option to assign VisIt relevant class variables here too
+        # only assign if not already previously assigned
 
-    def assign_levels(self, levels):
+        warn_msg = "WARNING: {} has already been assigned. Overwriting with new value."
+
+        if levels != None:
+            self.assign_levels(levels=levels)
+
+        if self.data != None && data != None:
+            print(warn_msg.format("data"))
+        self.data = data
+
+        if self.db != None && db != None:
+            print(warn_msg.format("db"))
+        self.db = db
+
+    ####################################################################
+    ######################## Public Functions ##########################
+    ####################################################################
+
+    def assign_levels(self, levels=None):
         """User defines the contour levels to be used in the isovolumes.
 
         Input:
@@ -62,7 +82,14 @@ class IsoVisit(IsoVolume):
             levels: list of floats, list of user-defined values to use
                 for contour levels
         """
-        # make sure values are floats
+
+        if self.levels != None && levels != None:
+            warn_msg = "WARNING: levels have already been assigned. Overwriting with new value."
+            print(warn_msg)
+        elif levels == None:
+            raise RuntimeError("No level values provided.")
+
+        # make sure values are floats and are in order
         levels = [float(i) for i in levels]
         self.levels = sorted(levels)
 
@@ -87,6 +114,10 @@ class IsoVisit(IsoVolume):
                 value, maximum level value is less than or equal to
                 maxN.
         """
+
+        if self.levels != None:
+            warn_msg = "WARNING: levels have already been assigned. Overwriting with new value."
+            print(warn_msg)
 
         if not ratio:
             # ratio not being used
