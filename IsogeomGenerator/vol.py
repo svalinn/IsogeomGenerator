@@ -252,20 +252,65 @@ def parse_arguments():
     return args
 
 
+def check_levels(args):
+    if args.levels != None:
+        return 0
+    if args.level_file != None:
+        return 0
+    if args.levelgenmode in ['ratio', 'log', 'lin']:
+        if args.minN == None || args.maxN == None || args.N == None:
+            return 1
+    return 1
+
+
+def no_info_error(item, f1, f2):
+    message = "No {} provided. Please provide with {} or {}.".format(item, f1, f2)
+    raise RuntimeError(message)
+
+
+def level_error():
+    raise RuntimeError("Incompatible or incomplete level information provided.")
+
+
+def check_full_visit_args(args):
+    """If mode is full mode (start to finish) or visit only mode, check
+    the required input arguments. Does not check the validity of other
+    optional arguments.
+    """
+    if args.mesh_file == None:
+        no_info_error("Cartesian mesh file", "-f", "--filename")
+    if args.data == None:
+        no_info_error("data name", "-d", "--data")
+    res = check_levels(args)
+    if res == 1:
+        level_error()
+
+
+def check_moab_args(args):
+    """Check that required arguments for the moab-only mode have been
+    provided. Does not check for optional arguments.
+    """
+    res = check_levels(args)
+    if res == 1:
+        level_error()
+
+
 def check_arguments(args):
     """Check that the user has provided valid combinations of arguments
     to perform tasks.
     """
     # check full mode
-
-    # check visit only mode
+    if args.mode in ['full', 'visit']:
+        check_full_visit_args(args)
 
     # check moab only mode
-    pass
+    if args.mode == 'moab':
+        check_moab_args(args)
 
 def main():
 
     args = parse_arguments()
+    check_arguments(args)
 
 
 if __name__ == "__main__":
