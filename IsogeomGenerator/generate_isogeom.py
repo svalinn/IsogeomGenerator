@@ -81,19 +81,20 @@ def set_level_options(parser, moab):
 def set_visit_only_options(parser):
     """set options specific to the Visit step.
     """
-    parser.add_argument('FILENAME',
+    parser.add_argument('meshfile',
         action = 'store',
         nargs = 1,
         type = str,
-        help = 'Relative path to the Cartesian mesh file (VTK) that will be used to generate isosurfaces.'
+        help = 'Relative path to the Cartesian mesh file (vtk format) that will be used to generate isosurfaces.'
         )
 
-    parser.add_argument('DATA',
+    parser.add_argument('dataname',
         action = 'store',
         nargs = 1,
         type = str,
-        help = 'String representing the name of the data on the Cartesian mesh file to use for the isosurfaces.'
+        help = 'String representing the name of the scalar data on the Cartesian mesh file to use for the isosurfaces.'
         )
+
 
 def set_moab_only_options(parser):
     """Set options specific to the MOAB step
@@ -103,7 +104,7 @@ def set_moab_only_options(parser):
         nargs = 1,
         required = False,
         default = 1e-5,
-        metavar = 'MERGE_TOL',
+        metavar = 'TOL',
         dest = 'mergetol',
         type = float,
         help = 'Merge tolerance for mesh based merging of coincident surfaces. Default=1e-5.'
@@ -205,16 +206,20 @@ def parse_arguments():
     set_visit_only_options(full_parser)
     set_shared_options(full_parser)
     set_moab_only_options(full_parser)
+    full_parser.set_defaults(which='full')
 
     # set visit only mode options
     visit_parser = subparsers.add_parser('visit', help = 'Only generate the isosurface mesh files using VisIt.')
     set_visit_only_options(visit_parser)
     set_shared_options(visit_parser)
+    visit_parser.set_defaults(which='visit')
 
     # set moab only mode options
     moab_parser = subparsers.add_parser('moab', help = 'Only generate the geometry with MOAB starting from the VisIt mesh files.')
     set_shared_options(moab_parser, moab=True)
     set_moab_only_options(moab_parser)
+    moab_parser.set_defaults(which='moab')
+
     args = parser.parse_args()
 
     return args
