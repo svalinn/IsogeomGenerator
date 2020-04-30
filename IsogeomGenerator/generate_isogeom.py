@@ -194,6 +194,7 @@ def set_shared_options(parser, moab=False):
             'Default is a folder named tmp/ in the current directory.'
         )
 
+
 def parse_arguments():
     """parse user args
     """
@@ -224,10 +225,30 @@ def parse_arguments():
 
     return args
 
+
 def main():
 
+    # get args
     args = parse_arguments()
 
+    # run steps depending on mode
+    mode = args.which
+    if mode == 'full':
+        # assign/read/gen levels
+        # generate isosurfs
+        # create/write geometry
+        pass
+    elif mode == 'visit':
+        # assign/read/gen levels
+        # generate isosurfs
+        pass
+    elif mode == 'moab':
+        # read/assign levels
+        # read database
+        # generate geometry
+        pass
+    else:
+        raise RuntimeError("Run mode not recognized.")
 
 if __name__ == "__main__":
     main()
