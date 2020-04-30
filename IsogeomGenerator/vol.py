@@ -254,13 +254,15 @@ def parse_arguments():
 
 def check_levels(args):
     if args.levels != None:
-        return 0
+        return True
     if args.level_file != None:
-        return 0
+        return True
     if args.levelgenmode in ['ratio', 'log', 'lin']:
         if args.minN == None || args.maxN == None || args.N == None:
-            return 1
-    return 1
+            return False
+        else:
+            return True
+    return False
 
 
 def no_info_error(item, f1, f2):
@@ -282,7 +284,7 @@ def check_full_visit_args(args):
     if args.data == None:
         no_info_error("data name", "-d", "--data")
     res = check_levels(args)
-    if res == 1:
+    if res == False:
         level_error()
 
 
@@ -291,7 +293,7 @@ def check_moab_args(args):
     provided. Does not check for optional arguments.
     """
     res = check_levels(args)
-    if res == 1:
+    if res == False:
         level_error()
 
 
