@@ -1,4 +1,5 @@
 import argparse
+import vol as v
 
 def parse_arguments():
     """parse user args
@@ -7,7 +8,7 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="Generate isosurface geometry from a Cartesian mesh with VisIt and MOAB")
 
     # select mode: start-to-finsih, VisIt only, MOAB only
-    parser.add_argument('-m', '--mode',
+    parser.add_argument('-M', '--mode',
                         action = 'store',
                         nargs = 1,
                         choices = ['full', 'visit', 'moab'],
@@ -157,7 +158,7 @@ def parse_arguments():
                         required = False,
                         default = 1e-5,
                         metavar = 'MERGE_TOL',
-                        dest = mergetol,
+                        dest = 'mergetol',
                         type = float,
                         help = 'Merge tolerance for mesh based merging of ' +\
                             'coincident surfaces. Default=1e-5.'
@@ -169,7 +170,7 @@ def parse_arguments():
                         required = False,
                         default = 1,
                         metavar = 'NORM_FACTOR',
-                        dest = norm,
+                        dest = 'norm',
                         type = float,
                         help = 'All level values will be multiplied by this normalization factor ' +\
                             'when the geometry is generated. Default=1'
@@ -199,7 +200,7 @@ def parse_arguments():
                         required = False,
                         default = None,
                         metavar = 'TAG_VAL',
-                        dest = tagvals,
+                        dest = 'tagvals',
                         type = float,
                         help = 'Use with --tagname. Value will be assigned to ' +\
                             'a MOAB tag on the geometry whose name corresponds to --tagname specified. ' +\
@@ -213,7 +214,7 @@ def parse_arguments():
                         required = False,
                         default = None,
                         metavar = 'TAG_NAME',
-                        dest = tagnames,
+                        dest = 'tagnames',
                         type = str,
                         help = 'Use with --tagval. Name will be used to create ' +\
                             'a MOAB tag on the geometry with this name whose value ' +\
@@ -228,12 +229,12 @@ def parse_arguments():
                         required = False,
                         default = None,
                         metavar = 'GEOM_FILENAME',
-                        dest = geomfile,
+                        dest = 'geomfile',
                         type = str,
                         help = 'Filename and relative path to write generated isosurface geometry file. ' +\
                             'Must be either a .h5m or .vtk file name. Default name is geom-DATA.h5m ' +\
                             'where DATA is the name of data specified by -d if provided. ' +\
-                            'If not provided, then default is geom.h5m',
+                            'If not provided, then default is geom.h5m' +\
                             'Default location is the database location (-db).'
                         )
 
@@ -247,7 +248,7 @@ def check_levels(args):
     if args.level_file != None:
         return True
     if args.levelgenmode in ['ratio', 'log', 'lin']:
-        if args.minN == None || args.maxN == None || args.N == None:
+        if args.minN == None or args.maxN == None or args.N == None:
             return False
         else:
             return True
