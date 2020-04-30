@@ -6,8 +6,7 @@ def set_level_options(parser, moab):
     level_group = parser.add_mutually_exclusive_group(required=True)
     level_group.add_argument('-lf', '--levelfile',
         action = 'store',
-        nargs = '?',
-        default = None,
+        nargs = 1,
         type = str,
         help = 'Relative path to file containing values to use for the isosurface levels. ' +\
             'File should be structured to have one value per line.'
