@@ -2,7 +2,9 @@ import argparse
 import vol as v
 
 def set_level_options(parser, moab):
-    # information for setting levels
+    """Sets options for specifying level values. If moab mode, do not
+    give options for generating levels.
+    """
     level_group = parser.add_mutually_exclusive_group(required=True)
     level_group.add_argument('-lf', '--levelfile',
         action = 'store',
@@ -77,6 +79,8 @@ def set_level_options(parser, moab):
 
 
 def set_visit_only_options(parser):
+    """set options specific to the Visit step.
+    """
     parser.add_argument('FILENAME',
         action = 'store',
         nargs = 1,
@@ -92,6 +96,8 @@ def set_visit_only_options(parser):
         )
 
 def set_moab_only_options(parser):
+    """Set options specific to the MOAB step
+    """
     parser.add_argument('-m', '--mergetol',
         action = 'store',
         nargs = 1,
@@ -172,9 +178,9 @@ def set_moab_only_options(parser):
         )
 
 def set_shared_options(parser, moab=False):
-
+    """set options that are in both the moab and visit steps.
+    """
     set_level_options(parser, moab)
-
     parser.add_argument('-db', '--database',
         action = 'store',
         nargs = 1,
