@@ -6,73 +6,145 @@ def parse_arguments():
     """
 
     parser = argparse.ArgumentParser(description="Generate isosurface geometry from a Cartesian mesh with VisIt and MOAB")
+    subparsers = parser.add_subparsers(title='Run Mode', help="Select mode for generating geometry.")
+    full_parser = subparsers.add_parser('full', help = 'Start-to-finish generation from a Cartesian mesh file to a DAGMC-compliant geometry.')
+    visit_parser = subparsers.add_parser('visit', help = 'Only generate the isosurface mesh files using VisIt.')
+    moab_parser = subparsers.add_parser('moab', help = 'Only generate the geometry with MOAB starting from the VisIt mesh files.')
 
-    # select mode: start-to-finsih, VisIt only, MOAB only
-    parser.add_argument('-M', '--mode',
-                        action = 'store',
-                        nargs = 1,
-                        choices = ['full', 'visit', 'moab'],
-                        default = 'full',
-                        required = False,
-                        metavar = 'MODE',
-                        dest = 'mode',
-                        type = str,
-                        help = "Mode for generating geometry:\n" +\
-                                "    full (default): start-to-finish generation " +\
-                                "from a Cartesian mesh file to a " +\
-                                "DAGMC-compliant geometry.\n" +\
-                                "    visit: only generate the isosurface meshes using VisIt.\n" +\
-                                "    moab: only generate the geometry with MOAB starting from the VisIt mesh files."
-                        )
+    # set full mode options
+    full_parser.add_argument('FILENAME',
+        action = 'store',
+        nargs = 1,
+        type = str,
+        help = 'Relative path to the Cartesian mesh file (VTK) that will be used to generate isosurfaces.'
+        )
 
-    parser.add_argument('-f', '--filename',
-                        action = 'store',
-                        nargs = 1,
-                        required = False,
-                        default = None,
-                        metavar = 'MESH_FILENAME',
-                        dest = 'mesh_file',
-                        type = str,
-                        help = 'Relative path to the cartesian mesh file used to generate isosurfaces. ' +\
-                            'Required for full mode or visit-only mode.'
-                        )
+    full_parser.add_argument('DATA',
+        action = 'store',
+        nargs = 1,
+        type = str,
+        help = 'String representing the name of the data on the Cartesian mesh file to use for the isosurfaces.'
+        )
 
-    parser.add_argument('-d', '--data',
-                        action = 'store',
-                        nargs = 1,
-                        required = False,
-                        default = None,
-                        metavar = 'NAME',
-                        dest = 'data',
-                        type = str,
-                        help = 'String representing the name of the data on the Cartesian ' +\
-                            'mesh file used to generate the isosurfaces. ' +\
-                            'Required for full mode or visit-only mode.',
-                        )
+    level_group = full_parser.add_mutually_exclusive_group(required=True)
 
-    parser.add_argument('-lv', '--levelvalues',
-                        action = 'store',
-                        nargs = '+',
-                        required = False,
-                        default = None,
-                        metavar = 'VAL1 VAL2 ...',
-                        dest = 'levels',
-                        type = float,
-                        help = 'List of values used to generate isosurfaces in VisIt. ' +\
-                            'Not required for full or visit-only modes if levels are not generated or provided from a file. ' +\
-                            'Only required for moab-only mode if levels are not provided in a file.'
-                        )
-    parser.add_argument('-lf', '--levelfile',
-                        action = 'store',
-                        nargs = 1,
-                        required = False,
-                        default = None,
-                        metavar = 'LEVELS_FILE',
-                        dest = 'level_file',
-                        type = str,
-                        help = 'Relative path to file containing values to use for the isosurface levels. ' +\
-                            'File should be structured to have one value (float) per line.'
-                        )
+    level_group.add_argument('-lf', '--levelfile',
+        action = 'store',
+        nargs = '?',
+        default = None,
+        type = str,
+        help = 'Relative path to file containing values to use for the isosurface levels. ' +\
+            'File should be structured to have one value (float) per line.'
+        )
+    level_group.add_argument('-lv', '--levelvalues',
+        action = 'store',
+        nargs = '+',
+        default = None,
+        metavar = 'VAL',
+        type = float,
+        help = 'List of values used to generate isosurfaces in VisIt.'
+        )
+    level_group.add_argument('-gl', '--generatelevels',
+        action = 'store',
+        nargs = 1,
+        choices = ['ratio', 'log', 'lin'],
+        default = 'lin',
+        metavar = 'ratio/log/lin',
+        type = str,
+        help = 'Specifies the mode for generating ' +\
+            'level values to be used for the isosurfaces.' +\
+            'If used, values for the min level (-lmin), ' +\
+            'max level (-lmax), and the ratio or number of levels (-N) ' +\
+            'are also required. ' +\
+            'Options are ' +\
+            '(1) ratio: N is the ratio between levels ranging from the min value upto, but not exceeding, the max value. ' +\
+            '(2) log: N is the number of levels to be evenly spaced logarithmically between the min and max values. ' +\
+            '(3) lin: N is the number of levels to be evenly spaced linearly between the min and max values.'
+        )
+
+    full_parser.add_argument('-lmin', '--levelmin',
+        action = 'store',
+        nargs = 1,
+        required = False,
+        default = None,
+        metavar = 'MIN_VAL',
+        dest = 'minN',
+        type = float,
+        help = 'float, minimum value to use for generating set ' +\
+            'of level values to be used for the isosurfaces. ' +\
+            'Only required if generating levels for full mode or visit-only mode. ' +\
+            'If used, must also provide a maximum value (-lmax).'
+        )
+
+    full_parser.add_argument('-lmax', '--levelmax',
+        action = 'store',
+        nargs = 1,
+        required = False,
+        default = None,
+        metavar = 'MAX_VAL',
+        dest = 'maxN',
+        type = float,
+        help = 'float, maximum value to use for generating set ' +\
+            'of level values to be used for the isosurfaces. ' +\
+            'Only required if generating levels for full mode or visit-only mode. ' +\
+            'If used, must also provide a minimum value (-lmin).'
+        )
+
+    full_parser.add_argument('-N', '--numlevels',
+        action = 'store',
+        nargs = 1,
+        required = False,
+        default = None,
+        metavar = 'N',
+        dest = 'N',
+        type = float,
+        help = 'If generating levels (-gl), it is either ' +\
+            'the ratio between adjacent level values (ratio mode), ' +\
+            'or the number of levels to generate (log or lin mode).'
+        )
+
+
+
+    #level_sub = full_parser.add_subparsers(title='level info')
+    #level_parser = level_sub.add_parser('levels')
+    #parser.add_argument('-lv', '--levelvalues',
+    #                    action = 'store',
+    #                    nargs = '+',
+    #                    required = False,
+    #                    default = None,
+    #                    metavar = 'VAL1 VAL2 ...',
+    #                    dest = 'levels',
+    #                    type = float,
+    #                    help = 'List of values used to generate isosurfaces in VisIt. ' +\
+    #                        'Not required for full or visit-only modes if levels are not generated or provided from a file. ' +\
+    #                        'Only required for moab-only mode if levels are not provided in a file.'
+    #                    )
+    #
+    #
+    #
+    #parser.add_argument('-lv', '--levelvalues',
+    #                    action = 'store',
+    #                    nargs = '+',
+    #                    required = False,
+    #                    default = None,
+    #                    metavar = 'VAL1 VAL2 ...',
+    #                    dest = 'levels',
+    #                    type = float,
+    #                    help = 'List of values used to generate isosurfaces in VisIt. ' +\
+    #                        'Not required for full or visit-only modes if levels are not generated or provided from a file. ' +\
+    #                        'Only required for moab-only mode if levels are not provided in a file.'
+    #                    )
+    #parser.add_argument('-lf', '--levelfile',
+    #                    action = 'store',
+    #                    nargs = 1,
+    #                    required = False,
+    #                    default = None,
+    #                    metavar = 'LEVELS_FILE',
+    #                    dest = 'level_file',
+    #                    type = str,
+    #                    help = 'Relative path to file containing values to use for the isosurface levels. ' +\
+    #                        'File should be structured to have one value (float) per line.'
+    #                    )
     parser.add_argument('-gl', '--generatelevels',
                         action = 'store',
                         nargs = 1,
