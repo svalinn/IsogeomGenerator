@@ -1,26 +1,30 @@
 import argparse
 import vol as v
 
+
 def set_level_options(parser, moab):
     """Sets options for specifying level values. If moab mode, do not
     give options for generating levels.
     """
     level_group = parser.add_mutually_exclusive_group(required=True)
     level_group.add_argument('-lf', '--levelfile',
-        action = 'store',
-        nargs = 1,
-        type = str,
-        help = 'Relative path to file containing values to use for the isosurface levels. ' +\
-            'File should be structured to have one value per line.'
-        )
+                                    action='store',
+                                    nargs=1,
+                                    type=str,
+                                    help='Relative path to file containing ' +
+                                    'values to use for isosurface levels.' +
+                                    'File should be structured to have one ' +
+                                    'value per line.'
+                             )
     level_group.add_argument('-lv', '--levelvalues',
-        action = 'store',
-        nargs = '+',
-        default = None,
-        metavar = 'VAL',
-        type = float,
-        help = 'List of values used to generate isosurfaces in VisIt.'
-        )
+                                    action='store',
+                                    nargs='+',
+                                    default=None,
+                                    metavar='VAL',
+                                    type=float,
+                                    help='List of values used to generate ' +
+                                    'isosurfaces in VisIt.'
+                             )
 
     # only have option to generate levels if not moab mode
     if not moab:
