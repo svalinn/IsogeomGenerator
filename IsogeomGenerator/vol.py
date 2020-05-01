@@ -25,7 +25,6 @@ class IsoVolume(object):
     def __init__(self):
         pass
 
-
     def assign_levels(self, levels):
         """User defines the contour levels to be used in the isovolumes.
 
@@ -40,7 +39,6 @@ class IsoVolume(object):
         self.minN = min(self.levels)
         self.maxN = max(self.levels)
         self.N = len(self.levels)
-
 
     def generate_levels(self, N, minN, maxN, log=True, ratio=False):
         """Auto-generate evenly-spaced level values to use given a
@@ -78,10 +76,10 @@ class IsoVolume(object):
                 start = m.log(self.minN, base)
                 stop = m.log(self.maxN, base)
                 self.levels = list(np.logspace(start, stop, num=self.N,
-                                        endpoint=True, base=base))
+                                               endpoint=True, base=base))
             else:
                 self.levels = list(np.linspace(self.minN, self.maxN,
-                                        num=self.N, endpoint=True))
+                                               num=self.N, endpoint=True))
 
         else:
             # ratio being used
@@ -100,9 +98,8 @@ class IsoVolume(object):
 
             self.N = len(self.levels)
 
-
     def generate_volumes(self, filename, data,
-                            dbname=os.getcwd()+"/tmp"):
+                         dbname=os.getcwd()+"/tmp"):
         """Creates an STL file for each isovolume. N+1 files are
         generated and stored in the dbname folder.
 
@@ -124,8 +121,8 @@ class IsoVolume(object):
         try:
             self.levels
         except:
-            print("ERROR: No contour levels have been set. " +\
-                "Please use assign_levels or generate_levels to set.")
+            print("ERROR: No contour levels have been set. " +
+                  "Please use assign_levels or generate_levels to set.")
             sys.exit()
 
         # Generate isovolumes using VisIT
@@ -139,8 +136,8 @@ class IsoVolume(object):
         print("...Isovolumes files generated!")
         v.CloseComputeEngine()
 
-
-    def create_geometry(self, e_lower, e_upper, tag_groups=False, tag_for_viz=False, norm=1.0,
+    def create_geometry(self, e_lower, e_upper, tag_groups=False,
+                        tag_for_viz=False, norm=1.0,
                         merge_tol=1e-5, facet_tol=1e-3):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.

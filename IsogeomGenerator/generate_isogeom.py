@@ -254,5 +254,6 @@ def main():
     else:
         raise RuntimeError("Run mode not recognized.")
 
+
 if __name__ == "__main__":
     main()
