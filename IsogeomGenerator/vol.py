@@ -154,8 +154,8 @@ class IsoVolume(object):
                 values in VisIt. Default=False.
             norm: float (optional), default=1. All ww values will be
                 multiplied by the normalization factor.
-            merge_tol: float (option), default=1e-5 cm. Merge tolerance for mesh
-                based merge of coincident surfaces. Recommended to be
+            merge_tol: float (option), default=1e-5 cm. Merge tolerance for
+                mesh based merge of coincident surfaces. Recommended to be
                 1/10th the mesh voxel size.
         """
 
@@ -167,8 +167,8 @@ class IsoVolume(object):
         try:
             self.db
         except:
-            print("ERROR: Database not found. " +\
-                "Please run generate_volumes first.")
+            print("ERROR: Database not found. " +
+                  "Please run generate_volumes first.")
             sys.exit()
 
         # Step 1: Separate Isovolume Surfaces
@@ -198,17 +198,16 @@ class IsoVolume(object):
 
         # tag energy bounds on the root set
         el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
+                                        tag_type=types.MB_TYPE_DOUBLE,
+                                        storage_type=types.MB_TAG_SPARSE,
+                                        create_if_missing=True)
         eu_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
+                                        tag_type=types.MB_TYPE_DOUBLE,
+                                        storage_type=types.MB_TAG_SPARSE,
+                                        create_if_missing=True)
         rs = self.mb.get_root_set()
         self.mb.tag_set_data(el_tag, rs, e_lower)
         self.mb.tag_set_data(eu_tag, rs, e_upper)
-
 
     def write_geometry(self, sname="", sdir=""):
         """Writes out the geometry stored in memory.
@@ -224,8 +223,8 @@ class IsoVolume(object):
         try:
             self.mb
         except:
-            print("ERROR: No geometry in memory to write to file. " + \
-                "Please run create_geometry first.")
+            print("ERROR: No geometry in memory to write to file. " +
+                  "Please run create_geometry first.")
             sys.exit()
 
         # create default filename if unassigned.
@@ -233,18 +232,18 @@ class IsoVolume(object):
             try:
                 self.data
             except:
-                print("WARNING: Data name is unknown! " + \
-                    "File will be saved as geom-isovols.h5m.")
-                sname="geom-isovols.h5m"
+                print("WARNING: Data name is unknown! " +
+                      "File will be saved as geom-isovols.h5m.")
+                sname = "geom-isovols.h5m"
             else:
-                sname="geom-{}.h5m".format(self.data)
+                sname = "geom-{}.h5m".format(self.data)
 
         if sdir == "":
             try:
                 self.db
             except:
-                print("WARNING: Database location is unknown! " + \
-                    "File will be saved in tmp/ folder.")
+                print("WARNING: Database location is unknown! " +
+                      "File will be saved in tmp/ folder.")
                 sdir = os.getcwd() + "/tmp"
             else:
                 sdir = self.db
@@ -252,8 +251,8 @@ class IsoVolume(object):
         # check file extension of save name:
         ext = sname.split(".")[-1]
         if ext.lower() not in ['h5m', 'vtk']:
-            print("WARNING: File extension {} ".format(ext) +\
-                " not recognized. File will be saved as type .h5m.")
+            print("WARNING: File extension {} ".format(ext) +
+                  " not recognized. File will be saved as type .h5m.")
             self.sname = sname.split(".")[0] + ".h5m"
 
         # save the file
@@ -263,7 +262,6 @@ class IsoVolume(object):
         self.mb.write_file(save_location)
 
         print("Geometry file written to {}.".format(save_location))
-
 
     ################################################################
     ################# Extra functions for VisIT step ###############
@@ -286,7 +284,6 @@ class IsoVolume(object):
         v.SetPlotOptions(att)
         v.DrawPlots()
 
-
     def _update_levels(self, value):
         """Removes a value from the levels list and resets N.
 
@@ -297,7 +294,6 @@ class IsoVolume(object):
 
         self.levels.remove(value)
         self.N = len(self.levels)
-
 
     def _get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
@@ -350,7 +346,6 @@ class IsoVolume(object):
 
         return export_res, ubound
 
-
     def _generate_vols(self):
         """Generates the isosurface volumes between the contour levels.
         Data files are exported as STLs and saved in the folder dbname.
@@ -396,7 +391,6 @@ class IsoVolume(object):
 
         # delete plots
         v.DeleteAllPlots()
-
 
     ##############################################################
     ############## Functions for PyMOAB step #####################
@@ -471,26 +465,27 @@ class IsoVolume(object):
             # resassign vertices that remain
             all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
 
-
     def _separate_isovols(self):
         """For each isovolume in the database, separate any disjoint
         surfaces into unique single surfaces.
         """
 
         tol_set = False
-        facet_tol_tag = self.mb.tag_get_handle('FACETING_TOL', size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
-        resabs_tag = self.mb.tag_get_handle('GEOMETRY_RESABS', size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
+        facet_tol_tag = \
+            self.mb.tag_get_handle('FACETING_TOL', size=1,
+                                   tag_type=types.MB_TYPE_DOUBLE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
+        resabs_tag = \
+            self.mb.tag_get_handle('GEOMETRY_RESABS', size=1,
+                                   tag_type=types.MB_TYPE_DOUBLE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
 
         for f in sorted(os.listdir(self.db + "/vols/")):
             # get file name
             fpath = self.db + "/vols/" + f
-            i = int(f.strip(".stl")) # must be an integer
+            i = int(f.strip(".stl"))  # must be an integer
 
             # load file and create EH for file-set
             fs = self.mb.create_meshset()
@@ -519,7 +514,6 @@ class IsoVolume(object):
             else:
                 self.isovol_meshsets[iv_info]['bounds'] =\
                     (self.levels[i-1], self.levels[i])
-
 
     def _list_coords(self, eh, invert=False):
         """Gets list of all coords as a list of tuples for an entity
@@ -555,7 +549,6 @@ class IsoVolume(object):
             coords[key] = value
 
         return coords
-
 
     def _get_matches(self, vertsA, vertsB):
         """Collects the set of entity handles and coordinates in set of
@@ -630,9 +623,8 @@ class IsoVolume(object):
 
                     match_dict[ehB] = ehA
 
-
-        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, match_dict
-
+        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, \
+            match_dict
 
     def _get_surf_triangles(self, verts_good):
         """This function will take a set of vertice entity handles and
@@ -663,7 +655,6 @@ class IsoVolume(object):
         else:
             # empty set so all tris are good
             return tris_all
-
 
     def _compare_surfs(self, v1, v2):
         """finds coincident surfaces between two isovolumes.
@@ -698,8 +689,8 @@ class IsoVolume(object):
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
-                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, match_dict =\
-                    self._get_matches(verts1, verts2_inv)
+                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, \
+                    match_dict = self._get_matches(verts1, verts2_inv)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
@@ -732,16 +723,20 @@ class IsoVolume(object):
                         self.surf_curve[s2].append(curve)
                         self.surf_curve[surf].append(curve)
 
-                        # remove merged verts and tris from each already existing surf
+                        # remove merged verts and tris from each already
+                        # existing surf
                         for vert_delete in s2_match_eh:
 
-                            # get all triangles connected to the vert to be deleted
-                            tris_adjust = self.mb.get_adjacencies(vert_delete, 2, op_type=1)
+                            # get all triangles connected to the vert to be
+                            # deleted
+                            tris_adjust = self.mb.get_adjacencies(vert_delete,
+                                                                  2, op_type=1)
 
                             # get the vert that will replace the deleted vert
                             replacement = match_dict[vert_delete]
 
-                            # for every tri to be deleted, replace vert by setting connectivity
+                            # for every tri to be deleted, replace vert by
+                            # setting connectivity
                             for tri in tris_adjust:
                                 tri_verts = self.mb.get_connectivity(tri)
                                 new_verts = [0, 0, 0]
@@ -770,12 +765,12 @@ class IsoVolume(object):
                     fwd = v1[1]
                     bwd = v2[1]
                     self.mb.tag_set_data(self.sense_tag, surf,
-                                            [fwd, bwd])
+                                         [fwd, bwd])
 
                     # tag the new surface with the shared value
                     shared = \
-                        list(set(self.isovol_meshsets[v1]['bounds']) \
-                        & set(self.isovol_meshsets[v2]['bounds']))
+                        list(set(self.isovol_meshsets[v1]['bounds'])
+                             & set(self.isovol_meshsets[v2]['bounds']))
                     if not(bool(shared)):
                         print('no matching value!', v1, v2)
                         val = 0.0
@@ -789,14 +784,14 @@ class IsoVolume(object):
 
                     # check if original surfaces are empty (no vertices)
                     # if so delete empty meshset and remove from list
-                    s2_remaining = self.mb.get_entities_by_type(s2,
-                                                        types.MBVERTEX)
+                    s2_remaining = \
+                        self.mb.get_entities_by_type(s2, types.MBVERTEX)
                     if len(s2_remaining) == 0:
                         # delete surface from list and mb instance
                         self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
 
-                    s1_remaining = self.mb.get_entities_by_type(s1,
-                                                        types.MBVERTEX)
+                    s1_remaining = \
+                        self.mb.get_entities_by_type(s1, types.MBVERTEX)
                     if len(s1_remaining) == 0:
                         # delete from list and mb instance and move to
                         # next surf
@@ -807,7 +802,6 @@ class IsoVolume(object):
         self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
         self.isovol_meshsets[v2]['surfs_EH'].extend(match_surfs)
 
-
     def _imprint_merge(self):
         """Uses PyMOAB to check if surfaces are coincident. Creates a
         single surface where surfaces are coincident values are tagged
@@ -815,14 +809,16 @@ class IsoVolume(object):
         """
 
         # set up surface tag information (value and sense)
-        self.val_tag = self.mb.tag_get_handle(self.data, size=1,
-                        tag_type=types.MB_TYPE_DOUBLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
-        self.sense_tag = self.mb.tag_get_handle('GEOM_SENSE_2', size=2,
-                        tag_type=types.MB_TYPE_HANDLE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
+        self.val_tag = \
+            self.mb.tag_get_handle(self.data, size=1,
+                                   tag_type=types.MB_TYPE_DOUBLE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
+        self.sense_tag = \
+            self.mb.tag_get_handle('GEOM_SENSE_2', size=2,
+                                   tag_type=types.MB_TYPE_HANDLE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
 
         # create dictionary of curves to match to surfaces:
         # key = surf eh, value = list of child curve eh
@@ -848,8 +844,9 @@ class IsoVolume(object):
                 except:
                     val = 0.0
                     self.mb.tag_set_data(self.val_tag, surf, val)
-                    verts = self.mb.get_entities_by_type(surf,
-                            types.MBVERTEX)
+                    verts = \
+                        self.mb.get_entities_by_type(surf,
+                                                     types.MBVERTEX)
                     tris = self._get_surf_triangles(verts)
                     self.mb.add_entities(surf, tris)
 
@@ -860,8 +857,7 @@ class IsoVolume(object):
                     fwd = isovol[1]
                     bwd = np.uint64(0)
                     self.mb.tag_set_data(self.sense_tag,
-                                        surf, [fwd, bwd])
-
+                                         surf, [fwd, bwd])
 
     def _make_family(self):
         """Makes the correct parent-child relationships with volumes
@@ -869,18 +865,21 @@ class IsoVolume(object):
         and volumes.
         """
         # create geometry dimension, category, and global id tags
-        geom_dim = self.mb.tag_get_handle('GEOM_DIMENSION', size=1,
-                        tag_type=types.MB_TYPE_INTEGER,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
-        category = self.mb.tag_get_handle('CATEGORY', size=32,
-                        tag_type=types.MB_TYPE_OPAQUE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
-        global_id = self.mb.tag_get_handle('GLOBAL_ID', size=1,
-                        tag_type=types.MB_TYPE_INTEGER,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
+        geom_dim = \
+            self.mb.tag_get_handle('GEOM_DIMENSION', size=1,
+                                   tag_type=types.MB_TYPE_INTEGER,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
+        category = \
+            self.mb.tag_get_handle('CATEGORY', size=32,
+                                   tag_type=types.MB_TYPE_OPAQUE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
+        global_id = \
+            self.mb.tag_get_handle('GLOBAL_ID', size=1,
+                                   tag_type=types.MB_TYPE_INTEGER,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
 
         vol_id = 0
         surf_id = 0
@@ -894,7 +893,6 @@ class IsoVolume(object):
             self.mb.tag_set_data(category, vol_eh, 'Volume')
             vol_id += 1
             self.mb.tag_set_data(global_id, vol_eh, vol_id)
-
 
             for surf_eh in self.isovol_meshsets[v]['surfs_EH']:
                 # create relationship
@@ -912,12 +910,11 @@ class IsoVolume(object):
                 # create relationship
                 self.mb.add_parent_child(s, c)
 
-                 # tag curves
+                # tag curves
                 self.mb.tag_set_data(geom_dim, c, 1)
                 self.mb.tag_set_data(category, c, 'Curve')
                 curve_id += 1
                 self.mb.tag_set_data(global_id, c, curve_id)
-
 
     def _tag_groups(self):
         """Tags the surfaces with metadata as a group with value
@@ -926,16 +923,18 @@ class IsoVolume(object):
         """
 
         # category tag
-        category = self.mb.tag_get_handle('CATEGORY', size=32,
-                        tag_type=types.MB_TYPE_OPAQUE,
-                        storage_type=types.MB_TAG_SPARSE,
-                        create_if_missing=True)
+        category = \
+            self.mb.tag_get_handle('CATEGORY', size=32,
+                                   tag_type=types.MB_TYPE_OPAQUE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
 
         # tag for group metadata
-        tag_name = self.mb.tag_get_handle('NAME', size=32,
-                                tag_type=types.MB_TYPE_OPAQUE,
-                                storage_type=types.MB_TAG_SPARSE,
-                                create_if_missing=True)
+        tag_name = \
+            self.mb.tag_get_handle('NAME', size=32,
+                                   tag_type=types.MB_TYPE_OPAQUE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
 
         # strip underscores from base data name
         data = self.data.replace('_', '')
@@ -965,7 +964,6 @@ class IsoVolume(object):
                 # add to group with that same data
                 self.mb.add_entities(data_groups[val], [surf])
 
-
     def _tag_for_viz(self):
         """Tags all triangles on all surfaces with the data value for
         that surface. This is for vizualization purposes.
@@ -977,7 +975,7 @@ class IsoVolume(object):
 
                 # get the triangles
                 tris = self.mb.get_entities_by_type(surf,
-                            types.MBTRI)
+                                                    types.MBTRI)
 
                 # create data array
                 num = len(tris)
