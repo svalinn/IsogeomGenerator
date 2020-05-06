@@ -1,4 +1,5 @@
 import argparse
+import os
 import vol as v
 
 
@@ -260,18 +261,29 @@ def main():
     # get level info regardless of mode
     get_levels(args, g)
 
+    # get database information
+    db = os.getcwd() + '/' + args.db[0]
+
     # run steps depending on mode
     mode = args.which
-    if mode == 'full':
+    if mode == 'full' or mode == 'visit':
+        # generate isosurfaces
         meshfile = args.meshfile[0]
         dataname = args.dataname[0]
-        # generate isosurfs
+        g.generate_volumes(meshfile, dataname, dbname=db)
+
+    if mode == 'full' or mode == 'moab':
+        e_lower = 0.0  # place holder
+        e_upper = 1.0  # place holder
+
         # create/write geometry
 
-    elif mode == 'visit':
+        #g.create_geometry(e_lower, e_upper, tag_groups=False)
+
+    # elif mode == 'visit':
         # assign/read/gen levels
         # generate isosurfs
-        pass
+    #    pass
     elif mode == 'moab':
         # read/assign levels
         # read database
