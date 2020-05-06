@@ -184,11 +184,6 @@ class IsoVolume(object):
         # Step 3: Assign Parent-Child Relationship
         self._make_family()
 
-        if tag_groups:
-            print('Tagging data groups...')
-            self._tag_groups()
-            print('... tags complete')
-
         if tag_for_viz:
             print('Tagging triangles with data...')
             self._tag_for_viz()
