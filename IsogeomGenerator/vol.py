@@ -156,7 +156,7 @@ class IsoVolume(object):
 
     def create_geometry(self, e_lower, e_upper, tag_groups=False,
                         tag_for_viz=False, norm=1.0,
-                        merge_tol=1e-5, facet_tol=1e-3):
+                        merge_tol=1e-5, facet_tol=1e-3, db=None):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
