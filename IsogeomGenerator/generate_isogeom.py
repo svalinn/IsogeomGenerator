@@ -308,19 +308,11 @@ def main():
             tags = None
 
         # create/write geometry
-        # g.create_geometry(e_lower, e_upper, tag_groups=False)
-
-    # elif mode == 'visit':
-        # assign/read/gen levels
-        # generate isosurfs
-    #    pass
-    elif mode == 'moab':
-        # read/assign levels
-        # read database
-        # generate geometry
-        pass
-    else:
-        raise RuntimeError("Run mode not recognized.")
+        g.create_geometry(tag_for_viz=args.tagviz[0],
+                          norm=args.norm[0],
+                          merg_tol=args.merg_tol[0],
+                          tags=tags,
+                          db=db)
 
 
 if __name__ == "__main__":
