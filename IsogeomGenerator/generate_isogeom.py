@@ -32,7 +32,7 @@ def set_level_options(parser, moab):
                                  action='store',
                                  nargs=1,
                                  choices=['ratio', 'log', 'lin'],
-                                 default='lin',
+                                 default=None,
                                  metavar='ratio/log/lin',
                                  type=str,
                                  help='Specifies the mode for generating ' +
@@ -205,23 +205,67 @@ def parse_arguments():
     moab_parser.set_defaults(which='moab')
 
     args = parser.parse_args()
-
     return args
+
+
+def check_level_gen(args):
+    """Check that correct args were supplied if generating level
+    """
+    if (args.extN is None) or (args.N is None):
+        raise RuntimeError("Min/Max level values (-lx) and number of levels " +
+                           "(-N) must be set to use --generatelevels option.")
+
+
+def get_levels(args, g):
+    """Get level information depending on supplied args.
+
+    Input:
+    ------
+        args: argparse ArgumentParser
+        g: IsoVolume instance
+    """
+    # collect level information:
+    if args.generatelevels is not None:
+        # option 1: generate levels
+        check_level_gen(args)
+        minN = min(args.extN)
+        maxN = max(args.extN)
+        N = args.N[0]
+        if args.generatelevels[0] == 'ratio':
+            g.generate_levels(N, minN, maxN, log=False, ratio=True)
+        elif args.generatelevels[0] == 'lin':
+            g.generate_levels(N, minN, maxN, log=False, ratio=False)
+        elif args.generatelevels[0] == 'log':
+            g.generate_levels(N, minN, maxN, log=True, ratio=False)
+    elif args.levelfile is not None:
+        # option 2: read from file
+        g.read_levels(args.levelfile[0])
+    elif args.levelvalues is not None:
+        # option 3: set values at run time
+        g.assign_levels(args.levelvalues)
+    else:
+        raise RuntimeError("Mode for setting level information is not " +
+                           "recognized")
 
 
 def main():
 
     # get args
     args = parse_arguments()
+    print(args)
+
+    g = v.IsoVolume()
 
     # run steps depending on mode
     mode = args.which
-    if mode == 'full':
 
-        # assign/read/gen levels
+    if mode == 'full':
+        get_levels(args, g)
+        meshfile = args.meshfile[0]
+        dataname = args.dataname[0]
         # generate isosurfs
         # create/write geometry
-        pass
+
     elif mode == 'visit':
         # assign/read/gen levels
         # generate isosurfs
