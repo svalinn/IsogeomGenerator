@@ -225,8 +225,14 @@ def get_levels(args, g):
         g: IsoVolume instance
     """
     # collect level information:
-    if args.generatelevels is not None:
-        # option 1: generate levels
+    if args.levelfile is not None:
+        # option 1: read from file
+        g.read_levels(args.levelfile[0])
+    elif args.levelvalues is not None:
+        # option 2: set values at run time
+        g.assign_levels(args.levelvalues)
+    elif args.generatelevels is not None:
+        # option 3: generate levels
         check_level_gen(args)
         minN = min(args.extN)
         maxN = max(args.extN)
@@ -237,12 +243,6 @@ def get_levels(args, g):
             g.generate_levels(N, minN, maxN, log=False, ratio=False)
         elif args.generatelevels[0] == 'log':
             g.generate_levels(N, minN, maxN, log=True, ratio=False)
-    elif args.levelfile is not None:
-        # option 2: read from file
-        g.read_levels(args.levelfile[0])
-    elif args.levelvalues is not None:
-        # option 3: set values at run time
-        g.assign_levels(args.levelvalues)
     else:
         raise RuntimeError("Mode for setting level information is not " +
                            "recognized")
@@ -254,13 +254,15 @@ def main():
     args = parse_arguments()
     print(args)
 
+    # create instance
     g = v.IsoVolume()
+
+    # get level info regardless of mode
+    get_levels(args, g)
 
     # run steps depending on mode
     mode = args.which
-
     if mode == 'full':
-        get_levels(args, g)
         meshfile = args.meshfile[0]
         dataname = args.dataname[0]
         # generate isosurfs
