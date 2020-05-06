@@ -40,6 +40,9 @@ class IsoVolume(object):
         self.maxN = max(self.levels)
         self.N = len(self.levels)
 
+    def read_levels(self, filename):
+        print(filename)
+
     def generate_levels(self, N, minN, maxN, log=True, ratio=False):
         """Auto-generate evenly-spaced level values to use given a
         user-defined maximum, minimum, and number of levels or set
