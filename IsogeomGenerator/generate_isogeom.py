@@ -143,11 +143,22 @@ def set_moab_only_options(parser):
                         metavar='GEOM_FILENAME',
                         dest='geomfile',
                         type=str,
-                        help='Filename and relative path to write generated ' +
-                        'isosurface geometry file. ' +
+                        help='Filename to write generated isosurface ' +
+                        'geometry file. ' +
                         'Must be either a .h5m or .vtk file name. ' +
-                        'Default name is isogeom.h5m in the database ' +
-                        'location (-db).'
+                        'Default name is isogeom.h5m.'
+                        )
+    parser.add_argument('-sp', '--savepath',
+                        action='store',
+                        nargs=1,
+                        required=False,
+                        default=None,
+                        metavar='PATH',
+                        dest='savepath',
+                        type=str,
+                        help='Absolue path to folder to write generated ' +
+                        'geometry file. If not set, file will be saved in ' +
+                        'the database folder (-db).'
                         )
     parser.add_argument('-t', '--tag',
                         action='append',
@@ -312,7 +323,9 @@ def main():
                           norm=args.norm[0],
                           merg_tol=args.merg_tol[0],
                           tags=tags,
-                          dbname=db)
+                          dbname=db,
+                          sname=args.geomfile[0],
+                          sdir=args.savepath[0])
 
 
 if __name__ == "__main__":

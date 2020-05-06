@@ -134,7 +134,8 @@ class IsoVolume(object):
         v.CloseComputeEngine()
 
     def create_geometry(self, tag_for_viz=False, norm=1.0, merge_tol=1e-5,
-                        dbname=os.getcwd()+"/tmp", tags=None):
+                        dbname=os.getcwd()+"/tmp", tags=None,
+                        sname=None, sdir=None):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC using pyMOAB.
 
@@ -155,6 +156,9 @@ class IsoVolume(object):
                 geometry root set. Dictionary should be structured with each
                 key as a tag name (str) and with a single value (float) for the
                 tag. Example: {'NAME1':1.0, 'NAME2': 2.0}
+            sname: (optional), str, name of file (including extension) for the
+                written geometry file. Acceptable file types are VTK and H5M.
+                Default name: isogeom.h5m
         """
 
         self.norm = norm
@@ -184,60 +188,12 @@ class IsoVolume(object):
         if tags is not None:
             self._set_tags(tags)
 
+        if sdir is None:
+            sdir = self.dbname
+        if sname is None:
+            sname = 'isogeom.h5m'
 
-    def write_geometry(self, sname="", sdir=""):
-        """Writes out the geometry stored in memory.
-
-        Input:
-        ------
-            sname: (optional), string, name of file to save written file
-                default: 'geom-DATA.h5m' where DATA is the name of the
-                data used to create the geometry (if known).
-        """
-
-        # check that there is a geometry in memory
-        try:
-            self.mb
-        except:
-            print("ERROR: No geometry in memory to write to file. " +
-                  "Please run create_geometry first.")
-            sys.exit()
-
-        # create default filename if unassigned.
-        if sname == "":
-            try:
-                self.data
-            except:
-                print("WARNING: Data name is unknown! " +
-                      "File will be saved as geom-isovols.h5m.")
-                sname = "geom-isovols.h5m"
-            else:
-                sname = "geom-{}.h5m".format(self.data)
-
-        if sdir == "":
-            try:
-                self.db
-            except:
-                print("WARNING: Database location is unknown! " +
-                      "File will be saved in tmp/ folder.")
-                sdir = os.getcwd() + "/tmp"
-            else:
-                sdir = self.db
-
-        # check file extension of save name:
-        ext = sname.split(".")[-1]
-        if ext.lower() not in ['h5m', 'vtk']:
-            print("WARNING: File extension {} ".format(ext) +
-                  " not recognized. File will be saved as type .h5m.")
-            self.sname = sname.split(".")[0] + ".h5m"
-
-        # save the file
-        save_location = sdir + "/" + sname
-
-        # write out only the ranges stored
-        self.mb.write_file(save_location)
-
-        print("Geometry file written to {}.".format(save_location))
+        _write_geometry(sname, sdir)
 
     ################################################################
     ################# Extra functions for VisIT step ###############
@@ -907,3 +863,22 @@ class IsoVolume(object):
                                          storage_type=types.MB_TAG_SPARSE,
                                          create_if_missing=True)
             self.mb.tag_set_data(tag, rs, tagval)
+
+    def _write_geometry(self, sname, sdir):
+        """Writes out the geometry stored in memory.
+
+        Input:
+        ------
+            sname: string, name of file to save written file
+            sdir: string, absolute path for writing file
+        """
+        # check file extension of save name:
+        ext = sname.split(".")[-1]
+        if ext.lower() not in ['h5m', 'vtk']:
+            print("WARNING: File extension {} ".format(ext) +
+                  " not recognized. File will be saved as type .h5m.")
+            sname = sname.split(".")[0] + ".h5m"
+        # save the file
+        save_location = sdir + "/" + sname
+        self.mb.write_file(save_location)
+        print("Geometry file written to {}.".format(save_location))
