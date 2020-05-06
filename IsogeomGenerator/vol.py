@@ -275,9 +275,9 @@ class IsoVolume(object):
 
         # min/max for the pseudocolor plot
         att.minFlag = True
-        att.min = self.minN
+        att.min = min(self.levels)
         att.maxFlag = True
-        att.max = self.maxN
+        att.max = max(self.levels)
 
         # plot
         v.SetPlotOptions(att)
@@ -292,7 +292,6 @@ class IsoVolume(object):
         """
 
         self.levels.remove(value)
-        self.N = len(self.levels)
 
     def _get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
@@ -507,7 +506,7 @@ class IsoVolume(object):
             if i == 0:
                 self.isovol_meshsets[iv_info]['bounds'] =\
                     (None, self.levels[i])
-            elif i == self.N:
+            elif i == len(self.levels):
                 self.isovol_meshsets[iv_info]['bounds'] =\
                     (self.levels[i-1], None)
             else:
@@ -827,7 +826,7 @@ class IsoVolume(object):
         all_vols = sorted(self.isovol_meshsets.keys())
         for i, isovol in enumerate(all_vols):
 
-            if i != self.N:
+            if i != len(self.levels):
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
                 self._compare_surfs(isovol, all_vols[i+1])
