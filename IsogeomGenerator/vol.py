@@ -81,7 +81,6 @@ class IsoVolume(object):
             self.levels = list(np.logspace(start, stop, num=N,
                                endpoint=True, base=base))
         elif mode == 'ratio':
-            # ratio being used
             # set minN as the minimum value and get all other values until maxN
             tmpmax = 0.
             self.levels = [minN]
