@@ -54,7 +54,9 @@ class IsoVolume(object):
             levels.append(float(line))
 
         self.levels = sorted(levels)
-        print(levels)
+        self.minN = min(self.levels)
+        self.maxN = max(self.levels)
+        self.N = len(self.levels)
 
     def generate_levels(self, N, minN, maxN, log=True, ratio=False):
         """Auto-generate evenly-spaced level values to use given a
