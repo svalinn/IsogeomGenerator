@@ -177,7 +177,7 @@ def parse_arguments():
                                      'geometry from a Cartesian mesh file ' +
                                      'with VisIt and MOAB')
     subparsers = parser.add_subparsers(title='Run Steps',
-                                       help="Select which steps to run for ' +
+                                       help='Select which steps to run for ' +
                                        'generating the geometry.')
 
     # set full mode options
@@ -217,6 +217,7 @@ def main():
     # run steps depending on mode
     mode = args.which
     if mode == 'full':
+
         # assign/read/gen levels
         # generate isosurfs
         # create/write geometry
