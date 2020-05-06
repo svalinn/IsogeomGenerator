@@ -135,9 +135,9 @@ class IsoVolume(object):
         print("...Isovolumes files generated!")
         v.CloseComputeEngine()
 
-    def create_geometry(self, e_lower, e_upper, tag_groups=False,
+    def create_geometry(self, tag_groups=False,
                         tag_for_viz=False, norm=1.0,
-                        merge_tol=1e-5, db=None):
+                        merge_tol=1e-5, db=None, tags=None):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
@@ -189,18 +189,9 @@ class IsoVolume(object):
             self._tag_for_viz()
             print('... tags complete')
 
-        # tag energy bounds on the root set
-        el_tag = self.mb.tag_get_handle('E_LOW_BOUND', size=1,
-                                        tag_type=types.MB_TYPE_DOUBLE,
-                                        storage_type=types.MB_TAG_SPARSE,
-                                        create_if_missing=True)
-        eu_tag = self.mb.tag_get_handle('E_UP_BOUND', size=1,
-                                        tag_type=types.MB_TYPE_DOUBLE,
-                                        storage_type=types.MB_TAG_SPARSE,
-                                        create_if_missing=True)
-        rs = self.mb.get_root_set()
-        self.mb.tag_set_data(el_tag, rs, e_lower)
-        self.mb.tag_set_data(eu_tag, rs, e_upper)
+        if tags is not None:
+            self._set_tags(tags)
+
 
     def write_geometry(self, sname="", sdir=""):
         """Writes out the geometry stored in memory.
@@ -909,3 +900,18 @@ class IsoVolume(object):
 
                 # tag the data
                 self.mb.tag_set_data(self.val_tag, tris, data)
+
+    def _set_tags(self, tags):
+        """Set provided tag values on the root set.
+
+        Input:
+        ------
+            tags: dict, key=TAGNAME, value=TAGVALUE
+        """
+        rs = self.mb.get_root_set()
+        for tagname, tagval in tags.items():
+            tag = self.mb.tag_get_handle(tagname, size=1,
+                                         tag_type=types.MB_TYPE_DOUBLE,
+                                         storage_type=types.MB_TAG_SPARSE,
+                                         create_if_missing=True)
+            self.mb.tag_set_data(tag, rs, tagval)

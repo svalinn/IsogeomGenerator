@@ -149,6 +149,19 @@ def set_moab_only_options(parser):
                         'Default name is isogeom.h5m in the database ' +
                         'location (-db).'
                         )
+    parser.add_argument('-t', '--tag',
+                        action='append',
+                        nargs=2,
+                        required=False,
+                        default=None,
+                        metavar='TAGNAME TAGVAL',
+                        dest='tags',
+                        help='Information to tag on the whole geometry. ' +
+                        'First entry must be the name for the tag (string). ' +
+                        'Second entry must be the value for the tag (will ' +
+                        'be tagged as float). ' +
+                        'Option can be set more than once to set more tags.'
+                        )
 
 
 def set_shared_options(parser, moab=False):
@@ -244,6 +257,27 @@ def get_levels(args, g):
                            "recognized")
 
 
+def process_tags(tags):
+    """Convert the provided tag information to a dictionary to pass to the
+    geometry creation stepself.
+
+    Input:
+    -----
+        tags: list of lists, [[tagname1, tagval1], [tagname2, tagval2], ...]
+
+    Return:
+    -------
+        tagdict: dict, key=TAGNAME, value=TAGVALUE
+    """
+    tagdict = {}
+    for tagset in tags:
+        key = tagset[0]
+        val = float(tagset[1])
+        tagdict[key] = val
+
+    return tagdict
+
+
 def main():
 
     # get args
@@ -268,12 +302,13 @@ def main():
         g.generate_volumes(meshfile, dataname, dbname=db)
 
     if mode == 'full' or mode == 'moab':
-        e_lower = 0.0  # place holder
-        e_upper = 1.0  # place holder
+        if args.tags is not None:
+            tags = process_tags(args.tags)
+        else:
+            tags = None
 
         # create/write geometry
-
-        #g.create_geometry(e_lower, e_upper, tag_groups=False)
+        # g.create_geometry(e_lower, e_upper, tag_groups=False)
 
     # elif mode == 'visit':
         # assign/read/gen levels
