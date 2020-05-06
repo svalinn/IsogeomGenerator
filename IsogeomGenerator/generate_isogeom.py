@@ -238,12 +238,7 @@ def get_levels(args, g):
         minN = min(args.extN)
         maxN = max(args.extN)
         N = args.N[0]
-        if args.generatelevels[0] == 'ratio':
-            g.generate_levels(N, minN, maxN, log=False, ratio=True)
-        elif args.generatelevels[0] == 'lin':
-            g.generate_levels(N, minN, maxN, log=False, ratio=False)
-        elif args.generatelevels[0] == 'log':
-            g.generate_levels(N, minN, maxN, log=True, ratio=False)
+        g.generate_levels(N, minN, maxN, mode=args.generatelevels[0])
     else:
         raise RuntimeError("Mode for setting level information is not " +
                            "recognized")

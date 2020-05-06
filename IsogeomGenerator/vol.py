@@ -36,9 +36,6 @@ class IsoVolume(object):
         # make sure values are floats
         levels = [float(i) for i in levels]
         self.levels = sorted(levels)
-        self.minN = min(self.levels)
-        self.maxN = max(self.levels)
-        self.N = len(self.levels)
 
     def read_levels(self, levelfile):
         """Read level values from a file. One value per line only.
@@ -54,11 +51,8 @@ class IsoVolume(object):
             levels.append(float(line))
 
         self.levels = sorted(levels)
-        self.minN = min(self.levels)
-        self.maxN = max(self.levels)
-        self.N = len(self.levels)
 
-    def generate_levels(self, N, minN, maxN, log=True, ratio=False):
+    def generate_levels(self, N, minN, maxN, mode='lin'):
         """Auto-generate evenly-spaced level values to use given a
         user-defined maximum, minimum, and number of levels or set
         constant ratio for spacing.
@@ -78,43 +72,30 @@ class IsoVolume(object):
                 value, maximum level value is less than or equal to
                 maxN.
         """
-
-        # set min value
-        self.minN = minN
-
-        if not ratio:
-            # ratio not being used
-            # set max value
-            self.maxN = maxN
-            self.N = int(N)
-
-            # generate evenly spaced values
-            if log:
-                base = 10.
-                start = m.log(self.minN, base)
-                stop = m.log(self.maxN, base)
-                self.levels = list(np.logspace(start, stop, num=self.N,
-                                               endpoint=True, base=base))
-            else:
-                self.levels = list(np.linspace(self.minN, self.maxN,
-                                               num=self.N, endpoint=True))
-
-        else:
+        if mode == 'lin':
+            self.levels = list(np.linspace(minN, maxN,
+                               num=N, endpoint=True))
+        elif mode == 'log':
+            base = 10.
+            start = m.log(minN, base)
+            stop = m.log(maxN, base)
+            self.levels = list(np.logspace(start, stop, num=N,
+                               endpoint=True, base=base))
+        elif mode == 'ratio':
             # ratio being used
-            # set minN as the minimum value and get all other values
-            # until maxN
-            self.maxN = 0.
-            self.levels = [self.minN]
-
-            while self.maxN < maxN:
+            # set minN as the minimum value and get all other values until maxN
+            tmpmax = 0.
+            self.levels = [minN]
+            while tmpmsx < maxN:
                 next_val = self.levels[-1]*float(N)
                 if next_val <= maxN:
                     self.levels.append(next_val)
-                    self.maxN = next_val
+                    tmpmax = next_val
                 else:
                     break
-
-            self.N = len(self.levels)
+        else:
+            raise RuntimeError("Level generation mode {} not " +
+                               "recognized.".format(mode))
 
     def generate_volumes(self, filename, data,
                          dbname=os.getcwd()+"/tmp"):
