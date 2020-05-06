@@ -312,7 +312,7 @@ def main():
                           norm=args.norm[0],
                           merg_tol=args.merg_tol[0],
                           tags=tags,
-                          db=db)
+                          dbname=db)
 
 
 if __name__ == "__main__":

@@ -133,19 +133,13 @@ class IsoVolume(object):
         print("...Isovolumes files generated!")
         v.CloseComputeEngine()
 
-    def create_geometry(self, tag_groups=False,
-                        tag_for_viz=False, norm=1.0,
-                        merge_tol=1e-5, db=None, tags=None):
+    def create_geometry(self, tag_for_viz=False, norm=1.0, merge_tol=1e-5,
+                        dbname=os.getcwd()+"/tmp", tags=None):
         """Over-arching function to do all steps to create a single
-        isovolume geometry for DAGMC.
+        isovolume geometry for DAGMC using pyMOAB.
 
         Input:
         ------
-            e_lower: double, energy group lower bound
-            e_upper: double, energy group upper bound
-            tag_groups: bool (optional), True to tag surfaces in groups
-                with NAMES '{data}_{value}' where data is the data name
-                and value is the value for that surface. Default=False.
             tag_for_viz: bool (optional), True to tag each triangle on
                 every surface with the data value. Needed to visualize
                 values in VisIt. Default=False.
@@ -154,18 +148,18 @@ class IsoVolume(object):
             merge_tol: float (option), default=1e-5 cm. Merge tolerance for
                 mesh based merge of coincident surfaces. Recommended to be
                 1/10th the mesh voxel size.
+            dbname: (optional), string, name of folder to store created
+                surface files. Must be absolute path.
+                default: a folder called 'tmp' in the current directory
+            tags: (optional), dict, set of names and values to tag on the
+                geometry root set. Dictionary should be structured with each
+                key as a tag name (str) and with a single value (float) for the
+                tag. Example: {'NAME1':1.0, 'NAME2': 2.0}
         """
 
         self.norm = norm
         self.merge_tol = merge_tol
-
-        # check that database is identified
-        try:
-            self.db
-        except:
-            print("ERROR: Database not found. " +
-                  "Please run generate_volumes first.")
-            sys.exit()
+        self.db = dbname
 
         # Step 1: Separate Isovolume Surfaces
         self.mb = core.Core()
