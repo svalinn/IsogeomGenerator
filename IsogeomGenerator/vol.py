@@ -60,17 +60,16 @@ class IsoVolume(object):
         Input:
         ------
             N: int or float, number of levels (int) to generate
-                (ratio=False); or the ratio (float) to use to separate
-                levels (ratio=True).
+                (lin or log mode); or the ratio (float) to use to separate
+                levels (ratio mode).
             minN: float, minimum level value
             maxN: float, maximum level value
-            log: bool (optional), True to generate evenly spaced levels
-                on a log scale (default), False to use linear scale.
-            ratio: bool (optional), True to generate levels that are
-                spaced by some constant ratio N. If True, log input is
-                ignored. If True, minN will be used as minimum level
-                value, maximum level value is less than or equal to
-                maxN.
+            mode: str, options are 'lin' (default), 'log', or 'ratio'.
+                lin: N linearly spaced values between minN and maxN
+                log: N logarithmically spaced values between minN and maxN
+                ratio: levels that are spaced by a constant ratio N.
+                    minN will be used as minimum level value and the maximum
+                    level value is less than or equal to maxN.
         """
         if mode == 'lin':
             self.levels = list(np.linspace(minN, maxN,
