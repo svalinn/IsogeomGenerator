@@ -137,7 +137,7 @@ class IsoVolume(object):
 
     def create_geometry(self, e_lower, e_upper, tag_groups=False,
                         tag_for_viz=False, norm=1.0,
-                        merge_tol=1e-5, facet_tol=1e-3, db=None):
+                        merge_tol=1e-5, db=None):
         """Over-arching function to do all steps to create a single
         isovolume geometry for DAGMC.
 
@@ -160,7 +160,6 @@ class IsoVolume(object):
 
         self.norm = norm
         self.merge_tol = merge_tol
-        self.facet_tol = facet_tol
 
         # check that database is identified
         try:
@@ -468,18 +467,6 @@ class IsoVolume(object):
         surfaces into unique single surfaces.
         """
 
-        tol_set = False
-        facet_tol_tag = \
-            self.mb.tag_get_handle('FACETING_TOL', size=1,
-                                   tag_type=types.MB_TYPE_DOUBLE,
-                                   storage_type=types.MB_TAG_SPARSE,
-                                   create_if_missing=True)
-        resabs_tag = \
-            self.mb.tag_get_handle('GEOMETRY_RESABS', size=1,
-                                   tag_type=types.MB_TYPE_DOUBLE,
-                                   storage_type=types.MB_TAG_SPARSE,
-                                   create_if_missing=True)
-
         for f in sorted(os.listdir(self.db + "/vols/")):
             # get file name
             fpath = self.db + "/vols/" + f
@@ -488,12 +475,6 @@ class IsoVolume(object):
             # load file and create EH for file-set
             fs = self.mb.create_meshset()
             self.mb.load_file(fpath, file_set=fs)
-
-            if not tol_set:
-                # only tag on one fileset
-                self.mb.tag_set_data(facet_tol_tag, fs, self.facet_tol)
-                self.mb.tag_set_data(resabs_tag, fs, self.merge_tol)
-                tol_set = True
 
             # initiate dictionary
             iv_info = (i, fs)
@@ -913,54 +894,6 @@ class IsoVolume(object):
                 self.mb.tag_set_data(category, c, 'Curve')
                 curve_id += 1
                 self.mb.tag_set_data(global_id, c, curve_id)
-
-    def _tag_groups(self):
-        """Tags the surfaces with metadata as a group with value
-            {data}_{value}. Example: 'wwn_0.005'. The original data
-            name will be stripped of any underscores.
-        """
-
-        # category tag
-        category = \
-            self.mb.tag_get_handle('CATEGORY', size=32,
-                                   tag_type=types.MB_TYPE_OPAQUE,
-                                   storage_type=types.MB_TAG_SPARSE,
-                                   create_if_missing=True)
-
-        # tag for group metadata
-        tag_name = \
-            self.mb.tag_get_handle('NAME', size=32,
-                                   tag_type=types.MB_TYPE_OPAQUE,
-                                   storage_type=types.MB_TAG_SPARSE,
-                                   create_if_missing=True)
-
-        # strip underscores from base data name
-        data = self.data.replace('_', '')
-
-        # create meshsets (starting w/ 0.0)
-        data_groups = {}
-
-        data_groups[0.0] = self.mb.create_meshset()
-        self.mb.tag_set_data(category, data_groups[0.0], 'Group')
-        name = '{}_{}'.format(data, 0.0)
-        self.mb.tag_set_data(tag_name, data_groups[0.0], name)
-
-        for val in self.levels:
-            val = val*self.norm
-            data_groups[val] = self.mb.create_meshset()
-            self.mb.tag_set_data(category, data_groups[val], 'Group')
-            name = '{}_{}'.format(data, val)
-            self.mb.tag_set_data(tag_name, data_groups[val], name)
-
-        # add surfs to groups
-        for isovol in self.isovol_meshsets.keys():
-            for surf in self.isovol_meshsets[isovol]['surfs_EH']:
-                # get the tagged data (get one value from the array)
-                val_data = self.mb.tag_get_data(self.val_tag, surf)
-                val = float(val_data[0])
-
-                # add to group with that same data
-                self.mb.add_entities(data_groups[val], [surf])
 
     def _tag_for_viz(self):
         """Tags all triangles on all surfaces with the data value for
