@@ -263,8 +263,9 @@ class IsoVolume(object):
         if export_res == 0:
             # export not successful because there was no data
             # get new upper bound
-            warn_message = "Warning: no data to export between {} and {}.\n".format(lbound, ubound) \
-                + "Increasing upper bound to next selected level."
+            warn_message = "Warning: no data to export between " +
+            "{} and {}.\n".format(lbound, ubound) +
+            "Increasing upper bound to next selected level."
             print(warn_message)
             if ubound in self.levels:
                 self._update_levels(ubound)
