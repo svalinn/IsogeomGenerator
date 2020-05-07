@@ -129,7 +129,7 @@ class IsoVolume(object):
             print("VisIt already launched.")
         v.OpenDatabase(filename)
         print("Generating isovolumes...")
-        self._generate_vols()
+        self.__generate_vols()
         print("...Isovolumes files generated!")
         v.CloseComputeEngine()
 
@@ -169,7 +169,7 @@ class IsoVolume(object):
         self.mb = core.Core()
         self.isovol_meshsets = {}
         print("Separating isovolumes...")
-        self._separate_isovols()
+        self.__separate_isovols()
         print("...Separation complete!")
 
         # Step 2: Merge Coincident Surfaces
@@ -178,28 +178,28 @@ class IsoVolume(object):
         print("...Merging complete!")
 
         # Step 3: Assign Parent-Child Relationship
-        self._make_family()
+        self.__make_family()
 
         if tag_for_viz:
             print('Tagging triangles with data...')
-            self._tag_for_viz()
+            self.__tag_for_viz()
             print('... tags complete')
 
         if tags is not None:
-            self._set_tags(tags)
+            self.__set_tags(tags)
 
         if sdir is None:
             sdir = self.dbname
         if sname is None:
             sname = 'isogeom.h5m'
 
-        _write_geometry(sname, sdir)
+        self.__write_geometry(sname, sdir)
 
     ################################################################
     ################# Extra functions for VisIT step ###############
     ################################################################
 
-    def _plot_pseudocolor(self):
+    def __plot_pseudocolor(self):
         """Plots the data on a pseudocolor plot to use."""
 
         # add the pseudocolor plot to contour
@@ -216,7 +216,7 @@ class IsoVolume(object):
         v.SetPlotOptions(att)
         v.DrawPlots()
 
-    def _update_levels(self, value):
+    def __update_levels(self, value):
         """Removes a value from the levels list and resets N.
 
         Input:
@@ -268,17 +268,17 @@ class IsoVolume(object):
             "Increasing upper bound to next selected level."
             print(warn_message)
             if ubound in self.levels:
-                self._update_levels(ubound)
+                self.__update_levels(ubound)
             else:
                 # it is the arbitrary upper level set and is not needed
-                self._update_levels(self.levels[-1])
+                self.__update_levels(self.levels[-1])
 
         # delete the operators
         v.RemoveAllOperators()
 
         return export_res, ubound
 
-    def _generate_vols(self):
+    def __generate_vols(self):
         """Generates the isosurface volumes between the contour levels.
         Data files are exported as STLs and saved in the folder dbname.
         Files will be named based on their index corresponding to their
@@ -294,7 +294,7 @@ class IsoVolume(object):
         os.mkdir(self.db + "/vols/")
 
         # plot the pseudocolor data inorder to get volumes
-        self._plot_pseudocolor()
+        self.__plot_pseudocolor()
 
         # get the minimum isovolume level
         lbound = 0.0
@@ -328,7 +328,7 @@ class IsoVolume(object):
     ############## Functions for PyMOAB step #####################
     ##############################################################
 
-    def _separate(self, iv_info):
+    def __separate(self, iv_info):
         """Separates a given surface into separate surfaces. All
         resulting surfaces are disjoint surfaces that made up the
         original surface.
@@ -383,7 +383,7 @@ class IsoVolume(object):
 
             # get the connected set of triangles that make the single
             # surface and store into a unique meshset
-            tris = self._get_surf_triangles(verts)
+            tris = self.__get_surf_triangles(verts)
             surf = self.mb.create_meshset()
             self.mb.add_entities(surf, tris)
             self.mb.add_entities(surf, verts)
@@ -397,7 +397,7 @@ class IsoVolume(object):
             # resassign vertices that remain
             all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
 
-    def _separate_isovols(self):
+    def __separate_isovols(self):
         """For each isovolume in the database, separate any disjoint
         surfaces into unique single surfaces.
         """
@@ -416,7 +416,7 @@ class IsoVolume(object):
             self.isovol_meshsets[iv_info] = {}
 
             # separate
-            self._separate(iv_info)
+            self.__separate(iv_info)
 
             # add value min/max info (min, max)
             if i == 0:
@@ -429,7 +429,7 @@ class IsoVolume(object):
                 self.isovol_meshsets[iv_info]['bounds'] =\
                     (self.levels[i-1], self.levels[i])
 
-    def _list_coords(self, eh, invert=False):
+    def __list_coords(self, eh, invert=False):
         """Gets list of all coords as a list of tuples for an entity
         handle eh.
 
@@ -464,7 +464,7 @@ class IsoVolume(object):
 
         return coords
 
-    def _get_matches(self, vertsA, vertsB):
+    def __get_matches(self, vertsA, vertsB):
         """Collects the set of entity handles and coordinates in set of
         vertsA and vertsB that match within the specified absolute
         tolerance (self.merge_tol).
@@ -540,7 +540,7 @@ class IsoVolume(object):
         return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, \
             match_dict
 
-    def _get_surf_triangles(self, verts_good):
+    def __get_surf_triangles(self, verts_good):
         """This function will take a set of vertice entity handles and
         return the set of triangles for which all vertices of all
         triangles are in the set of vertices.
@@ -570,7 +570,7 @@ class IsoVolume(object):
             # empty set so all tris are good
             return tris_all
 
-    def _compare_surfs(self, v1, v2):
+    def __compare_surfs(self, v1, v2):
         """finds coincident surfaces between two isovolumes.
 
         Input:
@@ -588,7 +588,7 @@ class IsoVolume(object):
         # compare all surfaces in v1 (s1) to all surfaces in v2 (s2)
         for s1 in self.isovol_meshsets[v1]['surfs_EH']:
             # get list of all coordinates in s1
-            verts1 = self._list_coords(s1)
+            verts1 = self.__list_coords(s1)
 
             # initialize list of curves
             if s1 not in self.surf_curve.keys():
@@ -599,21 +599,21 @@ class IsoVolume(object):
                     self.surf_curve[s2] = []
 
                 # get list of all coordinates in s2 (inverted)
-                verts2_inv = self._list_coords(s2, invert=True)
+                verts2_inv = self.__list_coords(s2, invert=True)
 
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
                 s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, \
-                    match_dict = self._get_matches(verts1, verts2_inv)
+                    match_dict = self.__get_matches(verts1, verts2_inv)
 
                 if s1_match_eh != []:
                     # matches were found, so continue
 
                     # get only tris1 that have all match vertices
-                    tris1 = self._get_surf_triangles(s1_match_eh)
+                    tris1 = self.__get_surf_triangles(s1_match_eh)
 
                     # get s2 tris to delete (no new surface needed)
-                    tris2 = self._get_surf_triangles(s2_match_eh)
+                    tris2 = self.__get_surf_triangles(s2_match_eh)
 
                     # create new coincident surface
                     surf = self.mb.create_meshset()
@@ -745,7 +745,7 @@ class IsoVolume(object):
             if i != len(self.levels):
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
-                self._compare_surfs(isovol, all_vols[i+1])
+                self.__compare_surfs(isovol, all_vols[i+1])
 
         # if a surface doesn't have a value tagged after merging
         # give it a value of 0 and tag forward sense
@@ -761,7 +761,7 @@ class IsoVolume(object):
                     verts = \
                         self.mb.get_entities_by_type(surf,
                                                      types.MBVERTEX)
-                    tris = self._get_surf_triangles(verts)
+                    tris = self.__get_surf_triangles(verts)
                     self.mb.add_entities(surf, tris)
 
                 # tag fwd sense
@@ -773,7 +773,7 @@ class IsoVolume(object):
                     self.mb.tag_set_data(self.sense_tag,
                                          surf, [fwd, bwd])
 
-    def _make_family(self):
+    def __make_family(self):
         """Makes the correct parent-child relationships with volumes
         and surfaces. Tags geometry type, category, and ID on surfaces
         and volumes.
@@ -830,7 +830,7 @@ class IsoVolume(object):
                 curve_id += 1
                 self.mb.tag_set_data(global_id, c, curve_id)
 
-    def _tag_for_viz(self):
+    def __tag_for_viz(self):
         """Tags all triangles on all surfaces with the data value for
         that surface. This is for vizualization purposes.
         """
@@ -850,7 +850,7 @@ class IsoVolume(object):
                 # tag the data
                 self.mb.tag_set_data(self.val_tag, tris, data)
 
-    def _set_tags(self, tags):
+    def __set_tags(self, tags):
         """Set provided tag values on the root set.
 
         Input:
@@ -865,7 +865,7 @@ class IsoVolume(object):
                                          create_if_missing=True)
             self.mb.tag_set_data(tag, rs, tagval)
 
-    def _write_geometry(self, sname, sdir):
+    def __write_geometry(self, sname, sdir):
         """Writes out the geometry stored in memory.
 
         Input:
