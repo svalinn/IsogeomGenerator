@@ -393,7 +393,6 @@ def main():
 
     # get args
     args = parse_arguments()
-    print(args)
 
     # create instance
     g = v.IsoVolume()
