@@ -4,8 +4,16 @@ import vol as v
 
 
 def set_level_options(parser, moab):
-    """Sets options for specifying level values. If moab mode, do not
-    give options for generating levels.
+    """Sets options for specifying level values.
+
+    Three options are available (two available for MOAB mode). Exactly one
+    option must be supplied. If in MOAB mode (moab=True), do not give options
+    for generating levels.
+
+    Input:
+    ------
+        parser: ArgumentParser object to attach options to
+        moab: bool, True if setting MOAB args
     """
     level_group = parser.add_mutually_exclusive_group(required=True)
     level_group.add_argument('-lf', '--levelfile',
@@ -81,7 +89,11 @@ def set_level_options(parser, moab):
 
 
 def set_visit_only_options(parser):
-    """set options specific to the Visit step.
+    """Set options specific to the VisIt step.
+
+    Input:
+    ------
+        parser: ArgumentParser object to attach options to
     """
     parser.add_argument('meshfile',
                         action='store',
@@ -102,7 +114,11 @@ def set_visit_only_options(parser):
 
 
 def set_moab_only_options(parser):
-    """Set options specific to the MOAB step
+    """Set options specific to the MOAB step.
+
+    Input:
+    ------
+        parser: ArgumentParser object to attach options to
     """
     parser.add_argument('-m', '--mergetol',
                         action='store',
@@ -176,7 +192,12 @@ def set_moab_only_options(parser):
 
 
 def set_shared_options(parser, moab=False):
-    """set options that are in both the moab and visit steps.
+    """Set options that are for both the MOAB and VisIt steps.
+
+    Input:
+    ------
+        parser: ArgumentParser object to attach options to
+        moab: bool, True if setting MOAB args (default=False)
     """
     set_level_options(parser, moab)
     parser.add_argument('-db', '--database',
@@ -195,9 +216,7 @@ def set_shared_options(parser, moab=False):
 
 
 def parse_arguments():
-    """parse user args
-    """
-
+    """Parse user args"""
     parser = argparse.ArgumentParser(description='Generate isosurface ' +
                                      'geometry from a Cartesian mesh file ' +
                                      'with VisIt and MOAB')
@@ -234,7 +253,13 @@ def parse_arguments():
 
 
 def check_level_gen(args):
-    """Check that correct args were supplied if generating level
+    """Check that correct args were supplied for generating levels.
+
+    If the min/max values or N are not supplied, then raise error.
+
+    Input:
+    ------
+        args: set of ArgumentParser args
     """
     if (args.extN is None) or (args.N is None):
         raise RuntimeError("Min/Max level values (-lx) and number of levels " +
@@ -246,7 +271,7 @@ def get_levels(args, g):
 
     Input:
     ------
-        args: argparse ArgumentParser
+        args: set of ArgumentParser args
         g: IsoVolume instance
     """
     # collect level information:
@@ -269,8 +294,10 @@ def get_levels(args, g):
 
 
 def process_tags(tags):
-    """Convert the provided tag information to a dictionary to pass to the
-    geometry creation stepself.
+    """Process the provided tag information to correct format.
+
+    Converts the list of information to a dictionary to be able to pass to the
+    geometry creation step.
 
     Input:
     -----
