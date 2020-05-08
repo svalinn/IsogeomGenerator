@@ -264,28 +264,60 @@ different modes:
     # set full mode options
     full_description = """
 Start-to-finish generation from a Cartesian mesh file to a DAGMC-compliant
-geometry."""
+geometry.
+
+Levels information must be provided with either the -lf, -lv, or -gl option.
+If using the -gl option (generate levels), then options -lx and -N must also be
+provided.
+"""
     full_usage = \
         'generate_isogeom full [-lf/-lv/-gl] [OPTIONS] meshfile dataname'
+    full_examples = """ EXAMPLES PLACEHOLDER """
 
-    full_parser = subparsers.add_parser('full', description=full_description,
-                                        usage=full_usage)
+    full_parser = subparsers.add_parser('full',
+                                        description=full_description,
+                                        usage=full_usage,
+                                        epilog=full_examples,
+                                        formatter_class=argparse.RawDescriptionHelpFormatter)
     set_visit_only_options(full_parser)
     set_shared_options(full_parser)
     set_moab_only_options(full_parser)
     full_parser.set_defaults(which='full')
 
     # set visit only mode options
-    visit_parser = subparsers.add_parser('visit', help='Only generate the ' +
-                                         'isosurface mesh files using VisIt.')
+    visit_description = """
+Only generate the isosurface mesh file database using VisIt.
+
+Levels information must be provided with either the -lf, -lv, or -gl option.
+If using the -gl option (generate levels), then options -lx and -N must also be
+provided.
+"""
+    visit_usage = \
+        'generate_isogeom visit [-lf/-lv/-gl] [OPTIONS] meshfile dataname'
+    visit_examples = """ EXAMPLES PLACEHOLDER """
+    visit_parser = subparsers.add_parser('visit',
+                                         description=visit_description,
+                                         usage=visit_usage,
+                                         epilog=visit_examples,
+                                         formatter_class=argparse.RawDescriptionHelpFormatter)
     set_visit_only_options(visit_parser)
     set_shared_options(visit_parser)
     visit_parser.set_defaults(which='visit')
 
     # set moab only mode options
-    moab_parser = subparsers.add_parser('moab', help='Only generate the ' +
-                                        'DAGMC-compliant geometry with MOAB ' +
-                                        'starting from the VisIt mesh files.')
+    moab_description = """
+Only generate the DAGMC-compliant geometry with MOAB starting from the VisIt
+mesh file database.
+
+Levels information must be provided with either the -lf or -lv option.
+"""
+    moab_usage = 'generate_isogeom moab [-lf/-lv] [OPTIONS]'
+    moab_examples = """ EXAMPLES PLACEHOLDER """
+    moab_parser = subparsers.add_parser('moab',
+                                        description=moab_description,
+                                        usage=moab_usage,
+                                        epilog=moab_examples,
+                                        formatter_class=argparse.RawDescriptionHelpFormatter)
     set_shared_options(moab_parser, moab=True)
     set_moab_only_options(moab_parser)
     moab_parser.set_defaults(which='moab')
