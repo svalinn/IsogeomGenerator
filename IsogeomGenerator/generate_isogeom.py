@@ -286,8 +286,7 @@ def get_levels(args, g):
         check_level_gen(args)
         minN = min(args.extN)
         maxN = max(args.extN)
-        N = args.N[0]
-        g.generate_levels(N, minN, maxN, mode=args.generatelevels[0])
+        g.generate_levels(args.N[0], minN, maxN, mode=args.generatelevels[0])
     else:
         raise RuntimeError("Mode for setting level information is not " +
                            "recognized")
@@ -335,9 +334,7 @@ def main():
     mode = args.which
     if mode == 'full' or mode == 'visit':
         # generate isosurfaces
-        meshfile = args.meshfile[0]
-        dataname = args.dataname[0]
-        g.generate_volumes(meshfile, dataname, dbname=db)
+        g.generate_volumes(args.meshfile[0], args.dataname[0], db)
 
     if mode == 'full' or mode == 'moab':
         if args.tags is not None:
