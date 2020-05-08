@@ -66,7 +66,7 @@ def set_level_options(parser, moab):
                             nargs=2,
                             required=False,
                             default=None,
-                            metavar='MIN_VAL MAX_VAL',
+                            metavar=('MIN_VAL', 'MAX_VAL'),
                             dest='extN',
                             type=float,
                             help='float, minimum and maximum values to use ' +
@@ -181,7 +181,7 @@ def set_moab_only_options(parser):
                         nargs=2,
                         required=False,
                         default=None,
-                        metavar='TAGNAME TAGVAL',
+                        metavar=('TAGNAME', 'TAGVAL'),
                         dest='tags',
                         help='Information to tag on the whole geometry. ' +
                         'First entry must be the name for the tag (string). ' +
