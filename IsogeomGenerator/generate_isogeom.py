@@ -239,7 +239,7 @@ Example usage:
         generate_isogeom moab -lf my_database/levelfile -db my_database -g geom1.h5m
 """
 
-    description = """
+    mode_description = """
 Use this to generate a full isosurface geometry from a starting Cartesian mesh
 file containing scalar data using VisIt and MOAB. This tool can be run in three
 different modes:
@@ -253,7 +253,7 @@ different modes:
         the visit step.
 """
 
-    parser = argparse.ArgumentParser(description=description,
+    parser = argparse.ArgumentParser(description=mode_description,
                                      usage='generate_isogeom MODE [OPTIONS]',
                                      epilog=mode_examples,
                                      formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -262,9 +262,14 @@ different modes:
                                        'generating the geometry.')
 
     # set full mode options
-    full_parser = subparsers.add_parser('full', help='Start-to-finish ' +
-                                        'generation from a Cartesian mesh ' +
-                                        'file to a DAGMC-compliant geometry.')
+    full_description = """
+Start-to-finish generation from a Cartesian mesh file to a DAGMC-compliant
+geometry."""
+    full_usage = \
+        'generate_isogeom full [-lf/-lv/-gl] [OPTIONS] meshfile dataname'
+
+    full_parser = subparsers.add_parser('full', description=full_description,
+                                        usage=full_usage)
     set_visit_only_options(full_parser)
     set_shared_options(full_parser)
     set_moab_only_options(full_parser)
