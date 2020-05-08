@@ -217,10 +217,47 @@ def set_shared_options(parser, moab=False):
 
 def parse_arguments():
     """Parse user args"""
-    parser = argparse.ArgumentParser(description='Generate isosurface ' +
-                                     'geometry from a Cartesian mesh file ' +
-                                     'with VisIt and MOAB')
-    subparsers = parser.add_subparsers(title='Run Steps',
+    mode_examples = """
+To view full options for each mode, use 'generate_isogeom MODE -h'.\n
+
+Example usage:
+    (1) Run all the steps start to finish (full mode) starting with meshfile
+        'cw_mesh', scalar data 'wwn', and defining 3 values for the level
+        information at runtime:
+
+        generate_isogeom full cw_mesh wwn -lv 0.1 5.2 12.3
+
+    (2) Run just the first step (visit mode), generating logarithmically spaced
+        levels between 0.1 and 1e+14 and specifying where to write the
+        generated database:
+
+        generate_isogeom visit -gl log -lx 0.1 1e+14 -db my_database/
+
+    (3) Run only the second step (moab mode), using the levelfile and database
+        from the MOAB step, and specifying a file name for file produced:
+
+        generate_isogeom moab -lf my_database/levelfile -db my_database -g geom1.h5m
+"""
+
+    description = """
+Use this to generate a full isosurface geometry from a starting Cartesian mesh
+file containing scalar data using VisIt and MOAB. This tool can be run in three
+different modes:
+    full: run both steps starting from the Cartesian mesh file to produce
+        a full DAGMC-compliant isosurface geom. This step first runs the visit
+        step then the moab step.
+    visit: run only the first step using VisIt. This will generate a database
+        of individual mesh isosurfaces from the Cartesian mesh fileself.
+    moab: run only the second step using MOAB. This will generate a full DAGMC-
+        compliant isosurface geometry starting from the database generated from
+        the visit step.
+"""
+
+    parser = argparse.ArgumentParser(description=description,
+                                     usage='generate_isogeom MODE [OPTIONS]',
+                                     epilog=mode_examples,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+    subparsers = parser.add_subparsers(title='Modes',
                                        help='Select which steps to run for ' +
                                        'generating the geometry.')
 
