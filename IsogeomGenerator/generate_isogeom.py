@@ -361,7 +361,30 @@ mesh file database.
 Levels information must be provided with either the -lf or -lv option.
 """
     moab_usage = 'generate_isogeom moab [-lf/-lv] [OPTIONS]'
-    moab_examples = """ EXAMPLES PLACEHOLDER """
+    moab_examples = """
+Example Usage:
+    (1) Create an isosurface geometry called 'my_isogeom.h5m' with assigned
+        level values of 0.1 0.4 and 1.0, and tag the surfaces with data for
+        vizualization (assume default database location):
+
+        generate_isogeom moab -lv 0.1 0.4 1.0 -g my_isogeom.h5m --viz
+
+    (2) Generate a geometry from a database located in 'my_isogeom/', read the
+        level info from a file called 'levelinfo', mutliply all data by a
+        factor of 2e4, and save the file as 'my_isogeom.vtk' in a new folder
+        called 'output_folder/':
+
+        generate_isogeom moab -db my_isogeom/ -lf levelinfo -n 2e4
+            -g my_isogeom.vtk -sp output_folder/
+
+    (3) Generate a geometry from a database in the default location, read
+        levels from a file called 'levelfile' located in the database, tag the
+        geometry two metadata tags called E1 and E2 with values of 1.0 and
+        10.0, respectively, and tag the geometry with the level information for
+        vizualization:
+
+        generate_isogeom moab -lf tmp/levelfile -t E1 1.0 -t E2 10.0 -v
+    """
     moab_parser = subparsers.add_parser('moab',
                                         description=moab_description,
                                         usage=moab_usage,
