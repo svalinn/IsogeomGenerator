@@ -321,7 +321,29 @@ provided.
 """
     visit_usage = \
         'generate_isogeom visit [-lf/-lv/-gl] [OPTIONS] meshfile dataname'
-    visit_examples = """ EXAMPLES PLACEHOLDER """
+    visit_examples = """
+Example Usage:
+    (1) Generate a database located at 'my_database/' with assigned
+        level values of 0.1 0.4 and 1.0:
+
+        generate_isogeom visit meshfile my_data -lv 0.1 0.4 1.0
+            -db my_isogeom/
+
+    (2) Generate a database in the default location using levels between 1.0
+        2e+4 that are spaced with a ratio of 20:
+
+        generate_isogeom visit meshfile my_data -gl ratio -lx 1.0 2.e4 -N 20
+
+    (3) Generate a database in the default location using 15 levels between 1.0
+        2e+4 that are spaced logarithmically:
+
+        generate_isogeom visit meshfile my_data -gl log -lx 1.0 2.e4 -N 15
+
+    (4) Generate a database in a folder called 'my_isogeom/' and read the level
+        information from a file in the current directory called 'levelfile':
+
+        generate_isogeom visit meshfile my_data -lf levelfile -db my_isogeom/
+    """
     visit_parser = subparsers.add_parser('visit',
                                          description=visit_description,
                                          usage=visit_usage,
