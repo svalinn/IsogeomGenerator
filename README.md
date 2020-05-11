@@ -14,18 +14,14 @@ values.
 
 ## Installation:
 
-From the source directory, run `pip install -e . --user`.
+From the source directory, run `pip install . --user`.
 
-## Usage
+## Python Module Usage
 
-To use, import the Python module with `import IsogeomGenerator`.
-
-Required input file: a 3D mesh file (such as a Cartesian mesh) with scalar
-values defined on each mesh voxel.
+To use, import the Python module with `from IsogeomGenerator import vol`.
 
 ### Steps:
 
-1. Set contour levels with `assign_levels()` or `generate_levels()`
+1. Set contour levels with `assign_levels()`, `read_levels()` or `generate_levels()`
 2. Generate the isovolume files using `generate_volumes()`
 3. Create the MOAB geometry with `create_geometry()`
-4. Write to a file with `write_geometry()`
