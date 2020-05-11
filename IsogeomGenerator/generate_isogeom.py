@@ -216,7 +216,12 @@ def set_shared_options(parser, moab=False):
 
 
 def parse_arguments():
-    """Parse user args"""
+    """Parse user args
+
+    There are three subparsers, one for each mode: full, visit, and moab.
+    Full mode runs both the visit and moab steps. Each parser should have a
+    full help message, simplified usage statement, and examples.
+    """
     mode_examples = """
 To view full options for each mode, use 'generate_isogeom MODE -h'.\n
 
@@ -236,7 +241,8 @@ Example usage:
     (3) Run only the second step (moab mode), using the levelfile and database
         from the MOAB step, and specifying a file name for file produced:
 
-        generate_isogeom moab -lf my_database/levelfile -db my_database -g geom1.h5m
+        generate_isogeom moab -lf my_database/levelfile -db my_database \
+            -g geom1.h5m
 """
 
     mode_description = """
@@ -272,7 +278,28 @@ provided.
 """
     full_usage = \
         'generate_isogeom full [-lf/-lv/-gl] [OPTIONS] meshfile dataname'
-    full_examples = """ EXAMPLES PLACEHOLDER """
+    full_examples = """
+Example Usage:
+    (1) Create an isosurface geometry called 'my_isogeom.h5m' with assigned
+        level values of 0.1 0.4 and 1.0, and tag the surfaces with data for
+        vizualization:
+
+        generate_isogeom full meshfile my_data -lv 0.1 0.4 1.0
+            -g my_isogeom.h5m --viz
+
+    (2) Generate a geometry with 5 levels lograthmically spaced from 1e-5 and
+        1e+3. Also tag the geometry two metadata tags called E1 and E2 with
+        values of 1.0 and 10.0, respectively:
+
+        generate_isogeom full meshfile my_data -gl log -lx 1e-5 1e+3 -N 5
+            -t E1 1.0 -t E2 10.0
+
+    (3) Store the generated database in a different folder called 'my_isogeom/'
+        and read level information from a file called 'levelfile' located in
+        the current directory:
+
+        generate_isogeom full meshfile my_data -lf levelfile -db my_isogeom/
+    """
 
     full_parser = subparsers.add_parser('full',
                                         description=full_description,
