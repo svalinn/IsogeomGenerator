@@ -174,7 +174,7 @@ class IsoVolume(object):
 
         # Step 2: Merge Coincident Surfaces
         print("Merging surfaces...")
-        self._imprint_merge()
+        self.__imprint_merge()
         print("...Merging complete!")
 
         # Step 3: Assign Parent-Child Relationship
@@ -299,7 +299,7 @@ class IsoVolume(object):
         # get the minimum isovolume level
         lbound = 0.0
         ubound = self.levels[0]
-        self._get_isovol(lbound, ubound, 0)
+        self.__get_isovol(lbound, ubound, 0)
 
         # iterate over all isovolume levels
         for l in self.levels[1:]:
@@ -314,12 +314,12 @@ class IsoVolume(object):
 
                 # get volume
                 # res = 0 if no level found (should update to next level)
-                res = self._get_isovol(lbound, ubound, i)
+                res = self.__get_isovol(lbound, ubound, i)
 
         # get maximum isovolume level
         lbound = self.levels[-1]
         ubound = 1.e200
-        self._get_isovol(lbound, ubound, i+1)
+        self.__get_isovol(lbound, ubound, i+1)
 
         # delete plots
         v.DeleteAllPlots()
@@ -716,7 +716,7 @@ class IsoVolume(object):
         self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
         self.isovol_meshsets[v2]['surfs_EH'].extend(match_surfs)
 
-    def _imprint_merge(self):
+    def __imprint_merge(self):
         """Uses PyMOAB to check if surfaces are coincident. Creates a
         single surface where surfaces are coincident values are tagged
         on each surface. Surface senses are also determined and tagged.
