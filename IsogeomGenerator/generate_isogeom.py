@@ -2,6 +2,13 @@ import argparse
 import os
 import vol as v
 
+"""This is a script that can be installed for a user to easily run all the
+steps to create an isosurface geometry from a mesh file with scalar data from
+the command line. This script will parse the command line options and call the
+necessary methods from the vol.py file. There are three modes for running this
+script: full, visit, and moab. Each are documented below.
+"""
+
 
 def set_level_options(parser, moab):
     """Sets options for specifying level values.
