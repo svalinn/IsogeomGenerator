@@ -223,7 +223,7 @@ def parse_arguments():
     full help message, simplified usage statement, and examples.
     """
     mode_examples = """
-To view full options for each mode, use 'generate_isogeom MODE -h'.\n
+To view full options for each mode, use 'generate_isogeom MODE -h'.
 
 Example usage:
     (1) Run all the steps start to finish (full mode) starting with meshfile
@@ -241,10 +241,9 @@ Example usage:
     (3) Run only the second step (moab mode), using the levelfile and database
         from the MOAB step, and specifying a file name for file produced:
 
-        generate_isogeom moab -lf my_database/levelfile -db my_database \
+        generate_isogeom moab -lf my_database/levelfile -db my_database
             -g geom1.h5m
 """
-
     mode_description = """
 Use this to generate a full isosurface geometry from a starting Cartesian mesh
 file containing scalar data using VisIt and MOAB. This tool can be run in three
@@ -258,7 +257,6 @@ different modes:
         compliant isosurface geometry starting from the database generated from
         the visit step.
 """
-
     parser = argparse.ArgumentParser(description=mode_description,
                                      usage='generate_isogeom MODE [OPTIONS]',
                                      epilog=mode_examples,
@@ -277,7 +275,7 @@ If using the -gl option (generate levels), then options -lx and -N must also be
 provided.
 """
     full_usage = \
-        'generate_isogeom full [-lf/-lv/-gl] [OPTIONS] meshfile dataname'
+        'generate_isogeom full meshfile dataname [-lf/-lv/-gl] [OPTIONS]'
     full_examples = """
 Example Usage:
     (1) Create an isosurface geometry called 'my_isogeom.h5m' with assigned
@@ -300,7 +298,6 @@ Example Usage:
 
         generate_isogeom full meshfile my_data -lf levelfile -db my_isogeom/
     """
-
     full_parser = subparsers.add_parser('full',
                                         description=full_description,
                                         usage=full_usage,
@@ -320,7 +317,7 @@ If using the -gl option (generate levels), then options -lx and -N must also be
 provided.
 """
     visit_usage = \
-        'generate_isogeom visit [-lf/-lv/-gl] [OPTIONS] meshfile dataname'
+        'generate_isogeom visit meshfile dataname [-lf/-lv/-gl] [OPTIONS]'
     visit_examples = """
 Example Usage:
     (1) Generate a database located at 'my_database/' with assigned
