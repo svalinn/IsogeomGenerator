@@ -481,11 +481,13 @@ def main():
 
     # run steps depending on mode
     mode = args.which
-    if mode == 'full' or mode == 'visit':
+    visit_modes = ["full", "visit"]
+    moab_modes = ["full", "moab"]
+    if mode in visit_modes:
         # generate isosurfaces
         g.generate_volumes(args.meshfile[0], args.dataname[0], db)
 
-    if mode == 'full' or mode == 'moab':
+    if mode in moab_modes:
         if args.tags is not None:
             tags = process_tags(args.tags)
         else:
