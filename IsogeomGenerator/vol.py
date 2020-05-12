@@ -226,7 +226,7 @@ class IsoVolume(object):
 
         self.levels.remove(value)
 
-    def _get_isovol(self, lbound, ubound, i):
+    def __get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
         outer surface of the volume as STL.
 
