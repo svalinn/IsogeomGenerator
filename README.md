@@ -46,10 +46,26 @@ Each mode has different required or optional arguments needed at run time.
 Below is a table summary of those options. This information is also available
 via terminal help message: (`generate_isogeom [mode] --help`).
 
-    | Option                      |        Mode         |
-    |-----------------------------|---------------------|
-    | Name     | Description      | Full | Visit | MOAB |
-    |----------|------------------|---------------------|
-    | meshfile |    tmp           |  X   |   X   |      |
-    |          | long description |      |       |      |
-    |----------|------------------|------|-------|------|
+* `X` = required
+* `O` = optional
+* `-` = Not allowed
+
+|||||| Mode ||
+|------|
+| | Option | Description | Default value | full | visit | moab |
+| Mesh file information |||||||
+| |`meshfile` ||| `X` | `X` | `-` |
+| |`dataname` ||| `X` | `X` | `-` |
+| Level value information | One of the following options is required: `-lf`, `-lv`, `-gl` | | | `X` | `X` | `X` |
+| | `-lf/--levelfile LEVELFILE` | | | `O` | `O` | `O` |
+| | `-lv/--levelvalues VAL [VAL VAL]` | | | `O` | `O` | `O` |
+| | `-gl/--generatelevels ratio/log/lin` | | | `O` | `O` | `-` |
+| | `-N/--numlevels N` | (Required if using `-gl`, otherwise not allowed) | | `X`/`-` | `X`/`-` | `-` |
+| | `-lx/-levelextrema MIN_VAL MAX_VAL` | (Required if using `-gl`, otherwise not allowed) | | `X`/`-` | `X`/`-` | `-` |
+| Geometry Information | | | | | | |
+| | `-db/--database DATABASE_PATH` | | | `O` | `O` | `O` |
+| | `-m/--mergetol TOL` | | | `O` | `-` | `O` |
+| | `-n/--norm NORM_FACTOR` | | | `O` | `-` | `O` |
+| | `-v/--viz` | | | `O` | `-` | `O` |
+| | `-g/--geomfile GEOM_FILENAME` | | | `O` | `-` | `O` |
+| | `-sp/--savepath PATH` | | | `O` | `-` | `O` |
