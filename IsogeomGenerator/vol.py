@@ -26,7 +26,7 @@ class IsoVolume(object):
         pass
 
     def assign_levels(self, levels):
-        """User defines the contour levels to be used in the isovolumes.
+        """User defines the contour levels to be used as the isosurfaces.
 
         Input:
         ------
