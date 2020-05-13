@@ -78,7 +78,7 @@ To generate a full geometry from a starting Cartesian mesh file, run the followi
         * `tag_for_viz`: bool (optional), True to tag each triangle on
             every surface with the data value. Needed to visualize
             values in VisIt. Default=False.
-        * `norm`: float (optional), default=1. All ww values will be
+        * `norm`: float (optional), default=1. All data values will be
             multiplied by the normalization factor.
         * `merge_tol`: float (option), default=1e-5 cm. Merge tolerance for
             mesh based merge of coincident surfaces. Recommended to be
