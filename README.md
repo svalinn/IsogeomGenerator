@@ -50,8 +50,8 @@ via terminal help message: (`generate_isogeom [mode] --help`).
 * `O` = optional
 * `-` = Not allowed
 
-|||||| Mode ||
-|------|
+| | | | | | Mode | |
+|-|-|-|-|-|------|-|
 | | Option | Description | Default value | full | visit | moab |
 | Mesh file information |||||||
 | |`meshfile` ||| `X` | `X` | `-` |
