@@ -136,7 +136,7 @@ class IsoVolume(object):
                         dbname=os.getcwd()+"/tmp", tags=None,
                         sname=None, sdir=None):
         """Over-arching function to do all steps to create a single
-        isovolume geometry for DAGMC using pyMOAB.
+        isosurface geometry for DAGMC using pyMOAB.
 
         Input:
         ------
