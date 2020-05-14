@@ -158,7 +158,7 @@ All of these examples will assume a starting Cartesian mesh file called `cw_mesh
 
 * Generate a geometry start to finish, with 5 levels logarithmically spaced from 1e-5 to 1e+3. Also tag the geometry two metadata tags called E1 and E2 with values of 1.0 and 10.0, respectively:
 
-      generate_isogeom full meshfile my_data -gl log -lx 1e-5 1e+3 -N 5 -t E1 1.0 -t E2 10.0
+      generate_isogeom full cw_mesh wwn -gl log -lx 1e-5 1e+3 -N 5 -t E1 1.0 -t E2 10.0
 
 * Generate only the isovolume database using levels that logarithmically spaced between 0.1 and 1e+14 and specifying where to write the generated database:
 
@@ -172,6 +172,6 @@ All of these examples will assume a starting Cartesian mesh file called `cw_mesh
 
       generate_isogeom moab -lf my_database/levelfile -db my_database -g geom1.h5m
 
-* Generate a geometry from a database located in 'my_isogeom/', read the level info from a file called 'levelinfo', mutliply all data by a factor of 2e4, and save the file as 'my_isogeom.vtk' in a new folder called 'output_folder/':
+* Generate a geometry from a database located in `my_isogeom/`, read the level info from a file called `levelinfo`, mutliply all data by a factor of 2e4, and save the file as `my_isogeom.vtk` in a new folder called `output_folder/`:
 
       generate_isogeom moab -db my_isogeom/ -lf levelinfo -n 2e4 -g my_isogeom.vtk -sp output_folder/
