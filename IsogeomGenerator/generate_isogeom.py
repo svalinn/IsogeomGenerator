@@ -243,7 +243,7 @@ Example usage:
         levels between 0.1 and 1e+14 and specifying where to write the
         generated database:
 
-        generate_isogeom visit -gl log -lx 0.1 1e+14 -db my_database/
+        generate_isogeom visit cw_mesh wwn -gl log -lx 0.1 1e14 -db my_database
 
     (3) Run only the second step (moab mode), using the levelfile and database
         from the MOAB step, and specifying a file name for file produced:
