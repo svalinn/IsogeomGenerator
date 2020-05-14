@@ -6,13 +6,22 @@ Monte Carlo particle transport).
 The tool will create a meshed surface geometry ([DAGMC](https://svalinn.github.io/DAGMC/)-compliant) using specified isosurface
 values.
 
-## Dependencies:
+## Table of Contents
+
+1. [Installation](#Installation)
+2. [Python Module](#Python-Module-Usage)
+3. [Command Line Tool](#Command-Line-Tool)
+-----
+
+## Installation
+
+### Dependencies:
 
 * Python 2.7
 * [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/)
 * [MOAB](https://sigma.mcs.anl.gov/moab-library/) v5.1+ with PyMOAB enabled
 
-## Installation:
+### Pip install:
 
 From the source directory, run the following to install:
 
