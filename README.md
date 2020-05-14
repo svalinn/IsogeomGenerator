@@ -3,7 +3,7 @@
 This tool can be used to generate an isosurface geometry from any 3D mesh
 tagged with scalar values (eg, a Cartesian weight window mesh used for
 Monte Carlo particle transport).
-The tool will create a meshed surface geometry (DAGMC-compliant) using specified isosurface
+The tool will create a meshed surface geometry ([DAGMC](https://svalinn.github.io/DAGMC/)-compliant) using specified isosurface
 values.
 
 ## Dependencies:
