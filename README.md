@@ -15,13 +15,13 @@ values.
 
 ## Installation
 
-### Dependencies:
+### Dependencies
 
 * Python 2.7
 * [VisIt](https://wci.llnl.gov/simulation/computer-codes/visit/)
 * [MOAB](https://sigma.mcs.anl.gov/moab-library/) v5.1+ with PyMOAB enabled
 
-### Pip install:
+### Pip install
 
 From the source directory, run the following to install:
 
@@ -33,7 +33,7 @@ From the source directory, run the following to install:
 
 To use, import the Python module with `from IsogeomGenerator import vol`.
 
-### Steps:
+### Steps
 
 To generate a full geometry from a starting Cartesian mesh file, run the following steps in order:
 
