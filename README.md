@@ -81,18 +81,17 @@ To generate a full geometry from a starting Cartesian mesh file, run the followi
         * `norm`: float (optional), default=1. All data values will be
             multiplied by the normalization factor.
         * `merge_tol`: float (option), default=1e-5 cm. Merge tolerance for
-            mesh based merge of coincident surfaces. Recommended to be
-            1/10th the mesh voxel size.
-        * `dbname`: (optional), string, name of folder to store created
+            mesh based merge of coincident surfaces.
+        * `dbname`: string (optional), name of folder to store created
             surface files. Must be absolute path.
             default: a folder called 'tmp' in the current directory
-        * `tags`: (optional), dict, set of names and values to tag on the
+        * `tags`: dict (optional), set of names and values to tag on the
             geometry root set. Dictionary should be structured with each
             key as a tag name (str) and with a single value (float) for the
-            tag. Example: {'NAME1':1.0, 'NAME2': 2.0}
-        * `sname`: (optional), str, name of file (including extension) for the
+            tag. Example: `{'NAME1':1.0, 'NAME2': 2.0}`
+        * `sname`: string (optional), name of file (including extension) for the
             written geometry file. Acceptable file types are VTK and H5M.
-            Default name: isogeom.h5m
+            Default name: `isogeom.h5m`
 
 ----
 
