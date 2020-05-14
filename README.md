@@ -152,20 +152,26 @@ via terminal help message: (`generate_isogeom [mode] --help`).
 
 All of these examples will assume a starting Cartesian mesh file called `cw_mesh` with the desired data called `wwn`.
 
-(1) Run all the steps start to finish (full mode) starting with meshfile
-        'cw_mesh', scalar data 'wwn', and defining 3 values for the level
-        information at runtime:
+* Run all the steps start to finish, defining 3 values for the level information at runtime, and tag for visualization:
 
-        generate_isogeom full cw_mesh wwn -lv 0.1 5.2 12.3
+      generate_isogeom full cw_mesh wwn -lv 0.1 5.2 12.3 --viz
 
-    (2) Run just the first step (visit mode), generating logarithmically spaced
-        levels between 0.1 and 1e+14 and specifying where to write the
-        generated database:
+* Generate a geometry start to finish, with 5 levels logarithmically spaced from 1e-5 to 1e+3. Also tag the geometry two metadata tags called E1 and E2 with values of 1.0 and 10.0, respectively:
 
-        generate_isogeom visit -gl log -lx 0.1 1e+14 -db my_database/
+      generate_isogeom full meshfile my_data -gl log -lx 1e-5 1e+3 -N 5 -t E1 1.0 -t E2 10.0
 
-    (3) Run only the second step (moab mode), using the levelfile and database
-        from the MOAB step, and specifying a file name for file produced:
+* Generate only the isovolume database using levels that logarithmically spaced between 0.1 and 1e+14 and specifying where to write the generated database:
 
-        generate_isogeom moab -lf my_database/levelfile -db my_database
-            -g geom1.h5m
+      generate_isogeom visit cw_mesh wwn -gl log -lx 0.1 1e+14 -db my_database/
+
+* Generate an isovolume database in the default location using levels between 1.0 2e+4 that are spaced with a ratio of 20:
+
+      generate_isogeom visit cw_mesh wwn -gl ratio -lx 1.0 2.e4 -N 20
+
+* Generate an isosurface geometry using the levelfile and database located in my_database/, specifying a file name for file produced:
+
+      generate_isogeom moab -lf my_database/levelfile -db my_database -g geom1.h5m
+
+* Generate a geometry from a database located in 'my_isogeom/', read the level info from a file called 'levelinfo', mutliply all data by a factor of 2e4, and save the file as 'my_isogeom.vtk' in a new folder called 'output_folder/':
+
+      generate_isogeom moab -db my_isogeom/ -lf levelinfo -n 2e4 -g my_isogeom.vtk -sp output_folder/
