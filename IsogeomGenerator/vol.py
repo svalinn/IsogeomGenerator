@@ -339,9 +339,15 @@ class IsoSurfGeom(object):
                                    "{}. ".format(filepath) +
                                    "Please provide levelfile location.")
 
-        # Step 1: Separate Isovolume Surfaces
+        # Step 0: initialize meshsets
         self.mb = core.Core()
         self.isovol_meshsets = {}
+
+        print("Reading database...")
+        self.__read_database()
+        print("... Reading complete!")
+
+        # Step 1: Separate Isovolume Surfaces
         print("Separating isovolumes...")
         self.__separate_isovols()
         print("...Separation complete!")
@@ -384,80 +390,9 @@ class IsoSurfGeom(object):
 
         self.levels = sorted(levels)
 
-    def __separate(self, iv_info):
-        """Separates a given surface into separate surfaces. All
-        resulting surfaces are disjoint surfaces that made up the
-        original surface.
-
-        Input:
-        ------
-            iv_info: tuple, (iso_id, fs) where iso_id is the name of the
-                loaded isovolume file (without the extension) and fs is
-                a MOAB EntityHandle corresponding to the file_set for
-                the loaded isovolume file.
+    def __read_database(self):
+        """Read the files from the database and initialize the meshset info.
         """
-
-        # extract isovolume information
-        iso_id = iv_info[0]
-        fs = iv_info[1]
-
-        # get set of all vertices for the isosurface
-        all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
-
-        # initiate list to store separate surface entity handles
-        self.isovol_meshsets[iv_info]['surfs_EH'] = []
-
-        # separate the surfaces
-        print("separating isovolume {}".format(iso_id))
-        while len(all_verts) > 0:
-            # get full set of connected verts starting from a seed
-            verts = [all_verts[0]]
-            verts_check = [all_verts[0]]
-            vtmp_all = set(verts[:])
-
-            # gather set of all vertices that are connected to the seed
-            while True:
-                # this step takes too long for large surfaces
-                # check adjancency and connectedness of new vertices
-                vtmp = self.mb.get_adjacencies(self.mb.get_adjacencies(
-                                               verts_check, 2, op_type=1),
-                                               0, op_type=1)
-
-                # add newly found verts to all list
-                vtmp_all.update(set(vtmp))
-
-                # check if different from already found verts
-                if len(list(vtmp_all)) == len(verts):
-                    # no more vertices are connected, so full surface
-                    # has been found
-                    break
-                else:
-                    # update vertices list to check only newly found
-                    # vertices
-                    verts_check = vtmp_all.difference(verts)
-                    verts = list(vtmp_all)
-
-            # get the connected set of triangles that make the single
-            # surface and store into a unique meshset
-            tris = self.__get_surf_triangles(verts)
-            surf = self.mb.create_meshset()
-            self.mb.add_entities(surf, tris)
-            self.mb.add_entities(surf, verts)
-
-            self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
-
-            # remove surface from original meshset
-            self.mb.remove_entities(fs, tris)
-            self.mb.remove_entities(fs, verts)
-
-            # resassign vertices that remain
-            all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
-
-    def __separate_isovols(self):
-        """For each isovolume in the database, separate any disjoint
-        surfaces into unique single surfaces.
-        """
-
         for f in sorted(os.listdir(self.db + "/vols/")):
             # get file name
             fpath = self.db + "/vols/" + f
@@ -471,9 +406,6 @@ class IsoSurfGeom(object):
             iv_info = (i, fs)
             self.isovol_meshsets[iv_info] = {}
 
-            # separate
-            self.__separate(iv_info)
-
             # add value min/max info (min, max)
             if i == 0:
                 self.isovol_meshsets[iv_info]['bounds'] =\
@@ -484,6 +416,97 @@ class IsoSurfGeom(object):
             else:
                 self.isovol_meshsets[iv_info]['bounds'] =\
                     (self.levels[i-1], self.levels[i])
+
+    def __separate_isovols(self):
+        """For each isovolume in the database, separate any disjoint
+        surfaces into unique single surfaces.
+        """
+        for iv_info in self.isovol_meshsets.keys():
+            # extract isovolume information
+            iso_id = iv_info[0]
+            fs = iv_info[1]
+
+            # get set of all vertices for the isosurface
+            all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
+
+            # initiate list to store separate surface entity handles
+            self.isovol_meshsets[iv_info]['surfs_EH'] = []
+
+            # separate the surfaces
+            print("Separating isovolume {}".format(iso_id))
+            while len(all_verts) > 0:
+                # get full set of connected verts starting from a seed
+                verts = [all_verts[0]]
+                verts_check = [all_verts[0]]
+                vtmp_all = set(verts[:])
+
+                # gather set of all vertices that are connected to the seed
+                while True:
+                    # check adjancency and connectedness of new vertices
+                    vtmp = self.mb.get_adjacencies(self.mb.get_adjacencies(
+                                                   verts_check, 2, op_type=1),
+                                                   0, op_type=1)
+
+                    # add newly found verts to all list
+                    vtmp_all.update(set(vtmp))
+
+                    # check if different from already found verts
+                    if len(list(vtmp_all)) == len(verts):
+                        # no more vertices are connected, so full surface
+                        # has been found
+                        break
+                    else:
+                        # update vertices list to check only newly found
+                        # vertices
+                        verts_check = vtmp_all.difference(verts)
+                        verts = list(vtmp_all)
+
+                # get the connected set of triangles that make the single
+                # surface and store into a unique meshset
+                tris = self.__get_surf_triangles(verts)
+                surf = self.mb.create_meshset()
+                self.mb.add_entities(surf, tris)
+                self.mb.add_entities(surf, verts)
+
+                # store surfaces in completed list
+                self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
+
+                # remove surface from original meshset
+                self.mb.remove_entities(fs, tris)
+                self.mb.remove_entities(fs, verts)
+
+                # resassign vertices that remain
+                all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
+
+    def __get_surf_triangles(self, verts_good):
+        """This function will take a set of vertice entity handles and
+        return the set of triangles for which all vertices of all
+        triangles are in the set of vertices.
+
+        Input:
+        ------
+            verts_good: list of entity handles, list of vertices to
+                compare against. Only triangles will be returned whose
+                complete set of vertices are in this list.
+
+        Returns:
+        --------
+            tris: list of entity handles, EHs for the triangles for
+                which all three vertices are in the verts list.
+        """
+
+        tris_all = self.mb.get_adjacencies(verts_good, 2, op_type=1)
+        verts_all = self.mb.get_connectivity(tris_all)
+        verts_bad = set(verts_all) - set(verts_good)
+
+        if verts_bad:
+            # not an empty set
+            tris_bad = self.mb.get_adjacencies(list(verts_bad), 2, op_type=1)
+            tris_good = set(tris_all) - set(tris_bad)
+            return list(tris_good)
+        else:
+            # empty set so all tris are good
+            return tris_all
 
     def __list_coords(self, eh, invert=False):
         """Gets list of all coords as a list of tuples for an entity
@@ -596,35 +619,7 @@ class IsoSurfGeom(object):
         return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, \
             match_dict
 
-    def __get_surf_triangles(self, verts_good):
-        """This function will take a set of vertice entity handles and
-        return the set of triangles for which all vertices of all
-        triangles are in the set of vertices.
 
-        Input:
-        ------
-            verts_good: list of entity handles, list of vertices to
-                compare against. Only triangles will be returned whose
-                complete set of vertices are in this list.
-
-        Returns:
-        --------
-            tris: list of entity handles, EHs for the triangles for
-                which all three vertices are in the verts list.
-        """
-
-        tris_all = self.mb.get_adjacencies(verts_good, 2, op_type=1)
-        verts_all = self.mb.get_connectivity(tris_all)
-        verts_bad = set(verts_all) - set(verts_good)
-
-        if verts_bad:
-            # not an empty set
-            tris_bad = self.mb.get_adjacencies(list(verts_bad), 2, op_type=1)
-            tris_good = set(tris_all) - set(tris_bad)
-            return list(tris_good)
-        else:
-            # empty set so all tris are good
-            return tris_all
 
     def __compare_surfs(self, v1, v2):
         """finds coincident surfaces between two isovolumes.
