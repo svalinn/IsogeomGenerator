@@ -13,7 +13,6 @@ class TestIsogeom(unittest.TestCase):
         v.assign_levels(levels)
         assert(v.levels == exp)
 
-
     def test_generate_levels_linear(self):
         """generate linearly spaced levels"""
         v = vol.IsoVolume()
@@ -24,7 +23,6 @@ class TestIsogeom(unittest.TestCase):
 
         v.generate_levels(N, minN, maxN, log=False)
         assert(v.levels == exp)
-
 
     def test_generate_levels_log(self):
         """generate lograthmically spaced levels"""
@@ -47,7 +45,6 @@ class TestIsogeom(unittest.TestCase):
 
         v.generate_levels(N, minN, maxN, ratio=True)
         assert(v.levels == exp)
-
 
     def test_generate_levels_ratio_2(self):
         """generate levels by ratio, max not included"""
