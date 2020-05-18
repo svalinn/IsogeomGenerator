@@ -294,7 +294,7 @@ class IsoVolDatabase(object):
         read_levels().
         """
         # store levels as a string
-        level str = ""
+        level_str = ""
         for level in self.levels:
             level_str += str(level)
             level_str += "\n"
