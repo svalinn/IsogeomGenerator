@@ -328,12 +328,12 @@ class IsoSurfGeom(object):
         # get level information
         if levelfile is not None:
             # read from provided file
-            self.read_levels(levelfile)
+            self.__read_levels(levelfile)
         else:
             # locate file in database
             filepath = self.db + '/' + 'levelfile'
             if os.path.exisits(filepath):
-                self.read_levels(filepath)
+                self.__read_levels(filepath)
             else:
                 raise RuntimeError("levelfile does not exist in database: " +
                                    "{}. ".format(filepath) +
@@ -369,7 +369,7 @@ class IsoSurfGeom(object):
 
         self.__write_geometry(sname, sdir)
 
-    def read_levels(self, levelfile):
+    def __read_levels(self, levelfile):
         """Read level values from a file. One value per line only.
 
         Input:
