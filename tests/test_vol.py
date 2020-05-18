@@ -21,7 +21,7 @@ class TestIsogeom(unittest.TestCase):
         maxN = 15
         exp = [5., 7., 9., 11., 13., 15.]
 
-        v.generate_levels(N, minN, maxN, log=False)
+        v.generate_levels(N, minN, maxN, mode='lin')
         assert(v.levels == exp)
 
     def test_generate_levels_log(self):
@@ -32,7 +32,7 @@ class TestIsogeom(unittest.TestCase):
         maxN = 1e5
         exp = [1., 10., 1.e2, 1.e3, 1.e4, 1.e5]
 
-        v.generate_levels(N, minN, maxN, log=True)
+        v.generate_levels(N, minN, maxN, mode='log')
         assert(v.levels == exp)
 
     def test_generate_levels_ratio_1(self):
@@ -43,7 +43,7 @@ class TestIsogeom(unittest.TestCase):
         maxN = 625
         exp = [1., 5., 25., 125., 625.]
 
-        v.generate_levels(N, minN, maxN, ratio=True)
+        v.generate_levels(N, minN, maxN, mode='ratio')
         assert(v.levels == exp)
 
     def test_generate_levels_ratio_2(self):
@@ -54,5 +54,5 @@ class TestIsogeom(unittest.TestCase):
         maxN = 700
         exp = [1., 5., 25., 125., 625.]
 
-        v.generate_levels(N, minN, maxN, ratio=True)
+        v.generate_levels(N, minN, maxN, mode='ratio')
         assert(v.levels == exp)
