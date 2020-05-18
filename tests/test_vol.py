@@ -2,11 +2,11 @@ from IsogeomGenerator import vol
 import unittest
 
 
-class TestIsogeom(unittest.TestCase):
+class TestDatabase(unittest.TestCase):
 
     def test_assign_levels(self):
         """assign predetermined levels (out of order)"""
-        v = vol.IsoVolume()
+        v = vol.IsoVolDatabase()
         levels = [0.1, 0.2, 0.05]
         exp = sorted(levels)
 
@@ -15,7 +15,7 @@ class TestIsogeom(unittest.TestCase):
 
     def test_generate_levels_linear(self):
         """generate linearly spaced levels"""
-        v = vol.IsoVolume()
+        v = vol.IsoVolDatabase()
         N = 6
         minN = 5
         maxN = 15
@@ -26,7 +26,7 @@ class TestIsogeom(unittest.TestCase):
 
     def test_generate_levels_log(self):
         """generate lograthmically spaced levels"""
-        v = vol.IsoVolume()
+        v = vol.IsoVolDatabase()
         N = 6
         minN = 1
         maxN = 1e5
@@ -37,7 +37,7 @@ class TestIsogeom(unittest.TestCase):
 
     def test_generate_levels_ratio_1(self):
         """generate levels by ratio, max included"""
-        v = vol.IsoVolume()
+        v = vol.IsoVolDatabase()
         N = 5
         minN = 1
         maxN = 625
@@ -48,7 +48,7 @@ class TestIsogeom(unittest.TestCase):
 
     def test_generate_levels_ratio_2(self):
         """generate levels by ratio, max not included"""
-        v = vol.IsoVolume()
+        v = vol.IsoVolDatabase()
         N = 5
         minN = 1
         maxN = 700
