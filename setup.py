@@ -13,4 +13,7 @@ setup(
     long_description_content_type="text/markdown",
     url="https://github.com/kkiesling/IsogeomGenerator",
     packages=setuptools.find_packages(),
+    entry_points={
+        'console_scripts':
+        ['generate_isogeom=IsogeomGenerator.generate_isogeom:main']}
 )
