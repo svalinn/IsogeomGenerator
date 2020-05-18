@@ -85,11 +85,15 @@ class IsoVolDatabase(object):
         except:
             pass
 
+        # create volumes
         v.OpenDatabase(filename)
         print("Generating isovolumes...")
         self.__generate_vols()
         print("...Isovolumes files generated!")
         v.CloseComputeEngine()
+
+        # write levels to file in database
+        self.__write_levels()
 
     def assign_levels(self, levels):
         """User defines the contour levels to be used as the isosurfaces.
@@ -285,6 +289,21 @@ class IsoVolDatabase(object):
         # delete plots
         v.DeleteAllPlots()
 
+    def __write_levels(self):
+        """Write the final level values used to a file that can be used by
+        read_levels().
+        """
+        # store levels as a string
+        level str = ""
+        for level in self.levels:
+            level_str += str(level)
+            level_str += "\n"
+
+        # write to a file
+        filepath = self.db + '/levelfile'
+        with open(filepath, "w") as f:
+            f.write(level_str)
+
 
 class IsoSurfGeom(object):
     """MOAB step
@@ -334,7 +353,7 @@ class IsoSurfGeom(object):
             self.__read_levels(levelfile)
         else:
             # locate file in database
-            filepath = self.db + '/' + 'levelfile'
+            filepath = self.db + '/levelfile'
             if os.path.exisits(filepath):
                 self.__read_levels(filepath)
             else:
