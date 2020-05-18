@@ -10,20 +10,83 @@ from pymoab.rng import Range
 from pymoab.skinner import Skinner
 
 
-class IsoVolume(object):
-    """This class contains methods to create a DAGMC geometry of
-    isovolumes given any Cartesian mesh with tagged data.
-
-    Users should follow the following sequence to completely build a
-    geometry file:
-        (1) Set contour levels with assign_levels() or generate_levels()
-        (2) Generate the isovolume files using generate_volumes()
-        (3) Create the MOAB geometry with create_geometry()
-        (4) Write to a file with write_geometry()
+class IsoVolDatabase(object):
+    """VisIt Step
     """
 
     def __init__(self):
-        pass
+        # initialize levels list to be populated in various ways
+        self.levels = None
+
+    def generate_volumes(self, filename, data,
+                         dbname=os.getcwd()+"/tmp",
+                         levels=None, levelfile=None, genmode=None, N=None,
+                         minN=None, maxN=None):
+        """Creates an STL file for each isovolume. N+1 files are
+        generated and stored in the dbname folder.
+
+        Input:
+        ------
+            filename: string, path to vtk file with the mesh
+            data: string, name of the data whose values exist on the
+                mesh (will be used to generate isocontours and
+                isovolumes)
+            dbname: (optional), string, name of folder to store created
+                surface files. Must be absolute path!
+                default: a folder called 'tmp' in the current directory
+
+            level information: One of the following 3 sets of inputs must be
+                provided if one of the level assignment methods was not called
+                previously (assign_levels(), read_levels(), generate_levels()):
+                Option 1: Assign levels
+                    levels: list of floats, list of user-defined values to use
+                        for contour levels
+                Option 2: Read levels from file
+                    levelfile: str, relative path to file with level
+                        information. Each line of the file should have exactly
+                        one float to be used as a level value.
+                Option 3: Generate Levels
+                    genmode: str, options are 'lin', 'log', or 'ratio'.
+                        lin: N linearly spaced values between minN and maxN
+                        log: N logarithmically spaced values between minN and
+                            maxN
+                        ratio: levels that are spaced by a constant ratio N.
+                            minN will be used as minimum level value and the
+                            maximum level value is less than or equal to maxN.
+                    N: int or float, number of levels (int) to generate (lin
+                        or log mode); or the ratio (float) to use to separate
+                        levels (ratio mode).
+                    minN: float, minimum level value
+                    maxN: float, maximum level value
+        """
+        self.data = data
+        self.db = dbname
+
+        # gather level information
+        if self.levels is None:
+            # level information has not been previously assigned
+            elif levels is not None:
+                self.assign_levels(levels)
+            elif levelfile is not None:
+                self.read_levels(levelfile)
+            elif genmode is not None:
+                if (N is None) or (minN is None) or (maxN is None):
+                    raise RuntimeError("Generating levels requires input " +
+                                       "values for N, minN, and maxN")
+                else:
+                    self.generate_levels(N, minN, maxN, mode=genmode)
+                else:
+                    raise RuntimeError("Information for assigning levels " +
+                                       "must be provided.")
+
+        # Generate isovolumes using VisIT
+        try:
+            v.LaunchNowin()
+        v.OpenDatabase(filename)
+        print("Generating isovolumes...")
+        self.__generate_vols()
+        print("...Isovolumes files generated!")
+        v.CloseComputeEngine()
 
     def assign_levels(self, levels):
         """User defines the contour levels to be used as the isosurfaces.
@@ -93,110 +156,6 @@ class IsoVolume(object):
         else:
             raise RuntimeError("Level generation mode {} not " +
                                "recognized.".format(mode))
-
-    def generate_volumes(self, filename, data,
-                         dbname=os.getcwd()+"/tmp"):
-        """Creates an STL file for each isovolume. N+1 files are
-        generated and stored in the dbname folder.
-
-        Input:
-        ------
-            filename: string, path to vtk file with the mesh
-            data: string, name of the data whose values exist on the
-                mesh (will be used to generate isocontours and
-                isovolumes)
-            dbname: (optional), string, name of folder to store created
-                surface files. Must be absolute path!
-                default: a folder called 'tmp' in the current directory
-        """
-
-        self.data = data
-        self.db = dbname
-
-        # make sure levels have been set before proceding
-        try:
-            self.levels
-        except:
-            print("ERROR: No contour levels have been set. " +
-                  "Please use assign_levels or generate_levels to set.")
-            sys.exit()
-
-        # Generate isovolumes using VisIT
-        try:
-            v.LaunchNowin()
-        except:
-            print("VisIt already launched.")
-        v.OpenDatabase(filename)
-        print("Generating isovolumes...")
-        self.__generate_vols()
-        print("...Isovolumes files generated!")
-        v.CloseComputeEngine()
-
-    def create_geometry(self, tag_for_viz=False, norm=1.0, merge_tol=1e-5,
-                        dbname=os.getcwd()+"/tmp", tags=None,
-                        sname=None, sdir=None):
-        """Over-arching function to do all steps to create a single
-        isosurface geometry for DAGMC using pyMOAB.
-
-        Input:
-        ------
-            tag_for_viz: bool (optional), True to tag each triangle on
-                every surface with the data value. Needed to visualize
-                values in VisIt. Default=False.
-            norm: float (optional), default=1. All data values will be
-                multiplied by the normalization factor.
-            merge_tol: float (option), default=1e-5 cm. Merge tolerance for
-                mesh based merge of coincident surfaces. Recommended to be
-                1/10th the mesh voxel size.
-            dbname: (optional), string, name of folder to store created
-                surface files. Must be absolute path.
-                default: a folder called 'tmp' in the current directory
-            tags: (optional), dict, set of names and values to tag on the
-                geometry root set. Dictionary should be structured with each
-                key as a tag name (str) and with a single value (float) for the
-                tag. Example: {'NAME1':1.0, 'NAME2': 2.0}
-            sname: (optional), str, name of file (including extension) for the
-                written geometry file. Acceptable file types are VTK and H5M.
-                Default name: isogeom.h5m
-        """
-
-        self.norm = norm
-        self.merge_tol = merge_tol
-        self.db = dbname
-
-        # Step 1: Separate Isovolume Surfaces
-        self.mb = core.Core()
-        self.isovol_meshsets = {}
-        print("Separating isovolumes...")
-        self.__separate_isovols()
-        print("...Separation complete!")
-
-        # Step 2: Merge Coincident Surfaces
-        print("Merging surfaces...")
-        self.__imprint_merge()
-        print("...Merging complete!")
-
-        # Step 3: Assign Parent-Child Relationship
-        self.__make_family()
-
-        if tag_for_viz:
-            print('Tagging triangles with data...')
-            self.__tag_for_viz()
-            print('... tags complete')
-
-        if tags is not None:
-            self.__set_tags(tags)
-
-        if sdir is None:
-            sdir = self.dbname
-        if sname is None:
-            sname = 'isogeom.h5m'
-
-        self.__write_geometry(sname, sdir)
-
-    ################################################################
-    ################# Extra functions for VisIT step ###############
-    ################################################################
 
     def __plot_pseudocolor(self):
         """Plots the data on a pseudocolor plot to use."""
@@ -323,9 +282,107 @@ class IsoVolume(object):
         # delete plots
         v.DeleteAllPlots()
 
-    ##############################################################
-    ############## Functions for PyMOAB step #####################
-    ##############################################################
+
+class IsoSurfGeom(object):
+    """MOAB step
+    """
+
+    def __init__(self):
+        pass
+
+    def create_geometry(self, tag_for_viz=False, norm=1.0, merge_tol=1e-5,
+                        dbname=os.getcwd()+"/tmp", levelfile=None, tags=None,
+                        sname=None, sdir=None):
+        """Over-arching function to do all steps to create a single
+        isosurface geometry for DAGMC using pyMOAB.
+
+        Input:
+        ------
+            tag_for_viz: bool (optional), True to tag each triangle on
+                every surface with the data value. Needed to visualize
+                values in VisIt. Default=False.
+            norm: float (optional), default=1. All data values will be
+                multiplied by the normalization factor.
+            merge_tol: float (option), default=1e-5 cm. Merge tolerance for
+                mesh based merge of coincident surfaces. Recommended to be
+                1/10th the mesh voxel size.
+            dbname: (optional), string, name of folder to store created
+                surface files. Must be absolute path.
+                default: a folder called 'tmp' in the current directory
+            levelfile: str (optional), relative path to file with level
+                information. Each line of the file should have exactly
+                one float to be used as a level value. If not provided, it
+                will be looked for in the database folder (dbbame).
+            tags: (optional), dict, set of names and values to tag on the
+                geometry root set. Dictionary should be structured with each
+                key as a tag name (str) and with a single value (float) for the
+                tag. Example: {'NAME1':1.0, 'NAME2': 2.0}
+            sname: (optional), str, name of file (including extension) for the
+                written geometry file. Acceptable file types are VTK and H5M.
+                Default name: isogeom.h5m
+        """
+        self.norm = norm
+        self.merge_tol = merge_tol
+        self.db = dbname
+
+        # get level information
+        if levelfile is not None:
+            # read from provided file
+            self.read_levels(levelfile)
+        else:
+            # locate file in database
+            filepath = self.db + '/' + 'levelfile'
+            if os.path.exisits(filepath):
+                self.read_levels(filepath)
+            else:
+                raise RuntimeError("levelfile does not exist in database: " +
+                                   "{}. ".format(filepath) +
+                                   "Please provide levelfile location.")
+
+        # Step 1: Separate Isovolume Surfaces
+        self.mb = core.Core()
+        self.isovol_meshsets = {}
+        print("Separating isovolumes...")
+        self.__separate_isovols()
+        print("...Separation complete!")
+
+        # Step 2: Merge Coincident Surfaces
+        print("Merging surfaces...")
+        self.__imprint_merge()
+        print("...Merging complete!")
+
+        # Step 3: Assign Parent-Child Relationship
+        self.__make_family()
+
+        if tag_for_viz:
+            print('Tagging triangles with data...')
+            self.__tag_for_viz()
+            print('... tags complete')
+
+        if tags is not None:
+            self.__set_tags(tags)
+
+        if sdir is None:
+            sdir = self.dbname
+        if sname is None:
+            sname = 'isogeom.h5m'
+
+        self.__write_geometry(sname, sdir)
+
+    def read_levels(self, levelfile):
+        """Read level values from a file. One value per line only.
+
+        Input:
+        ------
+            levelfile: str, relative path to file with level information.
+        """
+        levels = []
+        f = open(levelfile, 'r')
+        lines = f.readlines()
+        for line in lines:
+            levels.append(float(line))
+
+        self.levels = sorted(levels)
 
     def __separate(self, iv_info):
         """Separates a given surface into separate surfaces. All
