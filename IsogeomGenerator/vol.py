@@ -65,7 +65,7 @@ class IsoVolDatabase(object):
         # gather level information
         if self.levels is None:
             # level information has not been previously assigned
-            elif levels is not None:
+            if levels is not None:
                 self.assign_levels(levels)
             elif levelfile is not None:
                 self.read_levels(levelfile)
@@ -75,13 +75,16 @@ class IsoVolDatabase(object):
                                        "values for N, minN, and maxN")
                 else:
                     self.generate_levels(N, minN, maxN, mode=genmode)
-                else:
-                    raise RuntimeError("Information for assigning levels " +
-                                       "must be provided.")
+            else:
+                raise RuntimeError("Information for assigning levels " +
+                                   "must be provided.")
 
         # Generate isovolumes using VisIT
         try:
             v.LaunchNowin()
+        except:
+            pass
+
         v.OpenDatabase(filename)
         print("Generating isovolumes...")
         self.__generate_vols()
