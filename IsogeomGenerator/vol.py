@@ -15,9 +15,9 @@ class IsoVolDatabase(object):
     """VisIt Step
     """
 
-    def __init__(self):
+    def __init__(self, levels=None):
         # initialize levels list to be populated in various ways
-        self.levels = None
+        self.levels = levels
 
     def generate_volumes(self, filename, data,
                          dbname=os.getcwd()+"/tmp",

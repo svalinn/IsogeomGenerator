@@ -204,6 +204,19 @@ def test_generate_volumes_preset():
     levels = [8e-07, 1.2e-6, 1.7e-06]
     g.levels = levels
     db = test_dir + "/test-set"
+def test_generate_volumes_init():
+    """Set levels in the init"""
+    # Expected results:
+    exp_vols_dir = test_dir + "/vols-assign/vols"
+    common_files = [f for f in listdir(exp_vols_dir)
+                    if isfile(join(exp_vols_dir, f))]
+    exp_levelfile = test_dir + "/vols-assign/levelfile"
+    # Generate the volumes
+    levels = [8e-07, 1.2e-6, 1.7e-06]
+    g = vol.IsoVolDatabase(levels)
+    db = test_dir + "/test-init"
+    if os.path.isdir(db):
+        shutil.rmtree(db)
     g.generate_volumes(ww_file, 'ww_n', dbname=db)
     gen_vols_dir = db + "/vols"
     levelfile = db + "/levelfile"
