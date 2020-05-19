@@ -181,16 +181,6 @@ class IsoVolDatabase(object):
         v.SetPlotOptions(att)
         v.DrawPlots()
 
-    def __update_levels(self, value):
-        """Removes a value from the levels list and resets N.
-
-        Input:
-        ------
-            value: float, value to remove
-        """
-
-        self.levels.remove(value)
-
     def __get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
         outer surface of the volume as STL.
@@ -240,10 +230,10 @@ class IsoVolDatabase(object):
                     skip_max = True
                 else:
                     ubound = self.levels[index + 1]
-                self.__update_levels(ubound_old)
+                self.levels.remove(ubound_old)
             else:
                 # it is the arbitrary upper level set and is not needed
-                self.__update_levels(self.levels[-1])
+                self.levels.remove(self.levels[-1])
 
         # delete the operators
         v.RemoveAllOperators()
