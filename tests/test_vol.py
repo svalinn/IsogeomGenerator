@@ -187,7 +187,7 @@ def test_generate_volumes_genmode_error():
     g = vol.IsoVolDatabase()
     # check error
     with pytest.raises(RuntimeError) as error_info:
-        g.generate_volumes(ww_file, 'ww_n', dbname=db, genmode='lin')
+        g.generate_volumes(ww_file, 'ww_n', genmode='lin')
 
 
 def test_generate_volumes_preset():
