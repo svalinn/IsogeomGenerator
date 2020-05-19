@@ -40,6 +40,7 @@ def test_generate_levels(N, minN, maxN, mode, exp):
 
 
 def test_generate_levels_error():
+    """generate levels with invalid mode"""
     g = vol.IsoVolDatabase()
     with pytest.raises(RuntimeError) as error_info:
         g.generate_levels(6, 5, 1e5, mode='nonsense')
