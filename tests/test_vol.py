@@ -126,8 +126,45 @@ def test_generate_volumes_levelfile():
     shutil.rmtree(db)
 
 
-def test_generate_volumes_genmode():
-    pass
+def test_generate_volumes_genmode_pass():
+    """Generate levels at time of generating volumes - all input included"""
+    # Expected results:
+    exp_vols_dir = test_dir + "/vols-1/vols"
+    common_files = [f for f in listdir(exp_vols_dir)
+                    if isfile(join(exp_vols_dir, f))]
+    exp_levelfile = test_dir + "/vols-1/levelfile"
+    # Generate the volumes
+    g = vol.IsoVolDatabase()
+    db = test_dir + "/test-gen"
+    g.generate_volumes(ww_file, 'ww_n', dbname=db, N=4, minN=8.e-7,
+                       maxN=1.7e-6, genmode='lin')
+    gen_vols_dir = db + "/vols"
+    levelfile = db + "/levelfile"
+    # check that files produced are the same
+    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert(match_list == common_files)
+    assert(non_match == [])
+    # check that the level files are the same
+    res = filecmp.cmp(exp_levelfile, levelfile)
+    assert(res)
+    shutil.rmtree(db)
+
+
+def test_generate_volumes_genmode_error():
+    """Generate levels at time of generating volumes - missing input"""
+    # Expected results:
+    exp_vols_dir = test_dir + "/vols-1/vols"
+    common_files = [f for f in listdir(exp_vols_dir)
+                    if isfile(join(exp_vols_dir, f))]
+    exp_levelfile = test_dir + "/vols-1/levelfile"
+    # Generate the volumes
+    g = vol.IsoVolDatabase()
+    db = test_dir + "/test-gen"
+    # check error
+    with pytest.raises(RuntimeError) as error_info:
+        g.generate_volumes(ww_file, 'ww_n', dbname=db, genmode='lin')
 
 
 def test_generate_volumes_preset():
