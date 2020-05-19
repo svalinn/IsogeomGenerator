@@ -74,12 +74,7 @@ def test_generate_volumes(N, minN, maxN, id):
     shutil.rmtree(db)
 
 
-    # def test_generate_volumes_single_level():
-    #     # test that two levels are generated if a single value is passed
-    #     # (code needs work to accomplish this)
-    #     pass
-
-    def test_generate_volumes_no_levels(self):
-        """Try to generate volumes without assigning levels first and
-        catch error."""
-        pass
+def test_generate_volumes_no_levels(self):
+    """Try to generate volumes without assigning levels first and
+    catch error."""
+    pass
