@@ -225,15 +225,22 @@ class IsoVolDatabase(object):
         e.variables = self.data
         export_res = v.ExportDatabase(e)
 
+        skip_max = False
         if export_res == 0:
             # export not successful because there was no data
             # get new upper bound
-            warn_message = "Warning: no data to export between " +\
-                "{} and {}.\n".format(lbound, ubound) +\
-                "Increasing upper bound to next selected level."
+            warn_message = "Warning: no data to export between " \
+                + "{} and {}.\n".format(lbound, ubound) \
+                + "Increasing upper bound to next selected level."
             print(warn_message)
             if ubound in self.levels:
-                self.__update_levels(ubound)
+                index = self.levels.index(ubound)
+                ubound_old = ubound
+                if ubound == max(self.levels):
+                    skip_max = True
+                else:
+                    ubound = self.levels[index + 1]
+                self.__update_levels(ubound_old)
             else:
                 # it is the arbitrary upper level set and is not needed
                 self.__update_levels(self.levels[-1])
@@ -241,7 +248,7 @@ class IsoVolDatabase(object):
         # delete the operators
         v.RemoveAllOperators()
 
-        return export_res, ubound
+        return export_res, ubound, skip_max
 
     def __generate_vols(self):
         """Generates the isosurface volumes between the contour levels.
@@ -261,30 +268,31 @@ class IsoVolDatabase(object):
         # plot the pseudocolor data inorder to get volumes
         self.__plot_pseudocolor()
 
-        # get the minimum isovolume level
-        lbound = 0.0
-        ubound = self.levels[0]
-        self.__get_isovol(lbound, ubound, 0)
-
         # iterate over all isovolume levels
-        for l in self.levels[1:]:
+        for i, l in enumerate(self.levels):
             res = 0
             while res == 0:
-                # get index of current level
-                i = self.levels.index(l)
 
-                # assign bounds
-                lbound = self.levels[i-1]
-                ubound = l
+                # lower bound
+                if i == 0:
+                    lbound = 0.0
+                else:
+                    lbound = self.levels[i-1]
+
+                # upper bound
+                ubound = self.levels[i]
 
                 # get volume
                 # res = 0 if no level found (should update to next level)
-                res = self.__get_isovol(lbound, ubound, i)
+                res, ubound, skip_max = self.__get_isovol(lbound, ubound, i)
+                if skip_max is True:
+                    res = 1
 
         # get maximum isovolume level
-        lbound = self.levels[-1]
-        ubound = 1.e200
-        self.__get_isovol(lbound, ubound, i+1)
+        if not skip_max:
+            lbound = self.levels[-1]
+            ubound = 1.e200
+            self.__get_isovol(lbound, ubound, i+1)
 
         # delete plots
         v.DeleteAllPlots()
