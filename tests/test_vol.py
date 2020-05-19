@@ -83,7 +83,9 @@ def test_generate_volumes(N, minN, maxN, id):
     g = vol.IsoVolDatabase()
     g.generate_levels(N, minN, maxN, mode='lin')
     db = test_dir + "/test-{}".format(id)
-    g.generate_volumes(ww_file, 'ww_n', dbname=db)
+    # data out of range should produce warning
+    with pytest.warns(None) as record:
+        g.generate_volumes(ww_file, 'ww_n', dbname=db)
     gen_vols_dir = db + "/vols"
     levelfile = db + "/levelfile"
     # check that files produced are the same

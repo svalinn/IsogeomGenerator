@@ -263,7 +263,7 @@ class IsoVolDatabase(object):
             warn_message = "Warning: no data to export between " \
                 + "{} and {}.\n".format(lbound, ubound) \
                 + "Increasing upper bound to next selected level."
-            print(warn_message)
+            warnings.warn(warn_message)
             if ubound in self.levels:
                 index = self.levels.index(ubound)
                 ubound_old = ubound
