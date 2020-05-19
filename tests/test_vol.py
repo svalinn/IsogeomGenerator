@@ -101,7 +101,29 @@ def test_generate_volumes_assign_levels():
 
 
 def test_generate_volumes_levelfile():
-    pass
+    """Read levels from file at time of generating levels"""
+    # Expected results:
+    exp_vols_dir = test_dir + "/vols-assign/vols"
+    common_files = [f for f in listdir(exp_vols_dir)
+                    if isfile(join(exp_vols_dir, f))]
+    exp_levelfile = test_dir + "/vols-assign/levelfile"
+    # Generate the volumes
+    g = vol.IsoVolDatabase()
+    levelfile_in = test_dir + "/vols-assign/levelfile"
+    db = test_dir + "/test-read"
+    g.generate_volumes(ww_file, 'ww_n', dbname=db, levelfile=levelfile_in)
+    gen_vols_dir = db + "/vols"
+    levelfile_out = db + "/levelfile"
+    # check that files produced are the same
+    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert(match_list == common_files)
+    assert(non_match == [])
+    # check that the level files are the same
+    res = filecmp.cmp(exp_levelfile, levelfile_out)
+    assert(res)
+    shutil.rmtree(db)
 
 
 def test_generate_volumes_genmode():
