@@ -1,6 +1,7 @@
 import sys
 import os
 import shutil
+import warnings
 import numpy as np
 import math as m
 
@@ -178,12 +179,15 @@ class IsoVolDatabase(object):
         """
 
         # create folder to store data if it does not already exist
-        if not os.path.isdir(self.db):
-            os.mkdir(self.db)
-        if os.path.isdir(self.db + "/vols/"):
-            # make sure folder is empty by removing it first
-            shutil.rmtree(self.db + "/vols/")
-        os.mkdir(self.db + "/vols/")
+        i = 0
+        while os.path.isdir(self.db):
+            i += 1
+            new_dir = self.db.rstrip("/").rstrip("-{}".format(i-1)) +\
+                "-{}/".format(i)
+            warnings.warn("Database {} exists. Using {} " +
+                          "instead.".format(self.db, new_dir))
+            self.db = new_dir
+        os.makedirs(self.db + "/vols/")
 
         # plot the pseudocolor data in order to get volumes
         v.AddPlot("Pseudocolor", self.data)

@@ -222,3 +222,21 @@ def test_generate_volumes_no_levels():
     g = vol.IsoVolDatabase()
     with pytest.raises(RuntimeError) as error_info:
         g.generate_volumes(ww_file, 'ww_n')
+
+
+def test_generate_volumes_dir_exists():
+    """Catch warning if database already exists"""
+    # Generate the volumes
+    g = vol.IsoVolDatabase()
+    g.levels = [8e-07, 1.2e-6, 1.7e-06]
+    # create exisit dir
+    db = test_dir + "test-exist"  # already exists
+    if os.path.isdir(db):
+        shutil.rmtree(db)
+    os.mkdir(db)
+    with pytest.warns(None) as record:
+        g.generate_volumes(ww_file, 'ww_n', dbname=db)
+    new_db = test_dir + "/test-exist-1"
+    assert(os.path.isdir(new_db))
+    shutil.rmtree(db)
+    shutil.rmtree(new_db)
