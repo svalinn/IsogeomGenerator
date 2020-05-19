@@ -172,19 +172,7 @@ class IsoVolDatabase(object):
 
     def __plot_pseudocolor(self):
         """Plots the data on a pseudocolor plot to use."""
-
-        # add the pseudocolor plot to contour
         v.AddPlot("Pseudocolor", self.data)
-        att = v.PseudocolorAttributes()
-
-        # min/max for the pseudocolor plot
-        att.minFlag = True
-        att.min = min(self.levels)
-        att.maxFlag = True
-        att.max = max(self.levels)
-
-        # plot
-        v.SetPlotOptions(att)
         v.DrawPlots()
 
     def __get_isovol(self, lbound, ubound, i):
