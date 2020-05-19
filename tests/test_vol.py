@@ -22,55 +22,24 @@ def test_assign_levels():
     assert(v.levels == exp)
 
 
-def test_generate_levels_linear():
-    """generate linearly spaced levels"""
+# Generate Levels parametrized tests:
+# linear: (6, 5, 15, 'lin', [5., 7., 9., 11., 13., 15.]
+# log: (6, 1, 1e5, 'log', [1, 10, 1e2, 1e3, 1e4, 1e5])
+# ratio, max included: (5, 1, 625, 'ratio', [1., 5., 25., 125., 625.])
+# ratio, max not included: (5, 1, 700, 'ratio', [1., 5., 25., 125., 625.])
+@pytest.mark.parametrize("N,minN,maxN,mode,exp",
+                         [(6, 5, 15, 'lin', [5., 7., 9., 11., 13., 15.]),
+                          (6, 1, 1e5, 'log', [1, 10, 1e2, 1e3, 1e4, 1e5]),
+                          (5, 1, 625, 'ratio', [1., 5., 25., 125., 625.]),
+                          (5, 1, 700, 'ratio', [1., 5., 25., 125., 625.])])
+def test_generate_levels(N, minN, maxN, mode, exp):
+    """generate levels with different modes"""
     v = vol.IsoVolDatabase()
-    N = 6
-    minN = 5
-    maxN = 15
-    exp = [5., 7., 9., 11., 13., 15.]
-
-    v.generate_levels(N, minN, maxN, mode='lin')
+    v.generate_levels(N, minN, maxN, mode=mode)
     assert(v.levels == exp)
 
 
-def test_generate_levels_log():
-    """generate lograthmically spaced levels"""
-    v = vol.IsoVolDatabase()
-    N = 6
-    minN = 1
-    maxN = 1e5
-    exp = [1., 10., 1.e2, 1.e3, 1.e4, 1.e5]
-
-    v.generate_levels(N, minN, maxN, mode='log')
-    assert(v.levels == exp)
-
-
-def test_generate_levels_ratio_1():
-    """generate levels by ratio, max included"""
-    v = vol.IsoVolDatabase()
-    N = 5
-    minN = 1
-    maxN = 625
-    exp = [1., 5., 25., 125., 625.]
-
-    v.generate_levels(N, minN, maxN, mode='ratio')
-    assert(v.levels == exp)
-
-
-def test_generate_levels_ratio_2():
-    """generate levels by ratio, max not included"""
-    v = vol.IsoVolDatabase()
-    N = 5
-    minN = 1
-    maxN = 700
-    exp = [1., 5., 25., 125., 625.]
-
-    v.generate_levels(N, minN, maxN, mode='ratio')
-    assert(v.levels == exp)
-
-
-# parametrized tests:
+# Generate Volumes parametrized tests:
 # Min and Max w/in data bounds: (4, 8.e-7, 1.7e-6, 1)
 # Max out of data bounds: (4, 8.e-7, 3.e-6, 2)
 # Min out of data bounds: (4, 5.e-7, 1.7e-6, 3)
@@ -80,8 +49,7 @@ def test_generate_levels_ratio_2():
                                             (4, 5.e-7, 1.7e-6, 3),
                                             (4, 5.e-7, 3.e-6, 4)])
 def test_generate_volumes(N, minN, maxN, id):
-    """Generate all volume files when min and max are both within
-    range of the data"""
+    """Generate all isovolume files with different bounds"""
     # Expected results:
     exp_vols_dir = test_dir + "/vols-{}/vols".format(id)
     common_files = [f for f in listdir(exp_vols_dir)
