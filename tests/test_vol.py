@@ -39,6 +39,12 @@ def test_generate_levels(N, minN, maxN, mode, exp):
     assert(v.levels == exp)
 
 
+def test_generate_levels_error():
+    v = vol.IsoVolDatabase()
+    with pytest.raises(RuntimeError) as error_info:
+        v.generate_levels(6, 5, 1e5, mode='nonsense')
+
+
 # Generate Volumes parametrized tests:
 # Min and Max w/in data bounds: (4, 8.e-7, 1.7e-6, 1)
 # Max out of data bounds: (4, 8.e-7, 3.e-6, 2)
