@@ -193,8 +193,8 @@ def test_generate_volumes_preset():
     shutil.rmtree(db)
 
 
-def test_generate_volumes_no_levels(self):
-    """Try to generate volumes without assigning levels first and
-    catch error."""
+def test_generate_volumes_no_levels():
+    """Try to generate volumes without assigning levels first (error)"""
     g = vol.IsoVolDatabase()
-    g.generate_volumes(ww_file, 'ww_n')
+    with pytest.raises(RuntimeError) as error_info:
+        g.generate_volumes(ww_file, 'ww_n')
