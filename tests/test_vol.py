@@ -14,12 +14,12 @@ ww_file = test_dir + "cwwm.vtk"
 
 def test_assign_levels():
     """assign predetermined levels (out of order)"""
-    v = vol.IsoVolDatabase()
+    g = vol.IsoVolDatabase()
     levels = [0.1, 0.2, 0.05]
     exp = sorted(levels)
 
-    v.assign_levels(levels)
-    assert(v.levels == exp)
+    g.assign_levels(levels)
+    assert(g.levels == exp)
 
 
 # Generate Levels parametrized tests:
@@ -34,15 +34,15 @@ def test_assign_levels():
                           (5, 1, 700, 'ratio', [1., 5., 25., 125., 625.])])
 def test_generate_levels(N, minN, maxN, mode, exp):
     """generate levels with different modes"""
-    v = vol.IsoVolDatabase()
-    v.generate_levels(N, minN, maxN, mode=mode)
-    assert(v.levels == exp)
+    g = vol.IsoVolDatabase()
+    g.generate_levels(N, minN, maxN, mode=mode)
+    assert(g.levels == exp)
 
 
 def test_generate_levels_error():
-    v = vol.IsoVolDatabase()
+    g = vol.IsoVolDatabase()
     with pytest.raises(RuntimeError) as error_info:
-        v.generate_levels(6, 5, 1e5, mode='nonsense')
+        g.generate_levels(6, 5, 1e5, mode='nonsense')
 
 
 # Generate Volumes parametrized tests:
