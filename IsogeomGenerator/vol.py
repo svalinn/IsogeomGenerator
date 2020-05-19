@@ -170,11 +170,6 @@ class IsoVolDatabase(object):
             raise RuntimeError("Level generation mode {} not " +
                                "recognized.".format(mode))
 
-    def __plot_pseudocolor(self):
-        """Plots the data on a pseudocolor plot to use."""
-        v.AddPlot("Pseudocolor", self.data)
-        v.DrawPlots()
-
     def __get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
         outer surface of the volume as STL.
@@ -249,8 +244,9 @@ class IsoVolDatabase(object):
             shutil.rmtree(self.db + "/vols/")
         os.mkdir(self.db + "/vols/")
 
-        # plot the pseudocolor data inorder to get volumes
-        self.__plot_pseudocolor()
+        # plot the pseudocolor data in order to get volumes
+        v.AddPlot("Pseudocolor", self.data)
+        v.DrawPlots()
 
         # iterate over all isovolume levels
         for i, l in enumerate(self.levels):
