@@ -892,8 +892,6 @@ class IsoSurfGeom(object):
 
         vol_id = 0
         surf_id = 0
-        curve_id = 0
-
         for v in self.isovol_meshsets.keys():
             vol_eh = v[1]
 
