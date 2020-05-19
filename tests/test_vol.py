@@ -17,7 +17,6 @@ def test_assign_levels():
     g = vol.IsoVolDatabase()
     levels = [0.1, 0.2, 0.05]
     exp = sorted(levels)
-
     g.assign_levels(levels)
     assert(g.levels == exp)
 
