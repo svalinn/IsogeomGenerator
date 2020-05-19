@@ -177,7 +177,6 @@ class IsoVolDatabase(object):
         Files will be named based on their index corresponding to their
         level values (0.stl is lowest values).
         """
-
         # create folder to store data if it does not already exist
         i = 0
         while os.path.isdir(self.db):
@@ -232,7 +231,6 @@ class IsoVolDatabase(object):
             ubound: float, upper boundary value for the isovolume
             i: int, surface number
         """
-
         # generate isovolume
         v.AddOperator("Isovolume")
         att = v.IsovolumeAttributes()
@@ -256,6 +254,7 @@ class IsoVolDatabase(object):
         e.variables = self.data
         export_res = v.ExportDatabase(e)
 
+        # check if exporting was successful or not and adjust values
         skip_max = False
         if export_res == 0:
             # export not successful because there was no data
