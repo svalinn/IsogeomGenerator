@@ -14,7 +14,7 @@ jobs:
         steps:
             - checkout
             - run:
-                - command: |
+                command: |
                     pip install coverage
                     coverage run --source=./IsogeomGenerator/ --omit=./IsogeomGenerator/__init__.py -m pytest
                     coverage report
