@@ -13,11 +13,12 @@ jobs:
             - image: svalinn/pymoab-visit-py2-18.04
         steps:
             - checkout
-            - command: |
-                pip install coverage
-                coverage run --source=./IsogeomGenerator/ --omit=./IsogeomGenerator/__init__.py -m pytest
-                coverage report
-                coverage html
+            - run:
+                - command: |
+                    pip install coverage
+                    coverage run --source=./IsogeomGenerator/ --omit=./IsogeomGenerator/__init__.py -m pytest
+                    coverage report
+                    coverage html
             - store_artifacts:
                 path: htmlcov
 
