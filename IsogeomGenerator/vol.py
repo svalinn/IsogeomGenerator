@@ -242,9 +242,7 @@ class IsoVolDatabase(object):
         v.AddOperator("ExternalSurface")
 
         # draw plot
-        draw_res = v.DrawPlots()
-        if draw_res == 0:
-            sys.exit("Error with producing isovolume")
+        v.DrawPlots()
 
         # export current volume to folder
         e = v.ExportDBAttributes()
