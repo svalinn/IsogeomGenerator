@@ -83,6 +83,8 @@ def test_generate_volumes(N, minN, maxN, id):
     g = vol.IsoVolDatabase()
     g.generate_levels(N, minN, maxN, mode='lin')
     db = test_dir + "/test-{}".format(id)
+    if os.path.isdir(db):
+        shutil.rmtree(db)
     # data out of range should produce warning
     with pytest.warns(None) as record:
         g.generate_volumes(ww_file, 'ww_n', dbname=db)
@@ -111,6 +113,8 @@ def test_generate_volumes_assign_levels():
     g = vol.IsoVolDatabase()
     levels = [8e-07, 1.2e-6, 1.7e-06]
     db = test_dir + "/test-assign"
+    if os.path.isdir(db):
+        shutil.rmtree(db)
     g.generate_volumes(ww_file, 'ww_n', dbname=db, levels=levels)
     gen_vols_dir = db + "/vols"
     levelfile = db + "/levelfile"
@@ -137,6 +141,8 @@ def test_generate_volumes_levelfile():
     g = vol.IsoVolDatabase()
     levelfile_in = test_dir + "/vols-assign/levelfile"
     db = test_dir + "/test-read"
+    if os.path.isdir(db):
+        shutil.rmtree(db)
     g.generate_volumes(ww_file, 'ww_n', dbname=db, levelfile=levelfile_in)
     gen_vols_dir = db + "/vols"
     levelfile_out = db + "/levelfile"
@@ -162,6 +168,8 @@ def test_generate_volumes_genmode_pass():
     # Generate the volumes
     g = vol.IsoVolDatabase()
     db = test_dir + "/test-gen"
+    if os.path.isdir(db):
+        shutil.rmtree(db)
     g.generate_volumes(ww_file, 'ww_n', dbname=db, N=4, minN=8.e-7,
                        maxN=1.7e-6, genmode='lin')
     gen_vols_dir = db + "/vols"
@@ -204,6 +212,23 @@ def test_generate_volumes_preset():
     levels = [8e-07, 1.2e-6, 1.7e-06]
     g.levels = levels
     db = test_dir + "/test-set"
+    if os.path.isdir(db):
+        shutil.rmtree(db)
+    g.generate_volumes(ww_file, 'ww_n', dbname=db)
+    gen_vols_dir = db + "/vols"
+    levelfile = db + "/levelfile"
+    # check that files produced are the same
+    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert(match_list == common_files)
+    assert(non_match == [])
+    # check that the level files are the same
+    res = filecmp.cmp(exp_levelfile, levelfile)
+    assert(res)
+    shutil.rmtree(db)
+
+
 def test_generate_volumes_init():
     """Set levels in the init"""
     # Expected results:
@@ -255,3 +280,15 @@ def test_generate_volumes_dir_exists():
     assert(os.path.isdir(new_db))
     shutil.rmtree(db)
     shutil.rmtree(new_db)
+
+
+def test__generate_vols():
+    pass
+
+
+def test__get_isovol():
+    pass
+
+
+def test__write_levels():
+    pass
