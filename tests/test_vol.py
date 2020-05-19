@@ -161,14 +161,36 @@ def test_generate_volumes_genmode_error():
     exp_levelfile = test_dir + "/vols-1/levelfile"
     # Generate the volumes
     g = vol.IsoVolDatabase()
-    db = test_dir + "/test-gen"
     # check error
     with pytest.raises(RuntimeError) as error_info:
         g.generate_volumes(ww_file, 'ww_n', dbname=db, genmode='lin')
 
 
 def test_generate_volumes_preset():
-    pass
+    """Set levels as member variable before generating vols"""
+    # Expected results:
+    exp_vols_dir = test_dir + "/vols-assign/vols"
+    common_files = [f for f in listdir(exp_vols_dir)
+                    if isfile(join(exp_vols_dir, f))]
+    exp_levelfile = test_dir + "/vols-assign/levelfile"
+    # Generate the volumes
+    g = vol.IsoVolDatabase()
+    levels = [8e-07, 1.2e-6, 1.7e-06]
+    g.levels = levels
+    db = test_dir + "/test-set"
+    g.generate_volumes(ww_file, 'ww_n', dbname=db)
+    gen_vols_dir = db + "/vols"
+    levelfile = db + "/levelfile"
+    # check that files produced are the same
+    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert(match_list == common_files)
+    assert(non_match == [])
+    # check that the level files are the same
+    res = filecmp.cmp(exp_levelfile, levelfile)
+    assert(res)
+    shutil.rmtree(db)
 
 
 def test_generate_volumes_no_levels(self):
