@@ -170,6 +170,54 @@ class IsoVolDatabase(object):
             raise RuntimeError("Level generation mode {} not " +
                                "recognized.".format(mode))
 
+    def __generate_vols(self):
+        """Generates the isosurface volumes between the contour levels.
+        Data files are exported as STLs and saved in the folder dbname.
+        Files will be named based on their index corresponding to their
+        level values (0.stl is lowest values).
+        """
+
+        # create folder to store data if it does not already exist
+        if not os.path.isdir(self.db):
+            os.mkdir(self.db)
+        if os.path.isdir(self.db + "/vols/"):
+            # make sure folder is empty by removing it first
+            shutil.rmtree(self.db + "/vols/")
+        os.mkdir(self.db + "/vols/")
+
+        # plot the pseudocolor data in order to get volumes
+        v.AddPlot("Pseudocolor", self.data)
+        v.DrawPlots()
+
+        # iterate over all isovolume levels
+        for i, l in enumerate(self.levels):
+            res = 0
+            while res == 0:
+
+                # lower bound
+                if i == 0:
+                    lbound = 0.0
+                else:
+                    lbound = self.levels[i-1]
+
+                # upper bound
+                ubound = self.levels[i]
+
+                # get volume
+                # res = 0 if no level found (should update to next level)
+                res, ubound, skip_max = self.__get_isovol(lbound, ubound, i)
+                if skip_max is True:
+                    res = 1
+
+        # get maximum isovolume level
+        if not skip_max:
+            lbound = self.levels[-1]
+            ubound = 1.e200
+            self.__get_isovol(lbound, ubound, i+1)
+
+        # delete plots
+        v.DeleteAllPlots()
+
     def __get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
         outer surface of the volume as STL.
@@ -228,54 +276,6 @@ class IsoVolDatabase(object):
         v.RemoveAllOperators()
 
         return export_res, ubound, skip_max
-
-    def __generate_vols(self):
-        """Generates the isosurface volumes between the contour levels.
-        Data files are exported as STLs and saved in the folder dbname.
-        Files will be named based on their index corresponding to their
-        level values (0.stl is lowest values).
-        """
-
-        # create folder to store data if it does not already exist
-        if not os.path.isdir(self.db):
-            os.mkdir(self.db)
-        if os.path.isdir(self.db + "/vols/"):
-            # make sure folder is empty by removing it first
-            shutil.rmtree(self.db + "/vols/")
-        os.mkdir(self.db + "/vols/")
-
-        # plot the pseudocolor data in order to get volumes
-        v.AddPlot("Pseudocolor", self.data)
-        v.DrawPlots()
-
-        # iterate over all isovolume levels
-        for i, l in enumerate(self.levels):
-            res = 0
-            while res == 0:
-
-                # lower bound
-                if i == 0:
-                    lbound = 0.0
-                else:
-                    lbound = self.levels[i-1]
-
-                # upper bound
-                ubound = self.levels[i]
-
-                # get volume
-                # res = 0 if no level found (should update to next level)
-                res, ubound, skip_max = self.__get_isovol(lbound, ubound, i)
-                if skip_max is True:
-                    res = 1
-
-        # get maximum isovolume level
-        if not skip_max:
-            lbound = self.levels[-1]
-            ubound = 1.e200
-            self.__get_isovol(lbound, ubound, i+1)
-
-        # delete plots
-        v.DeleteAllPlots()
 
     def __write_levels(self):
         """Write the final level values used to a file that can be used by
