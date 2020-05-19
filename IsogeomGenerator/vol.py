@@ -61,6 +61,7 @@ class IsoVolDatabase(object):
                     minN: float, minimum level value
                     maxN: float, maximum level value
         """
+        # initialize attributes
         self.data = data
         self.db = dbname
 
@@ -96,6 +97,9 @@ class IsoVolDatabase(object):
 
         # write levels to file in database
         self.__write_levels()
+
+        # set flag for indicating completion
+        self.completed = True
 
     def assign_levels(self, levels):
         """User defines the contour levels to be used as the isosurfaces.
@@ -296,17 +300,26 @@ class IsoSurfGeom(object):
     """MOAB step
     """
 
-    def __init__(self):
-        pass
+    def __init__(self, isovoldbobj=None):
+        # initialize with an IsoVolDatabase object to avoid needing level
+        # info
+        self.isovoldbobj = isovoldbobj
 
-    def create_geometry(self, tag_for_viz=False, norm=1.0, merge_tol=1e-5,
-                        dbname=os.getcwd()+"/tmp", levelfile=None, tags=None,
-                        sname=None, sdir=None):
+    def create_geometry(self, isovoldbobj=None, data=None,
+                        dbname=os.getcwd()+"/tmp",
+                        levelfile=None,  tag_for_viz=False, norm=1.0,
+                        merge_tol=1e-5, tags=None, sname=None, sdir=None):
         """Over-arching function to do all steps to create a single
         isosurface geometry for DAGMC using pyMOAB.
 
         Input:
         ------
+            isovoldbobj: IsoVolDatabase object (optional), pass a completed
+                IsoVolDatabase object with already set levels and database
+                information. If passed, will attempt to get necessary info
+                from the object instead of dbname and levelfile.
+            data: string (optional), name of the data. Required if no
+                isovoldbobj was provided.
             tag_for_viz: bool (optional), True to tag each triangle on
                 every surface with the data value. Needed to visualize
                 values in VisIt. Default=False.
@@ -330,23 +343,43 @@ class IsoSurfGeom(object):
                 written geometry file. Acceptable file types are VTK and H5M.
                 Default name: isogeom.h5m
         """
+        # if not preset in the init, assign here
+        if self.isovoldbobj is None:
+            self.isovoldbobj = isovoldbobj
+        # if object exists, then set necessary values
+        if self.isovoldbobj is not None:
+            if self.isovoldbobj.completed:
+                self.levels = self.isovoldbobj.levels
+                self.db = self.isovoldbobj.db
+                self.data = self.isovoldbobj.data
+            else:
+                raise RuntimeError("IsoVolDatabase object was provided " +
+                                   "without running 'generate_volumes()'.")
+        # object was not provided so other options are required
+        elif data is None:
+            raise RuntimeError("Data name must be provided.")
+        else:
+            # set data and database info
+            self.data = data
+            self.db = dbname
+
+            # get level information from file
+            if levelfile is not None:
+                # read from provided file
+                self.__read_levels(levelfile)
+            else:
+                # locate file in database
+                filepath = self.db + '/levelfile'
+                if os.path.exisits(filepath):
+                    self.__read_levels(filepath)
+                else:
+                    raise RuntimeError("levelfile does not exist in " +
+                                       " database: {}. ".format(filepath) +
+                                       "Please provide levelfile location.")
+
+        # set other optional variables
         self.norm = norm
         self.merge_tol = merge_tol
-        self.db = dbname
-
-        # get level information
-        if levelfile is not None:
-            # read from provided file
-            self.__read_levels(levelfile)
-        else:
-            # locate file in database
-            filepath = self.db + '/levelfile'
-            if os.path.exisits(filepath):
-                self.__read_levels(filepath)
-            else:
-                raise RuntimeError("levelfile does not exist in database: " +
-                                   "{}. ".format(filepath) +
-                                   "Please provide levelfile location.")
 
         # Step 0: initialize meshsets
         self.mb = core.Core()
@@ -402,7 +435,11 @@ class IsoSurfGeom(object):
     def __read_database(self):
         """Read the files from the database and initialize the meshset info.
         """
-        for f in sorted(os.listdir(self.db + "/vols/")):
+        file_list = sorted(os.listdir(self.db + "/vols/"))
+        if len(self.db) != len(file_list) + 1:
+            raise RuntimeError("Number of levels does not match number of " +
+                               "isovolume files in the database.")
+        for f in file_list:
             # get file name
             fpath = self.db + "/vols/" + f
             i = int(f.strip(".stl"))  # must be an integer
