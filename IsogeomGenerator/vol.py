@@ -629,8 +629,6 @@ class IsoSurfGeom(object):
         return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, \
             match_dict
 
-
-
     def __compare_surfs(self, v1, v2):
         """finds coincident surfaces between two isovolumes.
 
