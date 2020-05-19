@@ -540,7 +540,6 @@ class IsoSurfGeom(object):
             tris: list of entity handles, EHs for the triangles for
                 which all three vertices are in the verts list.
         """
-
         tris_all = self.mb.get_adjacencies(verts_good, 2, op_type=1)
         verts_all = self.mb.get_connectivity(tris_all)
         verts_bad = set(verts_all) - set(verts_good)
@@ -570,7 +569,6 @@ class IsoSurfGeom(object):
                 vertice and the value is a tuple of the coordinate
                 (x, y, z). If invert=True, keys and values are switched.
         """
-
         # list of all entity handles for all vertices
         all_verts_eh = self.mb.get_entities_by_type(eh, types.MBVERTEX)
         coords = {}
@@ -613,14 +611,11 @@ class IsoSurfGeom(object):
             sB_match_coords: list of tuples, each entry is the
                 corresponding coordinate for the EH in sB_match_eh
         """
-
         sA_match_eh = []
         sA_match_coords = []
         sB_match_eh = []
         sB_match_coords = []
-
         match_dict = {}
-
         bcoords = vertsB.keys()
 
         # get exact matches
@@ -673,7 +668,6 @@ class IsoSurfGeom(object):
             v1/2: tuple, corresponds to the dictionary keys for two
                 isovolumes in self.isovol_meshsets that will be compared
         """
-
         print("comparing surfaces in isovolumes {} and {}.".format(
             v1[0], v2[0]))
 
@@ -701,9 +695,8 @@ class IsoSurfGeom(object):
                 s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, \
                     match_dict = self.__get_matches(verts1, verts2_inv)
 
+                # matches were found, so continue
                 if s1_match_eh != []:
-                    # matches were found, so continue
-
                     # get only tris1 that have all match vertices
                     tris1 = self.__get_surf_triangles(s1_match_eh)
 
@@ -717,7 +710,6 @@ class IsoSurfGeom(object):
                     self.surf_curve[surf] = []
 
                     # get skin of new merged surf (gets curve)
-
                     curve_verts = sk.find_skin(surf, tris1, True, False)
                     curve_edges = sk.find_skin(surf, tris1, False, False)
 
@@ -785,7 +777,6 @@ class IsoSurfGeom(object):
                         val = 0.0
                     else:
                         val = shared[0]*self.norm
-
                     self.mb.tag_set_data(self.val_tag, surf, val)
 
                     # add new surface to coincident surface list
@@ -816,7 +807,6 @@ class IsoSurfGeom(object):
         single surface where surfaces are coincident values are tagged
         on each surface. Surface senses are also determined and tagged.
         """
-
         # set up surface tag information (value and sense)
         self.val_tag = \
             self.mb.tag_get_handle(self.data, size=1,
@@ -836,7 +826,6 @@ class IsoSurfGeom(object):
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
         for i, isovol in enumerate(all_vols):
-
             if i != len(self.levels):
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
