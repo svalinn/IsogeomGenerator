@@ -21,6 +21,24 @@ def test_assign_levels():
     assert(g.levels == exp)
 
 
+def test_read_levels():
+    """Read levels from file"""
+    levelfile = test_dir + "/vols-assign/levelfile"
+    exp = [8e-07, 1.2e-06, 1.7e-06]
+    g = vol.IsoVolDatabase()
+    g.read_levels(levelfile)
+    assert(g.levels == exp)
+
+
+def test_read_levels_nofile():
+    """Read levels from nonexisting file"""
+    levelfile = ""
+    exp = [8e-07, 1.2e-06, 1.7e-06]
+    g = vol.IsoVolDatabase()
+    with pytest.raises(RuntimeError) as error_info:
+        g.read_levels(levelfile)
+
+
 # Generate Levels parametrized tests:
 # linear: (6, 5, 15, 'lin', [5., 7., 9., 11., 13., 15.]
 # log: (6, 1, 1e5, 'log', [1, 10, 1e2, 1e3, 1e4, 1e5])

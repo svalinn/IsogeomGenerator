@@ -115,7 +115,13 @@ class IsoVolDatabase(object):
             levelfile: str, relative path to file with level information.
         """
         levels = []
-        f = open(levelfile, 'r')
+        try:
+            f = open(levelfile, 'r')
+        except IOError:
+            raise RuntimeError("Level file {} does not " +
+                               "exist.".format(levelfile))
+
+        levels = []
         lines = f.readlines()
         for line in lines:
             levels.append(float(line))
