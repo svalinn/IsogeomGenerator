@@ -3,8 +3,6 @@ from os import listdir
 from os.path import isfile, join
 import filecmp
 import shutil
-
-import unittest
 import pytest
 
 from IsogeomGenerator import vol
@@ -14,60 +12,62 @@ test_dir = os.getcwd() + "/tests/test_files/"
 ww_file = test_dir + "cwwm.vtk"
 
 
-class TestDatabase(unittest.TestCase):
+def test_assign_levels():
+    """assign predetermined levels (out of order)"""
+    v = vol.IsoVolDatabase()
+    levels = [0.1, 0.2, 0.05]
+    exp = sorted(levels)
 
-    def test_assign_levels(self):
-        """assign predetermined levels (out of order)"""
-        v = vol.IsoVolDatabase()
-        levels = [0.1, 0.2, 0.05]
-        exp = sorted(levels)
+    v.assign_levels(levels)
+    assert(v.levels == exp)
 
-        v.assign_levels(levels)
-        assert(v.levels == exp)
 
-    def test_generate_levels_linear(self):
-        """generate linearly spaced levels"""
-        v = vol.IsoVolDatabase()
-        N = 6
-        minN = 5
-        maxN = 15
-        exp = [5., 7., 9., 11., 13., 15.]
+def test_generate_levels_linear():
+    """generate linearly spaced levels"""
+    v = vol.IsoVolDatabase()
+    N = 6
+    minN = 5
+    maxN = 15
+    exp = [5., 7., 9., 11., 13., 15.]
 
-        v.generate_levels(N, minN, maxN, mode='lin')
-        assert(v.levels == exp)
+    v.generate_levels(N, minN, maxN, mode='lin')
+    assert(v.levels == exp)
 
-    def test_generate_levels_log(self):
-        """generate lograthmically spaced levels"""
-        v = vol.IsoVolDatabase()
-        N = 6
-        minN = 1
-        maxN = 1e5
-        exp = [1., 10., 1.e2, 1.e3, 1.e4, 1.e5]
 
-        v.generate_levels(N, minN, maxN, mode='log')
-        assert(v.levels == exp)
+def test_generate_levels_log():
+    """generate lograthmically spaced levels"""
+    v = vol.IsoVolDatabase()
+    N = 6
+    minN = 1
+    maxN = 1e5
+    exp = [1., 10., 1.e2, 1.e3, 1.e4, 1.e5]
 
-    def test_generate_levels_ratio_1(self):
-        """generate levels by ratio, max included"""
-        v = vol.IsoVolDatabase()
-        N = 5
-        minN = 1
-        maxN = 625
-        exp = [1., 5., 25., 125., 625.]
+    v.generate_levels(N, minN, maxN, mode='log')
+    assert(v.levels == exp)
 
-        v.generate_levels(N, minN, maxN, mode='ratio')
-        assert(v.levels == exp)
 
-    def test_generate_levels_ratio_2(self):
-        """generate levels by ratio, max not included"""
-        v = vol.IsoVolDatabase()
-        N = 5
-        minN = 1
-        maxN = 700
-        exp = [1., 5., 25., 125., 625.]
+def test_generate_levels_ratio_1():
+    """generate levels by ratio, max included"""
+    v = vol.IsoVolDatabase()
+    N = 5
+    minN = 1
+    maxN = 625
+    exp = [1., 5., 25., 125., 625.]
 
-        v.generate_levels(N, minN, maxN, mode='ratio')
-        assert(v.levels == exp)
+    v.generate_levels(N, minN, maxN, mode='ratio')
+    assert(v.levels == exp)
+
+
+def test_generate_levels_ratio_2():
+    """generate levels by ratio, max not included"""
+    v = vol.IsoVolDatabase()
+    N = 5
+    minN = 1
+    maxN = 700
+    exp = [1., 5., 25., 125., 625.]
+
+    v.generate_levels(N, minN, maxN, mode='ratio')
+    assert(v.levels == exp)
 
 
 # parametrized tests:
