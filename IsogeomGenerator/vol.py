@@ -307,8 +307,7 @@ class IsoSurfGeom(object):
         self.data = data
         self.db = dbname
 
-    def create_geometry(self, isovoldbobj=None, data=None,
-                        dbname=None,
+    def create_geometry(self, isovoldbobj=None, data=None, dbname=None,
                         levelfile=None,  tag_for_viz=False, norm=1.0,
                         merge_tol=1e-5, tags=None, sname=None, sdir=None):
         """Over-arching function to do all steps to create a single
