@@ -292,3 +292,134 @@ def test__get_isovol():
 
 def test__write_levels():
     pass
+
+
+# Test Moab functions
+
+# Create a useable IsoVolDatabase object for testing
+isovol_obj = vol.IsoVolDatabase()
+isovol_obj.completed = True
+isovol_obj.data = 'wwn'
+isovol_obj.db = ''  # decide which one to use
+isovol_obj.levels = []  # depends on which test is decided
+
+
+# tests for checking if supplied variables are properly handled
+def test_create_geom_init_obj():
+    """init with an object"""
+    pass
+
+
+def test_create_geom_pass_obj():
+    """pass with an object"""
+    pass
+
+
+def test_create_geom_pass_vars():
+    """no object, pass variables in function call"""
+    pass
+
+
+def test_create_geom_no_vars_no_obj():
+    """no obj or vars provided - should raise error"""
+    pass
+
+
+def test_create_geom_init_vars_and_pass_obj():
+    """set vars in the init and pass object in function call - raise warn"""
+    pass
+
+
+def test_create_geom_init_obj_and_pass_vars():
+    """init with an object and pass vars - should raise warning"""
+    pass
+
+
+def test_create_geom_incomple_obj():
+    """pass incomplete IsoVolDatabase obj - raise error"""
+    pass
+
+
+# test full geometry creation with different options
+def test_create_geom_full():
+    """test the complete geometry created"""
+    pass
+
+
+def test_create_geom_norm():
+    """use a norm factor"""
+    pass
+
+
+def test_create_geom_tags():
+    """provided tags are set correctly"""
+    pass
+
+
+def test_create_geom_viz():
+    """test viz tags are set"""
+    pass
+
+
+def test__read_levels():
+    pass
+
+
+def test_read_database():
+    pass
+
+
+def test__read_database_error():
+    pass
+
+
+def test__separate_isvols():
+    pass
+
+
+def test_get_surf_tris():
+    pass
+
+
+def test__list_coords():
+    pass
+
+
+def test__list_coords_invert():
+    pass
+
+
+def test__get_matches_exact():
+    pass
+
+
+def test__get_matches_approx():
+    pass
+
+
+def test__compare_surfs():
+    pass
+
+
+def test__imprint_merge():
+    pass
+
+
+def test__make_family():
+    pass
+
+
+def test__tag_for_viz():
+    pass
+
+
+def test__set_tags():
+    pass
+
+
+def test__write_geom():
+    pass
+
+
+def test__write_geom_invalid_ext():
+    pass
