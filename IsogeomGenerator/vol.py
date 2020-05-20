@@ -300,10 +300,12 @@ class IsoSurfGeom(object):
     """MOAB step
     """
 
-    def __init__(self, isovoldbobj=None):
+    def __init__(self, isovoldbobj=None, data=None, dbname=None):
         # initialize with an IsoVolDatabase object to avoid needing level
         # info
         self.isovoldbobj = isovoldbobj
+        self.data = data
+        self.db = dbname
 
     def create_geometry(self, isovoldbobj=None, data=None,
                         dbname=os.getcwd()+"/tmp",
@@ -346,22 +348,44 @@ class IsoSurfGeom(object):
         # if not preset in the init, assign here
         if self.isovoldbobj is None:
             self.isovoldbobj = isovoldbobj
+
+        var_list = [[self.data, data, 'data'],
+                    [self.db, dbname, 'dbname']]
+
         # if object exists, then set necessary values
         if self.isovoldbobj is not None:
-            if self.isovoldbobj.completed:
+            if not self.isovoldbobj.completed:
+                raise RuntimeError("IsoVolDatabase object was provided " +
+                                   "without running 'generate_volumes()'.")
+            else:
+                # check if other variables are already set, if so, warn and
+                # take variables from object instead
+                for var in var_list:
+                    if (var[0] is not None) or (var[1] is not None):
+                        warnings.warn("Both an IsoVolDatabase object and " +
+                                      "variable {} have been ".format(var[2]) +
+                                      "provided. Value from the " +
+                                      "IsoVolDatabase object will be used.")
+                if levelfile is not None:
+                    warnings.warn("Both an IsoVolDatabase object and " +
+                                  "levelfile have been provided. Levels " +
+                                  "from the IsoVolDatabase object will be " +
+                                  "used.")
+                # set values
                 self.levels = self.isovoldbobj.levels
                 self.db = self.isovoldbobj.db
                 self.data = self.isovoldbobj.data
-            else:
-                raise RuntimeError("IsoVolDatabase object was provided " +
-                                   "without running 'generate_volumes()'.")
+
         # object was not provided so other options are required
-        elif data is None:
-            raise RuntimeError("Data name must be provided.")
         else:
-            # set data and database info
-            self.data = data
-            self.db = dbname
+            for var in var_list:
+                # first check if was already set in the init, if not, set here
+                if var[0] is None:
+                    var[0] = var[1]
+                # if still not set, raise error
+                if var[0] is None:
+                    raise RuntimeError("Variable '{}}' must be " +
+                                       "provided.".format(var[2]))
 
             # get level information from file
             if levelfile is not None:
@@ -374,7 +398,7 @@ class IsoSurfGeom(object):
                     self.__read_levels(filepath)
                 else:
                     raise RuntimeError("levelfile does not exist in " +
-                                       " database: {}. ".format(filepath) +
+                                       "database: {}. ".format(filepath) +
                                        "Please provide levelfile location.")
 
         # Step 0: initialize meshsets
