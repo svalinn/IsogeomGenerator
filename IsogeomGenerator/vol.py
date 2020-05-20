@@ -325,7 +325,7 @@ class IsoSurfGeom(object):
                 values in VisIt. Default=False.
             norm: float (optional), default=1. All data values will be
                 multiplied by the normalization factor.
-            merge_tol: float (option), default=1e-5 cm. Merge tolerance for
+            merge_tol: float (optional), default=1e-5 cm. Merge tolerance for
                 mesh based merge of coincident surfaces. Recommended to be
                 1/10th the mesh voxel size.
             dbname: (optional), string, name of folder to store created
@@ -377,10 +377,6 @@ class IsoSurfGeom(object):
                                        " database: {}. ".format(filepath) +
                                        "Please provide levelfile location.")
 
-        # set other optional variables
-        self.norm = norm
-        self.merge_tol = merge_tol
-
         # Step 0: initialize meshsets
         self.mb = core.Core()
         self.isovol_meshsets = {}
@@ -396,7 +392,7 @@ class IsoSurfGeom(object):
 
         # Step 2: Merge Coincident Surfaces
         print("Merging surfaces...")
-        self.__imprint_merge()
+        self.__imprint_merge(norm, merge_tol)
         print("...Merging complete!")
 
         # Step 3: Assign Parent-Child Relationship
@@ -587,10 +583,10 @@ class IsoSurfGeom(object):
 
         return coords
 
-    def __get_matches(self, vertsA, vertsB):
+    def __get_matches(self, vertsA, vertsB, merge_tol):
         """Collects the set of entity handles and coordinates in set of
         vertsA and vertsB that match within the specified absolute
-        tolerance (self.merge_tol).
+        tolerance (merge_tol).
 
         Input:
         ------
@@ -598,7 +594,9 @@ class IsoSurfGeom(object):
                 vertice and the value is a tuple of the coordinate
                 (x, y, z)
             vertsB: dictionary, key is a tuple of the coordinate and the
-                value is the MOAB entity handle for the coordinate
+                value is the MOAB entity handle for the coordinate.
+            merge_tol: float, Merge tolerance for mesh based merge of
+                coincident surfaces.
 
         Returns:
         --------
@@ -633,7 +631,7 @@ class IsoSurfGeom(object):
 
             else:
                 # check approx
-                tf = np.isclose(coord, bcoords, rtol=0, atol=self.merge_tol)
+                tf = np.isclose(coord, bcoords, rtol=0, atol=merge_tol)
 
                 # get index of matches if they exist
                 ix = np.where(zip(*tf)[0])[0]
@@ -660,13 +658,16 @@ class IsoSurfGeom(object):
         return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, \
             match_dict
 
-    def __compare_surfs(self, v1, v2):
+    def __compare_surfs(self, v1, v2, norm, merge_tol):
         """finds coincident surfaces between two isovolumes.
 
         Input:
         ------
             v1/2: tuple, corresponds to the dictionary keys for two
                 isovolumes in self.isovol_meshsets that will be compared
+            norm: float, All data values will be multiplied by this factor.
+            merge_tol: float, Merge tolerance for mesh based merge of
+                coincident surfaces.
         """
         print("comparing surfaces in isovolumes {} and {}.".format(
             v1[0], v2[0]))
@@ -693,7 +694,8 @@ class IsoSurfGeom(object):
                 # compare vertices and gather sets for s1 and s2
                 # that are coincident
                 s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, \
-                    match_dict = self.__get_matches(verts1, verts2_inv)
+                    match_dict = self.__get_matches(verts1, verts2_inv,
+                                                    merge_tol)
 
                 # matches were found, so continue
                 if s1_match_eh != []:
@@ -776,7 +778,7 @@ class IsoSurfGeom(object):
                         print('no matching value!', v1, v2)
                         val = 0.0
                     else:
-                        val = shared[0]*self.norm
+                        val = shared[0]*norm
                     self.mb.tag_set_data(self.val_tag, surf, val)
 
                     # add new surface to coincident surface list
@@ -802,10 +804,16 @@ class IsoSurfGeom(object):
         self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
         self.isovol_meshsets[v2]['surfs_EH'].extend(match_surfs)
 
-    def __imprint_merge(self):
+    def __imprint_merge(self, norm, merge_tol):
         """Uses PyMOAB to check if surfaces are coincident. Creates a
         single surface where surfaces are coincident values are tagged
         on each surface. Surface senses are also determined and tagged.
+
+        Input:
+        ------
+            norm: float, All data values will be multiplied by this factor.
+            merge_tol: float, Merge tolerance for mesh based merge of
+                coincident surfaces.
         """
         # set up surface tag information (value and sense)
         self.val_tag = \
@@ -829,7 +837,7 @@ class IsoSurfGeom(object):
             if i != len(self.levels):
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
-                self.__compare_surfs(isovol, all_vols[i+1])
+                self.__compare_surfs(isovol, all_vols[i+1], norm, merge_tol)
 
         # if a surface doesn't have a value tagged after merging
         # give it a value of 0 and tag forward sense
