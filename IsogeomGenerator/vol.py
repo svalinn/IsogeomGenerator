@@ -308,7 +308,7 @@ class IsoSurfGeom(object):
         self.db = dbname
 
     def create_geometry(self, isovoldbobj=None, data=None,
-                        dbname=os.getcwd()+"/tmp",
+                        dbname=None,
                         levelfile=None,  tag_for_viz=False, norm=1.0,
                         merge_tol=1e-5, tags=None, sname=None, sdir=None):
         """Over-arching function to do all steps to create a single
@@ -349,9 +349,6 @@ class IsoSurfGeom(object):
         if self.isovoldbobj is None:
             self.isovoldbobj = isovoldbobj
 
-        var_list = [[self.data, data, 'data'],
-                    [self.db, dbname, 'dbname']]
-
         # if object exists, then set necessary values
         if self.isovoldbobj is not None:
             if not self.isovoldbobj.completed:
@@ -360,6 +357,8 @@ class IsoSurfGeom(object):
             else:
                 # check if other variables are already set, if so, warn and
                 # take variables from object instead
+                var_list = [[self.data, data, 'data'],
+                            [self.db, dbname, 'dbname']]
                 for var in var_list:
                     if (var[0] is not None) or (var[1] is not None):
                         warnings.warn("Both an IsoVolDatabase object and " +
@@ -378,14 +377,19 @@ class IsoSurfGeom(object):
 
         # object was not provided so other options are required
         else:
-            for var in var_list:
-                # first check if was already set in the init, if not, set here
-                if var[0] is None:
-                    var[0] = var[1]
-                # if still not set, raise error
-                if var[0] is None:
-                    raise RuntimeError("Variable '{}}' must be " +
-                                       "provided.".format(var[2]))
+            # check if data was already set in the init, if not, set here
+            if self.data is None:
+                self.data = data
+            # if still not set, raise error
+            if self.data is None:
+                raise RuntimeError("Variable 'data' must be provided.")
+
+            # check if database was already set in init, if not, set here
+            if self.db is None:
+                self.db = dbname
+            # if still not set, use default location
+            if self.db is None:
+                self.db = os.getcwd()+"/tmp"
 
             # get level information from file
             if levelfile is not None:
