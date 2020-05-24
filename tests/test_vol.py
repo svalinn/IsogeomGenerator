@@ -61,6 +61,7 @@ def test_generate_levels_error():
     g = vol.IsoVolDatabase()
     with pytest.raises(RuntimeError) as error_info:
         g.generate_levels(6, 5, 1e5, mode='nonsense')
+    assert 'Level generation' in str(error_info)
 
 
 # Generate Volumes parametrized tests:
@@ -73,7 +74,8 @@ def test_generate_levels_error():
                                             (4, 5.e-7, 1.7e-6, 3),
                                             (4, 5.e-7, 3.e-6, 4)])
 def test_generate_volumes(N, minN, maxN, id):
-    """Generate all isovolume files with different bounds"""
+    """Generate all isovolume files with different bounds.
+    Some should raise warnings. Make sure generated files are correct."""
     # Expected results:
     exp_vols_dir = test_dir + "/vols-{}/vols".format(id)
     common_files = [f for f in listdir(exp_vols_dir)
@@ -86,11 +88,18 @@ def test_generate_volumes(N, minN, maxN, id):
     if os.path.isdir(db):
         shutil.rmtree(db)
     # data out of range should produce warning
-    with pytest.warns(None) as record:
+    with pytest.warns(None) as warn_info:
         g.generate_volumes(ww_file, 'ww_n', dbname=db)
+    # assert number of warnings raised
+    if id == 1:
+        assert(len(warn_info) == 0)
+    elif id in [1, 2]:
+        assert(len(warn_info) == 1)
+    elif id == 4:
+        assert(len(warn_info) == 2)
+    # check that files produced are the same
     gen_vols_dir = db + "/vols"
     levelfile = db + "/levelfile"
-    # check that files produced are the same
     res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
     match_list = res[0]
     non_match = res[1]
@@ -198,6 +207,7 @@ def test_generate_volumes_genmode_error():
     # check error
     with pytest.raises(RuntimeError) as error_info:
         g.generate_volumes(ww_file, 'ww_n', genmode='lin')
+    assert 'requires input values' in str(error_info)
 
 
 def test_generate_volumes_preset():
@@ -262,6 +272,7 @@ def test_generate_volumes_no_levels():
     g = vol.IsoVolDatabase()
     with pytest.raises(RuntimeError) as error_info:
         g.generate_volumes(ww_file, 'ww_n')
+    assert 'levels must be provided' in str(error_info)
 
 
 def test_generate_volumes_dir_exists():
@@ -274,8 +285,9 @@ def test_generate_volumes_dir_exists():
     if os.path.isdir(db):
         shutil.rmtree(db)
     os.mkdir(db)
-    with pytest.warns(None) as record:
+    with pytest.warns(None) as warn_info:
         g.generate_volumes(ww_file, 'ww_n', dbname=db)
+    assert(len(warn_info) == 1)
     new_db = test_dir + "/test-exist-1"
     assert(os.path.isdir(new_db))
     shutil.rmtree(db)
@@ -307,7 +319,7 @@ isovol_obj.levels = []  # depends on which test is decided
 # tests for checking if supplied variables are properly handled
 def test_create_geom_init_obj():
     """init with an object"""
-    pass
+    g = vol.IsoSurfGeom(isovoldbobj=isovol_obj)
 
 
 def test_create_geom_pass_obj():
