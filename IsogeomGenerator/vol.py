@@ -459,7 +459,7 @@ class IsoSurfGeom(object):
         """Read the files from the database and initialize the meshset info.
         """
         file_list = sorted(os.listdir(self.db + "/vols/"))
-        if len(self.db) != len(file_list) + 1:
+        if len(self.levels) + 1 != len(file_list):
             raise RuntimeError("Number of levels does not match number of " +
                                "isovolume files in the database.")
         for f in file_list:
