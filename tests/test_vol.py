@@ -312,15 +312,15 @@ def test__write_levels():
 isovol_obj = vol.IsoVolDatabase()
 isovol_obj.completed = True
 isovol_obj.data = 'wwn'
-isovol_obj.db = ''  # decide which one to use
-isovol_obj.levels = []  # depends on which test is decided
+isovol_obj.db = test_dir + '/vols-assign'
+isovol_obj.levels = [8e-7, 1.2e-6, 1.7e-6]
 
 
 # tests for checking if supplied variables are properly handled
 def test_create_geom_init_obj():
     """init with an object"""
     g = vol.IsoSurfGeom(isovoldbobj=isovol_obj)
-
+    #g.create_geometry()
 
 def test_create_geom_pass_obj():
     """pass with an object"""
