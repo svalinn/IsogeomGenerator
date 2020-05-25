@@ -8,8 +8,37 @@ import pytest
 from IsogeomGenerator import vol
 
 
+# Set up test files and expected results
 test_dir = os.getcwd() + "/tests/test_files/"
-ww_file = test_dir + "cwwm.vtk"
+test_mesh = test_dir + "test_mesh.vtk"
+dataname = 'dname'
+exp_db = test_dir + "/exp-test/"
+exp_vols_dir = exp_db + "/vols"
+common_files = [f for f in listdir(exp_vols_dir)
+                if isfile(join(exp_vols_dir, f))]
+exp_levelfile = exp_db + "/levelfile"
+exp_levels = [5, 15, 25, 35]
+
+
+def __compare_levelfiles(f1, f2):
+    """compares the levelfile contents regardless of string format"""
+    fs1 = open(f1, 'r')
+    fs2 = open(f2, 'r')
+
+    levels1 = []
+    lines = fs1.readlines()
+    for line in lines:
+        levels1.append(float(line))
+
+    levels2 = []
+    lines = fs2.readlines()
+    for line in lines:
+        levels2.append(float(line))
+
+    if levels1 == levels2:
+        return True
+    else:
+        return False
 
 
 def test_assign_levels():
@@ -23,20 +52,18 @@ def test_assign_levels():
 
 def test_read_levels():
     """Read levels from file"""
-    levelfile = test_dir + "/vols-assign/levelfile"
-    exp = [8e-07, 1.2e-06, 1.7e-06]
     g = vol.IsoVolDatabase()
-    g.read_levels(levelfile)
-    assert(g.levels == exp)
+    g.read_levels(exp_levelfile)
+    assert(g.levels == exp_levels)
 
 
 def test_read_levels_nofile():
     """Read levels from nonexisting file"""
     levelfile = ""
-    exp = [8e-07, 1.2e-06, 1.7e-06]
     g = vol.IsoVolDatabase()
     with pytest.raises(RuntimeError) as error_info:
         g.read_levels(levelfile)
+    assert 'does not exist' in str(error_info)
 
 
 # Generate Levels parametrized tests:
@@ -65,204 +92,104 @@ def test_generate_levels_error():
 
 
 # Generate Volumes parametrized tests:
-# Min and Max w/in data bounds: (4, 8.e-7, 1.7e-6, 1)
-# Max out of data bounds: (4, 8.e-7, 3.e-6, 2)
-# Min out of data bounds: (4, 5.e-7, 1.7e-6, 3)
-# Min and Max out of data bounds: (4, 5.e-7, 3.e-6, 4)
-@pytest.mark.parametrize("N,minN,maxN,id", [(4, 8.e-7, 1.7e-6, 1),
-                                            (4, 8.e-7, 3.e-6, 2),
-                                            (4, 5.e-7, 1.7e-6, 3),
-                                            (4, 5.e-7, 3.e-6, 4)])
-def test_generate_volumes(N, minN, maxN, id):
+#   (1) Min and Max w/in data bounds
+#   (2) Max out of data bounds
+#   (3) Min out of data bounds
+#   (4) mid level no data
+@pytest.mark.parametrize("levels,id", [([5, 15, 25, 35], 1),
+                                       ([-5, 5, 15, 25, 35], 2),
+                                       ([5, 15, 25, 35, 45], 3),
+                                       ([5, 15, 25, 28, 35], 4)])
+def test_generate_volumes(levels, id):
     """Generate all isovolume files with different bounds.
     Some should raise warnings. Make sure generated files are correct."""
-    # Expected results:
-    exp_vols_dir = test_dir + "/vols-{}/vols".format(id)
-    common_files = [f for f in listdir(exp_vols_dir)
-                    if isfile(join(exp_vols_dir, f))]
-    exp_levelfile = test_dir + "/vols-{}/levelfile".format(id)
     # Generate the volumes
     g = vol.IsoVolDatabase()
-    g.generate_levels(N, minN, maxN, mode='lin')
-    db = test_dir + "/test-{}".format(id)
+    db = test_dir + "/test-gen-vols-{}".format(id)
     if os.path.isdir(db):
         shutil.rmtree(db)
     # data out of range should produce warning
     with pytest.warns(None) as warn_info:
-        g.generate_volumes(ww_file, 'ww_n', dbname=db)
+        g.generate_volumes(test_mesh, dataname, dbname=db, levels=levels)
     # assert number of warnings raised
     if id == 1:
         assert(len(warn_info) == 0)
-    elif id in [1, 2]:
+    else:
         assert(len(warn_info) == 1)
-    elif id == 4:
-        assert(len(warn_info) == 2)
     # check that files produced are the same
     gen_vols_dir = db + "/vols"
-    levelfile = db + "/levelfile"
+    levelfile_out = db + "/levelfile"
     res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
     match_list = res[0]
     non_match = res[1]
     assert(match_list == common_files)
     assert(non_match == [])
     # check that the level files are the same
-    res = filecmp.cmp(exp_levelfile, levelfile)
-    assert(res)
-    shutil.rmtree(db)
-
-
-def test_generate_volumes_assign_levels():
-    """Assign levels at time of generating levels"""
-    # Expected results:
-    exp_vols_dir = test_dir + "/vols-assign/vols"
-    common_files = [f for f in listdir(exp_vols_dir)
-                    if isfile(join(exp_vols_dir, f))]
-    exp_levelfile = test_dir + "/vols-assign/levelfile"
-    # Generate the volumes
-    g = vol.IsoVolDatabase()
-    levels = [8e-07, 1.2e-6, 1.7e-06]
-    db = test_dir + "/test-assign"
-    if os.path.isdir(db):
-        shutil.rmtree(db)
-    g.generate_volumes(ww_file, 'ww_n', dbname=db, levels=levels)
-    gen_vols_dir = db + "/vols"
-    levelfile = db + "/levelfile"
-    # check that files produced are the same
-    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
-    match_list = res[0]
-    non_match = res[1]
-    assert(match_list == common_files)
-    assert(non_match == [])
-    # check that the level files are the same
-    res = filecmp.cmp(exp_levelfile, levelfile)
+    res = __compare_levelfiles(exp_levelfile, levelfile_out)
     assert(res)
     shutil.rmtree(db)
 
 
 def test_generate_volumes_levelfile():
     """Read levels from file at time of generating levels"""
-    # Expected results:
-    exp_vols_dir = test_dir + "/vols-assign/vols"
-    common_files = [f for f in listdir(exp_vols_dir)
-                    if isfile(join(exp_vols_dir, f))]
-    exp_levelfile = test_dir + "/vols-assign/levelfile"
     # Generate the volumes
     g = vol.IsoVolDatabase()
-    levelfile_in = test_dir + "/vols-assign/levelfile"
-    db = test_dir + "/test-read"
+    levelfile_in = test_dir + "/exp-test/levelfile"
+    db = test_dir + "/test-read-levels"
     if os.path.isdir(db):
         shutil.rmtree(db)
-    g.generate_volumes(ww_file, 'ww_n', dbname=db, levelfile=levelfile_in)
-    gen_vols_dir = db + "/vols"
+    g.generate_volumes(test_mesh, dataname, dbname=db, levelfile=levelfile_in)
     levelfile_out = db + "/levelfile"
-    # check that files produced are the same
-    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
-    match_list = res[0]
-    non_match = res[1]
-    assert(match_list == common_files)
-    assert(non_match == [])
+    # check that levels are read and written correctly
+    assert(g.levels == exp_levels)
     # check that the level files are the same
-    res = filecmp.cmp(exp_levelfile, levelfile_out)
+    res = __compare_levelfiles(exp_levelfile, levelfile_out)
     assert(res)
     shutil.rmtree(db)
 
 
 def test_generate_volumes_genmode_pass():
     """Generate levels at time of generating volumes - all input included"""
-    # Expected results:
-    exp_vols_dir = test_dir + "/vols-1/vols"
-    common_files = [f for f in listdir(exp_vols_dir)
-                    if isfile(join(exp_vols_dir, f))]
-    exp_levelfile = test_dir + "/vols-1/levelfile"
     # Generate the volumes
     g = vol.IsoVolDatabase()
     db = test_dir + "/test-gen"
     if os.path.isdir(db):
         shutil.rmtree(db)
-    g.generate_volumes(ww_file, 'ww_n', dbname=db, N=4, minN=8.e-7,
-                       maxN=1.7e-6, genmode='lin')
-    gen_vols_dir = db + "/vols"
-    levelfile = db + "/levelfile"
-    # check that files produced are the same
-    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
-    match_list = res[0]
-    non_match = res[1]
-    assert(match_list == common_files)
-    assert(non_match == [])
+    g.generate_volumes(test_mesh, dataname, dbname=db, N=4, minN=5,
+                       maxN=35, genmode='lin')
+    levelfile_out = db + "/levelfile"
+    # check that levels are read and written correctly
+    assert(g.levels == exp_levels)
     # check that the level files are the same
-    res = filecmp.cmp(exp_levelfile, levelfile)
+    res = __compare_levelfiles(exp_levelfile, levelfile_out)
     assert(res)
     shutil.rmtree(db)
 
 
 def test_generate_volumes_genmode_error():
     """Generate levels at time of generating volumes - missing input"""
-    # Expected results:
-    exp_vols_dir = test_dir + "/vols-1/vols"
-    common_files = [f for f in listdir(exp_vols_dir)
-                    if isfile(join(exp_vols_dir, f))]
-    exp_levelfile = test_dir + "/vols-1/levelfile"
     # Generate the volumes
     g = vol.IsoVolDatabase()
     # check error
     with pytest.raises(RuntimeError) as error_info:
-        g.generate_volumes(ww_file, 'ww_n', genmode='lin')
+        g.generate_volumes(test_mesh, dataname, genmode='lin')
     assert 'requires input values' in str(error_info)
-
-
-def test_generate_volumes_preset():
-    """Set levels as member variable before generating vols"""
-    # Expected results:
-    exp_vols_dir = test_dir + "/vols-assign/vols"
-    common_files = [f for f in listdir(exp_vols_dir)
-                    if isfile(join(exp_vols_dir, f))]
-    exp_levelfile = test_dir + "/vols-assign/levelfile"
-    # Generate the volumes
-    g = vol.IsoVolDatabase()
-    levels = [8e-07, 1.2e-6, 1.7e-06]
-    g.levels = levels
-    db = test_dir + "/test-set"
-    if os.path.isdir(db):
-        shutil.rmtree(db)
-    g.generate_volumes(ww_file, 'ww_n', dbname=db)
-    gen_vols_dir = db + "/vols"
-    levelfile = db + "/levelfile"
-    # check that files produced are the same
-    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
-    match_list = res[0]
-    non_match = res[1]
-    assert(match_list == common_files)
-    assert(non_match == [])
-    # check that the level files are the same
-    res = filecmp.cmp(exp_levelfile, levelfile)
-    assert(res)
-    shutil.rmtree(db)
 
 
 def test_generate_volumes_init():
     """Set levels in the init"""
-    # Expected results:
-    exp_vols_dir = test_dir + "/vols-assign/vols"
-    common_files = [f for f in listdir(exp_vols_dir)
-                    if isfile(join(exp_vols_dir, f))]
-    exp_levelfile = test_dir + "/vols-assign/levelfile"
     # Generate the volumes
-    levels = [8e-07, 1.2e-6, 1.7e-06]
+    levels = [5, 15, 25, 35]
     g = vol.IsoVolDatabase(levels)
     db = test_dir + "/test-init"
     if os.path.isdir(db):
         shutil.rmtree(db)
-    g.generate_volumes(ww_file, 'ww_n', dbname=db)
-    gen_vols_dir = db + "/vols"
-    levelfile = db + "/levelfile"
-    # check that files produced are the same
-    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
-    match_list = res[0]
-    non_match = res[1]
-    assert(match_list == common_files)
-    assert(non_match == [])
+    g.generate_volumes(test_mesh, dataname, dbname=db)
+    levelfile_out = db + "/levelfile"
+    # check that levels are read and written correctly
+    assert(g.levels == exp_levels)
     # check that the level files are the same
-    res = filecmp.cmp(exp_levelfile, levelfile)
+    res = __compare_levelfiles(exp_levelfile, levelfile_out)
     assert(res)
     shutil.rmtree(db)
 
@@ -271,7 +198,7 @@ def test_generate_volumes_no_levels():
     """Try to generate volumes without assigning levels first (error)"""
     g = vol.IsoVolDatabase()
     with pytest.raises(RuntimeError) as error_info:
-        g.generate_volumes(ww_file, 'ww_n')
+        g.generate_volumes(test_mesh, dataname)
     assert 'levels must be provided' in str(error_info)
 
 
@@ -279,14 +206,14 @@ def test_generate_volumes_dir_exists():
     """Catch warning if database already exists"""
     # Generate the volumes
     g = vol.IsoVolDatabase()
-    g.levels = [8e-07, 1.2e-6, 1.7e-06]
+    g.levels = [5, 15, 25, 35]
     # create exisit dir
-    db = test_dir + "test-exist"  # already exists
+    db = test_dir + "/test-exist"  # already exists
     if os.path.isdir(db):
         shutil.rmtree(db)
     os.mkdir(db)
     with pytest.warns(None) as warn_info:
-        g.generate_volumes(ww_file, 'ww_n', dbname=db)
+        g.generate_volumes(test_mesh, dataname, dbname=db)
     assert(len(warn_info) == 1)
     new_db = test_dir + "/test-exist-1"
     assert(os.path.isdir(new_db))
@@ -311,9 +238,9 @@ def test__write_levels():
 # Create a useable IsoVolDatabase object for testing
 isovol_obj = vol.IsoVolDatabase()
 isovol_obj.completed = True
-isovol_obj.data = 'wwn'
-isovol_obj.db = test_dir + '/vols-assign'
-isovol_obj.levels = [8e-7, 1.2e-6, 1.7e-6]
+isovol_obj.data = dataname
+isovol_obj.db = exp_db
+isovol_obj.levels = exp_levels
 
 
 # tests for checking if supplied variables are properly handled
