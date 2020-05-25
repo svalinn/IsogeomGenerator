@@ -274,7 +274,9 @@ class IsoVolDatabase(object):
                 else:
                     ubound = self.levels[index + 1]
                 self.levels.remove(ubound_old)
-
+            else:
+                # it is the arbitrary upper level set and is not needed
+                self.levels.remove(self.levels[-1])
         # delete the operators
         v.RemoveAllOperators()
 
