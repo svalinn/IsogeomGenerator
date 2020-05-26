@@ -235,12 +235,14 @@ def test__write_levels():
 
 # Test Moab functions
 
-# Create a useable IsoVolDatabase object for testing
-isovol_obj = vol.IsoVolDatabase()
-isovol_obj.completed = True
-isovol_obj.data = dataname
-isovol_obj.db = exp_db
-isovol_obj.levels = exp_levels
+def __create_isvolobj(complete):
+    """Create a useable IsoVolDatabase object for testing"""
+    isovolobj = vol.IsoVolDatabase()
+    isovolobj.completed = complete
+    isovolobj.data = dataname
+    isovolobj.db = exp_db
+    isovolobj.levels = exp_levels
+    return isovolobj
 
 
 # tests for checking if supplied variables are properly handled
