@@ -276,20 +276,50 @@ def test_init_obj_incomplete():
     assert "Incomplete IsoVolDatabase object" in str(error_info)
 
 
-def test_create_geom_pass_obj():
-    """Test geometry is created properly by passing object"""
+def test_create_geom():
+    """Test geometry is created properly when using defaults"""
     ivo = __create_isvolobj(True)
     g = vol.IsoSurfGeom()
     g.create_geometry(isovoldbobj=ivo)
-    assert(g.data == dataname)
-    assert(g.db == exp_db)
-    assert(g.levels == exp_levels)
     geom_file = exp_db + '/isogeom.h5m'
     # compare h5m files, ignoring timestamps
     diffs = os.system('h5diff --exclude-path /tstt/history ' +
                       '{} {}'.format(exp_geom, geom_file))
     assert(diffs == 0)
     remove(geom_file)
+
+
+def test_create_geom_pass_obj():
+    """test values are set properly when object is passed"""
+    ivo = __create_isvolobj(True)
+    g = vol.IsoSurfGeom()
+    g.create_geometry(isovoldbobj=ivo)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+    remove(exp_db + '/isogeom.h5m')
+
+
+def test_create_geom_init_and_pass_obj():
+    """called with an object after already having set in the initself.
+    Only test that variables are properly set and warnings are raised.
+    """
+    # create object that will be overwritten
+    init_obj = vol.IsoVolDatabase()
+    init_obj.completed = True
+    init_obj.data = 'fake_name'
+    init_obj.db = 'fake_db'
+    init_obj.levels = [-1, 1]
+    # correct object
+    ivo = __create_isvolobj(True)
+    g = vol.IsoSurfGeom(isovoldbobj=init_obj)
+    with pytest.warns(None) as warn_info:
+        g.create_geometry(isovoldbobj=ivo)
+    assert(len(warn_info) == 3)  # initial warning, plus data and db variables
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+    remove(exp_db + '/isogeom.h5m')
 
 
 def test_create_geom_pass_vars():
