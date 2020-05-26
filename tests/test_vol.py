@@ -111,7 +111,6 @@ def test_generate_volumes(levels, id):
     with pytest.warns(None) as warn_info:
         g.generate_volumes(test_mesh, dataname, dbname=db, levels=levels)
     # assert number of warnings raised
-    print(warn_info)
     if id == 2:
         # no data found warning
         assert(len(warn_info) == 1)
@@ -132,6 +131,17 @@ def test_generate_volumes(levels, id):
     res = __compare_levelfiles(exp_levelfile, levelfile_out)
     assert(res)
     shutil.rmtree(db)
+
+
+@pytest.mark.filterwarnings("ignore:Level")
+def test_generate_volumes_levels_outofbounds():
+    """level values provided are not within data bounds, so raise error"""
+    # Generate the volumes
+    g = vol.IsoVolDatabase()
+    # data out of range should produce warning
+    with pytest.raises(RuntimeError) as error_info:
+        g.generate_volumes(test_mesh, dataname, levels=[-5, 0, 45])
+    assert "No data exists" in str(error_info)
 
 
 def test_generate_volumes_levelfile():
