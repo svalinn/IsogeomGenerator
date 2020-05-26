@@ -15,6 +15,7 @@ jobs:
             - checkout
             - run:
                 command: |
+                    apt install -y hdf5-tools
                     pip install coverage
                     coverage run --source=./IsogeomGenerator/ --omit=./IsogeomGenerator/__init__.py -m pytest
                     coverage report
