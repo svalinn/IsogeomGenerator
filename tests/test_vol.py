@@ -94,14 +94,11 @@ def test_generate_levels_error():
 
 # Generate Volumes parametrized tests:
 #   (1) Min and Max w/in data bounds
-#   (2) Max out of data bounds
-#   (3) Min out of data bounds
-#   (4) mid level no data
+#   (2) Mid level no data
+#   (3) Min and max out of data bounds
 @pytest.mark.parametrize("levels,id", [([5, 15, 25, 35], 1),
-                                       ([-5, 5, 15, 25, 35], 2),
-                                       ([5, 15, 25, 35, 45], 3),
-                                       ([5, 15, 25, 28, 35], 4),
-                                       ([5, 15, 25, 35, 45, 50], 5)])
+                                       ([5, 15, 25, 28, 35], 2),
+                                       ([-5, 5, 15, 25, 35, 45], 3)])
 def test_generate_volumes(levels, id):
     """Generate all isovolume files with different bounds.
     Some should raise warnings. Make sure generated files are correct."""
@@ -114,10 +111,15 @@ def test_generate_volumes(levels, id):
     with pytest.warns(None) as warn_info:
         g.generate_volumes(test_mesh, dataname, dbname=db, levels=levels)
     # assert number of warnings raised
-    if id == 1:
-        assert(len(warn_info) == 0)
-    else:
+    print(warn_info)
+    if id == 2:
+        # no data found warning
         assert(len(warn_info) == 1)
+    elif id == 3:
+        # levels are out of bounds
+        assert(len(warn_info) == 2)
+    else:
+        assert(len(warn_info) == 0)
     # check that files produced are the same
     gen_vols_dir = db + "/vols"
     levelfile_out = db + "/levelfile"

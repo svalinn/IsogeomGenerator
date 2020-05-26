@@ -4,6 +4,7 @@ import shutil
 import warnings
 import numpy as np
 import math as m
+import meshio
 
 import visit as v
 from pymoab import core, types
@@ -81,6 +82,22 @@ class IsoVolDatabase(object):
             else:
                 raise RuntimeError("Information for assigning levels " +
                                    "must be provided.")
+
+        # read data using meshio to get min and max and make sure levels are
+        # within data bounds:
+        mf = meshio.read(filename)
+        mindata = min(mf.cell_data['hexahedron'][self.data])
+        maxdata = max(mf.cell_data['hexahedron'][self.data])
+        self.arbmin = mindata - 10  # lower than lowest data
+        self.arbmax = maxdata + 10  # higher than highest data
+        all_levels = list(self.levels)
+        for level in all_levels:
+            if (level <= mindata) or (level >= maxdata):
+                warnings.warn("Level {} is out of data bounds.".format(level))
+                self.levels.remove(level)
+
+        if len(self.levels) == 0:
+            raise RuntimeError("No data exists within provided levels.")
 
         # Generate isovolumes using VisIT
         try:
@@ -204,7 +221,7 @@ class IsoVolDatabase(object):
 
                 # lower bound
                 if i == 0:
-                    lbound = 0.0
+                    lbound = self.arbmin
                 else:
                     lbound = self.levels[i-1]
 
@@ -214,14 +231,11 @@ class IsoVolDatabase(object):
                 # get volume
                 # res = 0 if no level found (should update to next level)
                 res, ubound, skip_max = self.__get_isovol(lbound, ubound, i)
-                if skip_max is True:
-                    res = 1
 
         # get maximum isovolume level
-        if not skip_max:
-            lbound = self.levels[-1]
-            ubound = 1.e200
-            self.__get_isovol(lbound, ubound, i+1)
+        lbound = self.levels[-1]
+        ubound = self.arbmax
+        self.__get_isovol(lbound, ubound, i+1)
 
         # delete plots
         v.DeleteAllPlots()
@@ -268,16 +282,9 @@ class IsoVolDatabase(object):
             warnings.warn(warn_message)
             if ubound in self.levels:
                 index = self.levels.index(ubound)
-                if ubound == max(self.levels):
-                    skip_max = True
-                    self.levels.remove(ubound)
-                    # also remove bound before it because it is equivalent to
-                    # having an arbitrary upper bound
-                    self.levels.remove(self.levels[-1])
-                else:
-                    ubound_old = ubound
-                    ubound = self.levels[index + 1]
-                    self.levels.remove(ubound_old)
+                ubound_old = ubound
+                ubound = self.levels[index + 1]
+                self.levels.remove(ubound_old)
             else:
                 # it is the arbitrary upper level set and is not needed
                 self.levels.remove(self.levels[-1])
