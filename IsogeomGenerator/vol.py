@@ -305,9 +305,32 @@ class IsoSurfGeom(object):
     def __init__(self, isovoldbobj=None, data=None, dbname=None):
         # initialize with an IsoVolDatabase object to avoid needing level
         # info
-        self.isovoldbobj = isovoldbobj
         self.data = data
         self.db = dbname
+        self.isovoldbobj = isovoldbobj
+        if self.isovoldbobj is not None:
+            self.__read_isvol(data, dbname)
+
+    def __read_isvol(self, data, dbname):
+        # if object exists, then set necessary values
+        if not self.isovoldbobj.completed:
+            raise RuntimeError("Incomplete IsoVolDatabase object was " +
+                               "provided. Please run 'generate_volumes()'.")
+
+        # check if other variables are already set, if so, warn and
+        # take variables from object instead
+        var_list = [[self.data, data, 'data'],
+                    [self.db, dbname, 'dbname']]
+        for var in var_list:
+            if (var[0] is not None) or (var[1] is not None):
+                warnings.warn("Variable {} will be replaced ".format(var[2]) +
+                              "with the value from the " +
+                              "IsoVolDatabase object provided.")
+
+        # set values
+        self.levels = self.isovoldbobj.levels
+        self.db = self.isovoldbobj.db
+        self.data = self.isovoldbobj.data
 
     def create_geometry(self, isovoldbobj=None, data=None, dbname=None,
                         levelfile=None,  tag_for_viz=False, norm=1.0,
@@ -346,47 +369,33 @@ class IsoSurfGeom(object):
                 written geometry file. Acceptable file types are VTK and H5M.
                 Default name: isogeom.h5m
         """
-        # if not preset in the init, assign here
-        if self.isovoldbobj is None:
+        if isovoldbobj is not None:
+            if self.isovoldbobj is not None:
+                # obj was present in the init, but overwrite here
+                warnings.warn("New IsoVolDatabase object will overwrite the " +
+                              "previously provided object.")
             self.isovoldbobj = isovoldbobj
-
-        # if object exists, then set necessary values
-        if self.isovoldbobj is not None:
-            if not self.isovoldbobj.completed:
-                raise RuntimeError("IsoVolDatabase object was provided " +
-                                   "without running 'generate_volumes()'.")
-            else:
-                # check if other variables are already set, if so, warn and
-                # take variables from object instead
-                var_list = [[self.data, data, 'data'],
-                            [self.db, dbname, 'dbname']]
-                for var in var_list:
-                    if (var[0] is not None) or (var[1] is not None):
-                        warnings.warn("Both an IsoVolDatabase object and " +
-                                      "variable {} have been ".format(var[2]) +
-                                      "provided. Value from the " +
-                                      "IsoVolDatabase object will be used.")
-                if levelfile is not None:
-                    warnings.warn("Both an IsoVolDatabase object and " +
-                                  "levelfile have been provided. Levels " +
-                                  "from the IsoVolDatabase object will be " +
-                                  "used.")
-                # set values
-                self.levels = self.isovoldbobj.levels
-                self.db = self.isovoldbobj.db
-                self.data = self.isovoldbobj.data
+            self.__read_isvol(data, dbname)
 
         # object was not provided so other options are required
-        else:
-            # check if data was already set in the init, if not, set here
-            if self.data is None:
+        elif self.isovoldbobj is None:
+            # set data name
+            if data is not None:
+                # check if data was already set in the init
+                if self.data is not None:
+                    warnings.warn("New variable data will overwrite " +
+                                  "previously provided data.")
                 self.data = data
             # if still not set, raise error
             if self.data is None:
                 raise RuntimeError("Variable 'data' must be provided.")
 
-            # check if database was already set in init, if not, set here
-            if self.db is None:
+            # set database info
+            if dbname is not None:
+                # check if database was already set in init
+                if self.db is not None:
+                    warnings.warn("New variable dbname will overwrite " +
+                                  "previously provided dbname.")
                 self.db = dbname
             # if still not set, use default location
             if self.db is None:
@@ -436,7 +445,7 @@ class IsoSurfGeom(object):
             self.__set_tags(tags)
 
         if sdir is None:
-            sdir = self.dbname
+            sdir = self.db
         if sname is None:
             sname = 'isogeom.h5m'
 
