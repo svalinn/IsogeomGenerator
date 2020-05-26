@@ -268,12 +268,16 @@ class IsoVolDatabase(object):
             warnings.warn(warn_message)
             if ubound in self.levels:
                 index = self.levels.index(ubound)
-                ubound_old = ubound
                 if ubound == max(self.levels):
                     skip_max = True
+                    self.levels.remove(ubound)
+                    # also remove bound before it because it is equivalent to
+                    # having an arbitrary upper bound
+                    self.levels.remove(self.levels[-1])
                 else:
+                    ubound_old = ubound
                     ubound = self.levels[index + 1]
-                self.levels.remove(ubound_old)
+                    self.levels.remove(ubound_old)
             else:
                 # it is the arbitrary upper level set and is not needed
                 self.levels.remove(self.levels[-1])
