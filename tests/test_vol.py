@@ -102,7 +102,7 @@ def test_generate_levels_error():
                                        ([5, 15, 25, 35, 45], 3),
                                        ([5, 15, 25, 28, 35], 4),
                                        ([5, 15, 25, 35, 45, 50], 5)])
-def test_generate_volumes_1(levels, id):
+def test_generate_volumes(levels, id):
     """Generate all isovolume files with different bounds.
     Some should raise warnings. Make sure generated files are correct."""
     # Generate the volumes
