@@ -1,5 +1,5 @@
 import os
-from os import listdir
+from os import listdir, remove
 from os.path import isfile, join
 import filecmp
 import shutil
@@ -18,6 +18,7 @@ common_files = [f for f in listdir(exp_vols_dir)
                 if isfile(join(exp_vols_dir, f))]
 exp_levelfile = exp_db + "/levelfile"
 exp_levels = [5, 15, 25, 35]
+exp_geom = test_dir + '/exp-isogeom.h5m'
 
 
 def __compare_levelfiles(f1, f2):
@@ -276,8 +277,19 @@ def test_init_obj_incomplete():
 
 
 def test_create_geom_pass_obj():
-    """pass with an object"""
-    pass
+    """Test geometry is created properly by passing object"""
+    ivo = __create_isvolobj(True)
+    g = vol.IsoSurfGeom()
+    g.create_geometry(isovoldbobj=ivo)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+    geom_file = exp_db + '/isogeom.h5m'
+    # compare h5m files, ignoring timestamps
+    diffs = os.system('h5diff --exclude-path /tstt/history ' +
+                      '{} {}'.format(exp_geom, geom_file))
+    assert(diffs == 0)
+    remove(geom_file)
 
 
 def test_create_geom_pass_vars():
