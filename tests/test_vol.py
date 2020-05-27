@@ -246,27 +246,71 @@ def test_generate_volumes_no_levels():
     assert 'levels must be provided' in str(error_info)
 
 
-def test_generate_volumes_dir_exists():
+def test__generate_vols():
+    """Test the private method for generating isovols"""
+    # create useable object with necessary attributes
+    g = vol.IsoVolDatabase()
+    db = test_dir + "/test-private-gen/"
+    g.db = db
+    if os.path.isdir(db):
+        shutil.rmtree(db)
+    g.data = dataname
+    g.levels = [5, 15, 25, 35]
+    g.arbmax = 50
+    g.arbmin = -10
+    # launch VisIt
+    import visit
+    try:
+        visit.LaunchNowin()
+    except:
+        pass
+    visit.OpenDatabase(test_mesh)
+    # run __generate_vols
+    g._IsoVolDatabase__generate_vols()
+    # close VisIt
+    visit.CloseComputeEngine()
+    # check that vol files produced are the same
+    gen_vols_dir = db + "/vols"
+    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert(match_list == common_files)
+    assert(non_match == [])
+    shutil.rmtree(db)
+
+
+def test__generate_vols_dir_exists():
     """Catch warning if database already exists"""
     # Generate the volumes
+    # create useable object with necessary attributes
     g = vol.IsoVolDatabase()
-    g.levels = [5, 15, 25, 35]
-    # create exisit dir
-    db = test_dir + "/test-exist"  # already exists
+    db = test_dir + "/test-exist/"
     if os.path.isdir(db):
         shutil.rmtree(db)
     os.mkdir(db)
+    g.db = db
+    g.data = dataname
+    g.levels = [5, 15, 25, 35]
+    g.arbmax = 50
+    g.arbmin = -10
+    # launch VisIt
+    import visit
+    try:
+        visit.LaunchNowin()
+    except:
+        pass
+    visit.OpenDatabase(test_mesh)
+    # run __generate_vols
     with pytest.warns(None) as warn_info:
-        g.generate_volumes(test_mesh, dataname, dbname=db)
+        g._IsoVolDatabase__generate_vols()
+    # close VisIt
+    visit.CloseComputeEngine()
+    # check that new dir was properly created
     assert(len(warn_info) == 1)
     new_db = test_dir + "/test-exist-1"
     assert(os.path.isdir(new_db))
     shutil.rmtree(db)
     shutil.rmtree(new_db)
-
-
-def test__generate_vols():
-    pass
 
 
 def test__get_isovol():
