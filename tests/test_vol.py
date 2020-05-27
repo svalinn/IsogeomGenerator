@@ -247,7 +247,7 @@ def test_generate_volumes_no_levels():
 
 
 def test__generate_vols():
-    """Test the private method for generating isovols"""
+    """Test the private method for generating isovols - __generate_vols()"""
     # create useable object with necessary attributes
     g = vol.IsoVolDatabase()
     db = test_dir + "/test-private-gen/"
@@ -280,8 +280,7 @@ def test__generate_vols():
 
 
 def test__generate_vols_dir_exists():
-    """Catch warning if database already exists"""
-    # Generate the volumes
+    """Catch warning if database already exists - __generate_vols()"""
     # create useable object with necessary attributes
     g = vol.IsoVolDatabase()
     db = test_dir + "/test-exist/"
@@ -314,7 +313,85 @@ def test__generate_vols_dir_exists():
 
 
 def test__get_isovol():
-    pass
+    """test private method __get_isovol()"""
+    # create useable object with necessary attributes
+    g = vol.IsoVolDatabase()
+    db = test_dir + "/test-private-isovol/"
+    g.db = db
+    if os.path.isdir(db):
+        shutil.rmtree(db)
+    os.mkdir(db)
+    os.mkdir(db + '/vols/')
+    g.data = dataname
+    g.levels = [5, 15, 25, 35]
+    g.arbmax = 50
+    g.arbmin = -10
+    # launch VisIt
+    import visit
+    try:
+        visit.LaunchNowin()
+    except:
+        pass
+    visit.OpenDatabase(test_mesh)
+    visit.AddPlot('Pseudocolor', dataname)
+    # run __get_isovol
+    lbound = 5
+    ubound = 15
+    i = 1
+    export_res, ubound_out = g._IsoVolDatabase__get_isovol(lbound, ubound, i)
+    # close VisIt
+    visit.CloseComputeEngine()
+    # check returned values
+    assert(export_res == 1)
+    assert(ubound_out == ubound)
+    # check that vol file produced are the same
+    gen_vol = db + "/vols/1.stl"
+    exp_vol = exp_vols_dir + "/1.stl"
+    res = filecmp.cmp(gen_vol, exp_vol)
+    assert(res)
+    shutil.rmtree(db)
+
+
+def test__get_isovol_no_data():
+    """test private method __get_isovol() when there is no data to export"""
+    # create useable object with necessary attributes
+    g = vol.IsoVolDatabase()
+    db = test_dir + "/test-private-isovol-nodata/"
+    g.db = db
+    if os.path.isdir(db):
+        shutil.rmtree(db)
+    os.mkdir(db)
+    os.mkdir(db + '/vols/')
+    g.data = dataname
+    g.levels = [5, 15, 25, 28, 35]
+    g.arbmax = 50
+    g.arbmin = -10
+    # launch VisIt
+    import visit
+    try:
+        visit.LaunchNowin()
+    except:
+        pass
+    visit.OpenDatabase(test_mesh)
+    visit.AddPlot('Pseudocolor', dataname)
+    # run __get_isovol
+    lbound = 25
+    ubound = 28
+    i = 3
+    with pytest.warns(None) as warn_info:
+        export_res, ubound_out = g._IsoVolDatabase__get_isovol(lbound,
+                                                               ubound, i)
+    # close VisIt
+    visit.CloseComputeEngine()
+    # check returned values
+    assert(len(warn_info) == 1)
+    assert(export_res == 0)
+    assert(ubound_out == 35)
+    assert(g.levels == [5, 15, 25, 35])
+    # check that no file is produced
+    gen_vol = db + "/vols/3.stl"
+    assert(not isfile(gen_vol))
+    shutil.rmtree(db)
 
 
 def test__write_levels():
