@@ -621,11 +621,6 @@ def test__read_isovol_var_exists_pass():
     assert(g.levels == exp_levels)
 
 
-def test_create_geom_incomple_obj():
-    """pass incomplete IsoVolDatabase obj - raise error"""
-    pass
-
-
 # test full geometry creation with different options
 def test_create_geom_full():
     """test the complete geometry created"""
