@@ -279,14 +279,10 @@ class IsoVolDatabase(object):
                 + "{} and {}.\n".format(lbound, ubound) \
                 + "Increasing upper bound to next selected level."
             warnings.warn(warn_message)
-            if ubound in self.levels:
-                index = self.levels.index(ubound)
-                ubound_old = ubound
-                ubound = self.levels[index + 1]
-                self.levels.remove(ubound_old)
-            else:
-                # it is the arbitrary upper level set and is not needed
-                self.levels.remove(self.levels[-1])
+            index = self.levels.index(ubound)
+            ubound_old = ubound
+            ubound = self.levels[index + 1]
+            self.levels.remove(ubound_old)
         # delete the operators
         v.RemoveAllOperators()
 
