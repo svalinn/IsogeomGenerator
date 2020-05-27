@@ -144,6 +144,36 @@ def test_generate_volumes_levels_outofbounds():
     assert "No data exists" in str(error_info)
 
 
+def test_generate_volumes_single():
+    """Single isosurface"""
+    # Generate the volumes
+    g = vol.IsoVolDatabase()
+    db = test_dir + "/test-gen-vols-single"
+    if os.path.isdir(db):
+        shutil.rmtree(db)
+    # data out of range should produce warning
+    g.generate_volumes(test_mesh, dataname, dbname=db, levels=[25])
+    # check that files produced are the same
+    gen_vols_dir = db + "/vols"
+    levelfile_out = db + "/levelfile"
+    # expected files
+    exp_db = test_dir + "/exp-single/"
+    exp_vols_dir = exp_db + "/vols"
+    common_files = [f for f in listdir(exp_vols_dir)
+                    if isfile(join(exp_vols_dir, f))]
+    exp_levelfile = exp_db + "/levelfile"
+    exp_levels = [25]
+    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
+    match_list = res[0]
+    non_match = res[1]
+    assert(match_list == common_files)
+    assert(non_match == [])
+    # check that the level files are the same
+    res = __compare_levelfiles(exp_levelfile, levelfile_out)
+    assert(res)
+    shutil.rmtree(db)
+
+
 def test_generate_volumes_levelfile():
     """Read levels from file at time of generating levels"""
     # Generate the volumes
