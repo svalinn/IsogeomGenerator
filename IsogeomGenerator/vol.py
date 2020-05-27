@@ -230,7 +230,7 @@ class IsoVolDatabase(object):
 
                 # get volume
                 # res = 0 if no level found (should update to next level)
-                res, ubound, skip_max = self.__get_isovol(lbound, ubound, i)
+                res, ubound = self.__get_isovol(lbound, ubound, i)
 
         # get maximum isovolume level
         lbound = self.levels[-1]
@@ -272,7 +272,6 @@ class IsoVolDatabase(object):
         export_res = v.ExportDatabase(e)
 
         # check if exporting was successful or not and adjust values
-        skip_max = False
         if export_res == 0:
             # export not successful because there was no data
             # get new upper bound
@@ -291,7 +290,7 @@ class IsoVolDatabase(object):
         # delete the operators
         v.RemoveAllOperators()
 
-        return export_res, ubound, skip_max
+        return export_res, ubound
 
     def __write_levels(self):
         """Write the final level values used to a file that can be used by
