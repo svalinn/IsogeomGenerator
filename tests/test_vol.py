@@ -395,7 +395,20 @@ def test__get_isovol_no_data():
 
 
 def test__write_levels():
-    pass
+    """test private method for writing level\file"""
+    g = vol.IsoVolDatabase()
+    db = test_dir + "/test-private-write-levels/"
+    g.db = db
+    if os.path.isdir(db):
+        shutil.rmtree(db)
+    os.mkdir(db)
+    g.levels = [5, 15, 25, 35]
+    g._IsoVolDatabase__write_levels()
+    levelfile_out = db + "/levelfile"
+    # check that the level files are the same
+    res = __compare_levelfiles(exp_levelfile, levelfile_out)
+    assert(res)
+    shutil.rmtree(db)
 
 
 # Test Moab functions
