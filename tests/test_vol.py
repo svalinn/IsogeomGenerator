@@ -474,6 +474,7 @@ def test_create_geom_pass_obj():
     assert(g.data == dataname)
     assert(g.db == exp_db)
     assert(g.levels == exp_levels)
+    assert(isfile(exp_db + '/isogeom.h5m'))
     remove(exp_db + '/isogeom.h5m')
 
 
@@ -496,27 +497,128 @@ def test_create_geom_init_and_pass_obj():
     assert(g.data == dataname)
     assert(g.db == exp_db)
     assert(g.levels == exp_levels)
+    assert(isfile(exp_db + '/isogeom.h5m'))
     remove(exp_db + '/isogeom.h5m')
 
 
 def test_create_geom_pass_vars():
     """no object, pass variables in function call"""
-    pass
+    g = vol.IsoSurfGeom()
+    g.create_geometry(data=dataname, dbname=exp_db)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+    assert(isfile(exp_db + '/isogeom.h5m'))
+    remove(exp_db + '/isogeom.h5m')
 
 
-def test_create_geom_no_vars_no_obj():
-    """no obj or vars provided - should raise error"""
-    pass
+def test_create_geom_no_data():
+    g = vol.IsoSurfGeom()
+    with pytest.raises(RuntimeError) as error_info:
+        g.create_geometry()
+    assert "Variable 'data' must be provided" in str(error_info)
+
+
+def test_create_geom_db_nonexistent():
+    g = vol.IsoSurfGeom()
+    with pytest.raises(RuntimeError) as error_info:
+        g.create_geometry(data=dataname)
+    assert "does not contain an isovolume database" in str(error_info)
+    assert(g.db == os.getcwd() + '/tmp')
 
 
 def test_create_geom_init_vars_and_pass_obj():
     """set vars in the init and pass object in function call - raise warn"""
-    pass
+    # create object that will be overwritten
+    g = vol.IsoSurfGeom(data='fake_data', dbname='fake_db')
+    ivo = __create_isvolobj(True)
+    with pytest.warns(None) as warn_info:
+        g.create_geometry(isovoldbobj=ivo)
+    assert(len(warn_info) == 2)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+    assert(isfile(exp_db + '/isogeom.h5m'))
+    remove(exp_db + '/isogeom.h5m')
+
+
+def test_create_geom_init_and_pass_vars():
+    """init with an object and pass vars - should raise warning"""
+    g = vol.IsoSurfGeom(data='fake_data', dbname='fake_db')
+    with pytest.warns(None) as warn_info:
+        g.create_geometry(data=dataname, dbname=exp_db)
+    assert(len(warn_info) == 2)  # initial warning, plus data and db variables
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+    assert(isfile(exp_db + '/isogeom.h5m'))
+    remove(exp_db + '/isogeom.h5m')
 
 
 def test_create_geom_init_obj_and_pass_vars():
-    """init with an object and pass vars - should raise warning"""
-    pass
+    """init with an object and also pass variables - warnings"""
+    # create object that will be overwritten
+    init_obj = vol.IsoVolDatabase()
+    init_obj.completed = True
+    init_obj.data = 'fake_name'
+    init_obj.db = 'fake_db'
+    init_obj.levels = [-1, 1]
+    # correct object
+    ivo = __create_isvolobj(True)
+    g = vol.IsoSurfGeom(isovoldbobj=init_obj)
+    with pytest.warns(None) as warn_info:
+        g.create_geometry(data=dataname, dbname=exp_db)
+    assert(len(warn_info) == 2)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+    assert(isfile(exp_db + '/isogeom.h5m'))
+    remove(exp_db + '/isogeom.h5m')
+
+
+def test__read_isovol():
+    ivo = __create_isvolobj(True)
+    g = vol.IsoSurfGeom()
+    g.isovoldbobj = ivo
+    g._IsoSurfGeom__read_isovol(None, None)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+
+
+def test__read_isovol_incomplete():
+    ivo = __create_isvolobj(False)
+    g = vol.IsoSurfGeom()
+    g.isovoldbobj = ivo
+    with pytest.raises(RuntimeError) as error_info:
+        g._IsoSurfGeom__read_isovol(None, None)
+    assert "Incomplete IsoVolDatabase object" in str(error_info)
+
+
+def test__read_isovol_var_exists_init():
+    ivo = __create_isvolobj(True)
+    g = vol.IsoSurfGeom()
+    g.isovoldbobj = ivo
+    g.data = 'fake_data'
+    g.db = 'fake_db'
+    with pytest.warns(None) as warn_info:
+        g._IsoSurfGeom__read_isovol(None, None)
+    assert(len(warn_info) == 2)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
+
+
+def test__read_isovol_var_exists_pass():
+    ivo = __create_isvolobj(True)
+    g = vol.IsoSurfGeom()
+    g.isovoldbobj = ivo
+    with pytest.warns(None) as warn_info:
+        g._IsoSurfGeom__read_isovol('fake_data', 'fake_db')
+    assert(len(warn_info) == 2)
+    assert(g.data == dataname)
+    assert(g.db == exp_db)
+    assert(g.levels == exp_levels)
 
 
 def test_create_geom_incomple_obj():

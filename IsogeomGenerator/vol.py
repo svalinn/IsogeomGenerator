@@ -315,9 +315,9 @@ class IsoSurfGeom(object):
         self.db = dbname
         self.isovoldbobj = isovoldbobj
         if self.isovoldbobj is not None:
-            self.__read_isvol(data, dbname)
+            self.__read_isovol(data, dbname)
 
-    def __read_isvol(self, data, dbname):
+    def __read_isovol(self, data, dbname):
         # if object exists, then set necessary values
         if not self.isovoldbobj.completed:
             raise RuntimeError("Incomplete IsoVolDatabase object was " +
@@ -381,45 +381,40 @@ class IsoSurfGeom(object):
                 warnings.warn("New IsoVolDatabase object will overwrite the " +
                               "previously provided object.")
             self.isovoldbobj = isovoldbobj
-            self.__read_isvol(data, dbname)
+            self.__read_isovol(data, dbname)
 
-        # object was not provided so other options are required
-        elif self.isovoldbobj is None:
-            # set data name
-            if data is not None:
-                # check if data was already set in the init
-                if self.data is not None:
-                    warnings.warn("New variable data will overwrite " +
-                                  "previously provided data.")
-                self.data = data
-            # if still not set, raise error
-            if self.data is None:
-                raise RuntimeError("Variable 'data' must be provided.")
+        # set data name
+        if data is not None:
+            # check if data was already set in the init
+            if self.data is not None:
+                warnings.warn("New variable data will overwrite " +
+                              "previously provided data.")
+            self.data = data
+        # if still not set, raise error
+        if self.data is None:
+            raise RuntimeError("Variable 'data' must be provided.")
 
-            # set database info
-            if dbname is not None:
-                # check if database was already set in init
-                if self.db is not None:
-                    warnings.warn("New variable dbname will overwrite " +
-                                  "previously provided dbname.")
-                self.db = dbname
-            # if still not set, use default location
-            if self.db is None:
-                self.db = os.getcwd()+"/tmp"
+        # set database info
+        if dbname is not None:
+            # check if database was already set in init
+            if self.db is not None:
+                warnings.warn("New variable dbname will overwrite " +
+                              "previously provided dbname.")
+            self.db = dbname
 
-            # get level information from file
-            if levelfile is not None:
-                # read from provided file
-                self.__read_levels(levelfile)
-            else:
-                # locate file in database
-                filepath = self.db + '/levelfile'
-                if os.path.exisits(filepath):
-                    self.__read_levels(filepath)
-                else:
-                    raise RuntimeError("levelfile does not exist in " +
-                                       "database: {}. ".format(filepath) +
-                                       "Please provide levelfile location.")
+        # if still not set, use default location
+        if self.db is None:
+            self.db = os.getcwd()+"/tmp"
+
+        # check that the database folder exists:
+        if not os.path.exists(self.db + '/vols/'):
+            raise RuntimeError('Database {} does not '.format(self.db) +
+                               'contain an isovolume database.')
+
+        # get level information from file
+        if levelfile is None:
+            levelfile = self.db + '/levelfile'
+        self.__read_levels(levelfile)
 
         # Step 0: initialize meshsets
         self.mb = core.Core()
@@ -464,6 +459,10 @@ class IsoSurfGeom(object):
         ------
             levelfile: str, relative path to file with level information.
         """
+        if not os.path.exists(levelfile):
+            raise RuntimeError("levelfile does not exist in " +
+                               "database: {}. ".format(levelfile) +
+                               "Please provide levelfile location.")
         levels = []
         f = open(levelfile, 'r')
         lines = f.readlines()
