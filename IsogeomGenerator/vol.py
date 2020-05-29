@@ -22,7 +22,7 @@ class IsoVolDatabase(object):
         self.completed = False
 
     def generate_volumes(self, filename, data,
-                         dbname=os.getcwd()+"/tmp",
+                         dbname=os.getcwd() + "/tmp",
                          levels=None, levelfile=None, genmode=None, N=None,
                          minN=None, maxN=None):
         """Creates an STL file for each isovolume. N+1 files are
@@ -183,7 +183,7 @@ class IsoVolDatabase(object):
             tmpmax = 0.
             self.levels = [minN]
             while tmpmax < maxN:
-                next_val = self.levels[-1]*float(N)
+                next_val = self.levels[-1] * float(N)
                 if next_val <= maxN:
                     self.levels.append(next_val)
                     tmpmax = next_val
@@ -203,7 +203,7 @@ class IsoVolDatabase(object):
         i = 0
         while os.path.isdir(self.db):
             i += 1
-            new_dir = self.db.rstrip("/").rstrip("-{}".format(i-1)) +\
+            new_dir = self.db.rstrip("/").rstrip("-{}".format(i - 1)) +\
                 "-{}/".format(i)
             warnings.warn("Database {} exists. Using {} " +
                           "instead.".format(self.db, new_dir))
@@ -223,7 +223,7 @@ class IsoVolDatabase(object):
                 if i == 0:
                     lbound = self.arbmin
                 else:
-                    lbound = self.levels[i-1]
+                    lbound = self.levels[i - 1]
 
                 # upper bound
                 ubound = self.levels[i]
@@ -235,7 +235,7 @@ class IsoVolDatabase(object):
         # get maximum isovolume level
         lbound = self.levels[-1]
         ubound = self.arbmax
-        self.__get_isovol(lbound, ubound, i+1)
+        self.__get_isovol(lbound, ubound, i + 1)
 
         # delete plots
         v.DeleteAllPlots()
@@ -339,7 +339,7 @@ class IsoSurfGeom(object):
         self.data = self.isovoldbobj.data
 
     def create_geometry(self, isovoldbobj=None, data=None, dbname=None,
-                        levelfile=None,  tag_for_viz=False, norm=1.0,
+                        levelfile=None, tag_for_viz=False, norm=1.0,
                         merge_tol=1e-5, tags=None, sname=None, sdir=None):
         """Over-arching function to do all steps to create a single
         isosurface geometry for DAGMC using pyMOAB.
@@ -404,7 +404,7 @@ class IsoSurfGeom(object):
 
         # if still not set, use default location
         if self.db is None:
-            self.db = os.getcwd()+"/tmp"
+            self.db = os.getcwd() + "/tmp"
 
         # check that the database folder exists:
         if not os.path.exists(self.db + '/vols/'):
@@ -497,10 +497,10 @@ class IsoSurfGeom(object):
                     (None, self.levels[i])
             elif i == len(self.levels):
                 self.isovol_meshsets[iv_info]['bounds'] =\
-                    (self.levels[i-1], None)
+                    (self.levels[i - 1], None)
             else:
                 self.isovol_meshsets[iv_info]['bounds'] =\
-                    (self.levels[i-1], self.levels[i])
+                    (self.levels[i - 1], self.levels[i])
 
     def __separate_isovols(self):
         """For each isovolume in the database, separate any disjoint
@@ -815,13 +815,13 @@ class IsoSurfGeom(object):
 
                     # tag the new surface with the shared value
                     shared = \
-                        list(set(self.isovol_meshsets[v1]['bounds'])
-                             & set(self.isovol_meshsets[v2]['bounds']))
+                        list(set(self.isovol_meshsets[v1]['bounds']) &
+                             set(self.isovol_meshsets[v2]['bounds']))
                     if not(bool(shared)):
                         print('no matching value!', v1, v2)
                         val = 0.0
                     else:
-                        val = shared[0]*norm
+                        val = shared[0] * norm
                     self.mb.tag_set_data(self.val_tag, surf, val)
 
                     # add new surface to coincident surface list
@@ -880,7 +880,7 @@ class IsoSurfGeom(object):
             if i != len(self.levels):
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
-                self.__compare_surfs(isovol, all_vols[i+1], norm, merge_tol)
+                self.__compare_surfs(isovol, all_vols[i + 1], norm, merge_tol)
 
         # if a surface doesn't have a value tagged after merging
         # give it a value of 0 and tag forward sense
