@@ -3,3 +3,4 @@
 visitlog.py
 htmlcov
 .coverage
+.vscode
