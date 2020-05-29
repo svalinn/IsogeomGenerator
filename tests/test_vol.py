@@ -462,7 +462,7 @@ def test_create_geom():
     # compare h5m files, ignoring timestamps
     diffs = os.system('h5diff --exclude-path /tstt/history ' +
                       '{} {}'.format(exp_geom, geom_file))
-    #assert(diffs == 0)
+    # assert(diffs == 0)
     remove(geom_file)
 
 
