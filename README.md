@@ -9,8 +9,11 @@ values.
 ## Table of Contents
 
 1. [Installation](#Installation)
+
 2. [Python Module](#Python-Module-Usage)
+
 3. [Command Line Tool](#Command-Line-Tool)
+
 -----
 
 ## Installation
@@ -27,7 +30,7 @@ From the source directory, run the following to install:
 
       pip install . --user
 
----
+-----
 
 ## Python Module Usage
 
@@ -102,7 +105,7 @@ To generate a full geometry from a starting Cartesian mesh file, run the followi
             written geometry file. Acceptable file types are VTK and H5M.
             Default name: `isogeom.h5m`
 
-----
+-----
 
 ## Command Line Tool
 
@@ -128,6 +131,7 @@ Command:
 To view the three different modes, run `generate_isogeom --help`.
 
 ### Options
+
 Each mode has different required or optional arguments needed at run time.
 Below is a table summary of those options. This information is also available
 via terminal help message: (`generate_isogeom [mode] --help`).
