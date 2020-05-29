@@ -4,3 +4,4 @@ visitlog.py
 htmlcov
 .coverage
 .vscode
+.pytest_cache
