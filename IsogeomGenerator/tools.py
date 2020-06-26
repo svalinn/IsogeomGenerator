@@ -26,6 +26,10 @@ def generate_levels(N, minN, maxN, mode='lin'):
             ratio: levels that are spaced by a constant ratio N.
                 minN will be used as minimum level value and the maximum
                 level value is less than or equal to maxN.
+
+    Returns:
+    --------
+        levels: list of floats, evenly spaced values according to mode
     """
     if mode == 'lin':
         levels = list(np.linspace(minN, maxN,
