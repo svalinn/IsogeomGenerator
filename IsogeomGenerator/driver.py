@@ -2,14 +2,10 @@
 geometry creation.
 """
 
-import sys
 import os
-import shutil
 import warnings
 import numpy as np
 import math as m
-import meshio
-
 import visit as v
 
 
@@ -125,3 +121,115 @@ def generate_volumes(ivdb, filename, data,
 
     # set flag for indicating completion
     ivdb.completed = True
+
+
+def create_geometry(self, isogeom, ivdb=None, data=None, dbname=None,
+                    levelfile=None, tag_for_viz=False, norm=1.0,
+                    merge_tol=1e-5, tags=None, sname=None, sdir=None):
+    """Over-arching function to do all steps to create a single
+    isosurface geometry for DAGMC using pyMOAB.
+
+    Input:
+    ------
+        isogeom: IsoGeom object, initialized object to use to create
+            full isosurface geometry
+        ivdb: IsoVolDatabase object (optional), pass a completed
+            IsoVolDatabase object with already set levels and database
+            information. If passed, will attempt to get necessary info
+            from the object instead of dbname and levelfile.
+        data: string (optional), name of the data. Required if no
+            ivdb was provided.
+        tag_for_viz: bool (optional), True to tag each triangle on
+            every surface with the data value. Needed to visualize
+            values in VisIt. Default=False.
+        norm: float (optional), default=1. All data values will be
+            multiplied by the normalization factor.
+        merge_tol: float (optional), default=1e-5 cm. Merge tolerance for
+            mesh based merge of coincident surfaces. Recommended to be
+            1/10th the mesh voxel size.
+        dbname: (optional), string, name of folder to store created
+            surface files. Must be absolute path.
+            default: a folder called 'tmp' in the current directory
+        levelfile: str (optional), relative path to file with level
+            information. Each line of the file should have exactly
+            one float to be used as a level value. If not provided, it
+            will be looked for in the database folder (dbname). If levels
+            already exist on the ivdb or isogeom object, levelfile will be
+            ignored.
+        tags: (optional), dict, set of names and values to tag on the
+            geometry root set. Dictionary should be structured with each
+            key as a tag name (str) and with a single value (float) for the
+            tag. Example: {'NAME1':1.0, 'NAME2': 2.0}
+        sname: (optional), str, name of file (including extension) for the
+            written geometry file. Acceptable file types are VTK and H5M.
+            Default name: isogeom.h5m
+    """
+    if ivdb is not None:
+        isogeom.read_isovol(ivdb)
+
+    # set data name
+    if data is not None:
+        # check if data was already set in the init
+        if isogeom.data is not None:
+            warnings.warn("New variable data will overwrite " +
+                          "previously provided data.")
+        isogeom.data = data
+    # if still not set, raise error
+    if isogeom.data is None:
+        raise RuntimeError("Variable 'data' must be provided.")
+
+    # set database info
+    if dbname is not None:
+        # check if database was already set in init
+        if isogeom.db is not None:
+            warnings.warn("New variable dbname will overwrite " +
+                          "previously provided dbname.")
+        isogeom.db = dbname
+    # if still not set, use default location
+    if isogeom.db is None:
+        isogeom.db = os.getcwd() + "/tmp"
+
+    # check that the database folder exists:
+    if not os.path.exists(isogeom.db + '/vols/'):
+        raise RuntimeError('Database {} does not '.format(isogeom.db) +
+                           'contain an isovolume database.')
+
+    # get level information from file
+    if levelfile is None:
+        levelfile = isogeom.db + '/levelfile'
+    if isogeom.levels is None:
+        isogeom.read_levels(levelfile)
+    else:
+        warnings.warn("levels already set, ignoring levelfile.")
+
+    print("Reading database...")
+    isogeom.read_database()
+    print("... Reading complete!")
+
+    # Step 1: Separate Isovolume Surfaces
+    print("Separating isovolumes...")
+    isogeom.separate_isovols()
+    print("...Separation complete!")
+
+    # Step 2: Merge Coincident Surfaces
+    print("Merging surfaces...")
+    isogeom.imprint_merge(norm, merge_tol)
+    print("...Merging complete!")
+
+    # Step 3: Assign Parent-Child Relationship
+    isogeom.make_family()
+
+    if tag_for_viz:
+        print('Tagging triangles with data...')
+        isogeom.tag_for_viz()
+        print('... tags complete')
+
+    if tags is not None:
+        isogeom.set_tags(tags)
+
+    if sdir is None:
+        sdir = isogeom.db
+    if sname is None:
+        sname = 'isogeom.h5m'
+
+    isogeom.write_geometry(sname, sdir)
