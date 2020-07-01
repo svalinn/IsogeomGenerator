@@ -67,31 +67,6 @@ def test_read_levels_nofile():
     assert 'does not exist' in str(error_info)
 
 
-# Generate Levels parametrized tests:
-# linear: (6, 5, 15, 'lin', [5., 7., 9., 11., 13., 15.]
-# log: (6, 1, 1e5, 'log', [1, 10, 1e2, 1e3, 1e4, 1e5])
-# ratio, max included: (5, 1, 625, 'ratio', [1., 5., 25., 125., 625.])
-# ratio, max not included: (5, 1, 700, 'ratio', [1., 5., 25., 125., 625.])
-@pytest.mark.parametrize("N,minN,maxN,mode,exp",
-                         [(6, 5, 15, 'lin', [5., 7., 9., 11., 13., 15.]),
-                          (6, 1, 1e5, 'log', [1, 10, 1e2, 1e3, 1e4, 1e5]),
-                          (5, 1, 625, 'ratio', [1., 5., 25., 125., 625.]),
-                          (5, 1, 700, 'ratio', [1., 5., 25., 125., 625.])])
-def test_generate_levels(N, minN, maxN, mode, exp):
-    """generate levels with different modes"""
-    g = vol.IsoVolDatabase()
-    g.generate_levels(N, minN, maxN, mode=mode)
-    assert(g.levels == exp)
-
-
-def test_generate_levels_error():
-    """generate levels with invalid mode"""
-    g = vol.IsoVolDatabase()
-    with pytest.raises(RuntimeError) as error_info:
-        g.generate_levels(6, 5, 1e5, mode='nonsense')
-    assert 'Level generation' in str(error_info)
-
-
 # Generate Volumes parametrized tests:
 #   (1) Min and Max w/in data bounds
 #   (2) Mid level no data
