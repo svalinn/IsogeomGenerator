@@ -18,3 +18,11 @@ def test_generate_levels(N, minN, maxN, mode, exp):
     """generate levels with different modes"""
     obs = driver.generate_levels(N, minN, maxN, mode=mode)
     assert(obs == exp)
+
+
+def test_generate_levels_error():
+    """generate levels with invalid mode"""
+    with pytest.raises(RuntimeError) as error_info:
+        exp = driver.generate_levels(6, 5, 1e5, mode='nonsense')
+    assert 'Level generation' in str(error_info)
+
