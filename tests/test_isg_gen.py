@@ -6,11 +6,11 @@ import pytest
 from IsogeomGenerator import isg_gen
 
 test_dir = os.getcwd() + "/tests/test_files/"
-data = 'dname'
 db = test_dir + "/exp-test/"
 levelfile = db + "/levelfile"
 levels = [15, 5, 25, 35]
 exp_levels = [5, 15, 25, 35]
+data = 'dname'
 
 
 def test_init_none():
