@@ -6,7 +6,7 @@ import numpy as np
 import math as m
 import meshio
 
-from IsoGeomGen import IsoGeomGen
+from isg_gen import IsoGeomGen
 
 import visit as v
 
@@ -15,8 +15,14 @@ class IvDb(IsoGeomGen):
     """VisIt Step
     """
 
-    def __init__(self):
-        # initialize levels list to be populated in various ways
+    def __init__(self, levels=None, data=None, db=None):
+        # initialize attributes
+        if levels is not None:
+            self.levels = levels
+        if data is not None:
+            self.data = data
+        if db is not None:
+            self.db = db
         self.completed = False
 
     def generate_vols(self):
