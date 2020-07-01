@@ -36,4 +36,6 @@ def test_init_input():
 
 
 def test_init_levels_error():
-    pass
+    with pytest.raises(RuntimeError) as error_info:
+        ig = isg_gen.IsoGeomGen(levels=1)
+    assert "Type of levels" in str(error_info)
