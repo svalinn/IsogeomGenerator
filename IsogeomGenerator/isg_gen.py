@@ -14,7 +14,7 @@ class IsoGeomGen(object):
         if type(levels) is list:
             self.assign_levels(levels)
         elif levels is not None:
-            raise RuntimeWarning("Type of levels provided not allowed. " +
+            raise RuntimeError("Type of levels provided not allowed. " +
                                  "Provide list of floats.")
         else:
             self.levels = None
