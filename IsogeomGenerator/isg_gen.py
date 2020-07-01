@@ -10,11 +10,10 @@ class IsoGeomGen(object):
 
     def __init__(self, levels=None, data=None, db=None):
 
-        self.levels = levels
         # check type of level input
         if type(levels) is list:
             self.assign_levels(levels)
-        elif type(levels) is not None:
+        elif levels is not None:
             raise RuntimeWarning("Type of levels provided not allowed. " +
                                  "Provide list of floats.")
         else:
