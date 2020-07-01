@@ -62,7 +62,7 @@ def generate_levels(N, minN, maxN, mode='lin'):
 
 
 def generate_volumes(ivdb, filename, data,
-                     dbname=os.getcwd() + "/tmp",
+                     db=os.getcwd() + "/tmp",
                      levelinfo=None):
     """Creates an STL file for each isovolume. N+1 files are
     generated and stored in the dbname folder.
@@ -74,7 +74,7 @@ def generate_volumes(ivdb, filename, data,
         data: string, name of the data whose values exist on the
             mesh (will be used to generate isocontours and
             isovolumes)
-        dbname: (optional), string, name of folder to store created
+        db: (optional), string, name of folder to store created
             surface files. Must be absolute path!
             default: a folder called 'tmp' in the current directory
         levelinfo: string or list of floats, level value information.
@@ -91,7 +91,7 @@ def generate_volumes(ivdb, filename, data,
         raise RuntimeError("Name of 'data' not provided.")
 
     if ivdb.db is None:
-        ivdb.db = dbname
+        ivdb.db = db
 
     # gather level information
     if ivdb.levels is None:
@@ -127,7 +127,7 @@ def generate_volumes(ivdb, filename, data,
     ivdb.completed = True
 
 
-def create_geometry(self, isogeom, ivdb=None, data=None, dbname=None,
+def create_geometry(isogeom, ivdb=None, data=None, dbname=None,
                     levelfile=None, tag_for_viz=False, norm=1.0,
                     merge_tol=1e-5, tags=None, sname=None, sdir=None):
     """Over-arching function to do all steps to create a single
