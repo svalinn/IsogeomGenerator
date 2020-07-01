@@ -8,7 +8,7 @@ from IsogeomGenerator import isg_gen
 levels = [1.0, 2.0, 5.0, 3.0]
 levels_exp = [1.0, 2.0, 3.0, 5.0]
 data = 'ww'
-db = test_dir = os.getcwd() + "/tests/test_files/"
+db = os.getcwd() + "/tests/test_files/"
 
 
 def test_init_none():
