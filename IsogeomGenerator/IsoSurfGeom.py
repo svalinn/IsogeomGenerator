@@ -5,21 +5,20 @@ import warnings
 import numpy as np
 import math as m
 
+from IsoGeomGen import IsoGeomGen
+
 from pymoab import core, types
 from pymoab.rng import Range
 from pymoab.skinner import Skinner
 
 
-class IsoGeom(object):
+class IsoGeom(IsoGeomGen):
     """MOAB step
     """
 
-    def __init__(self, ivdb=None, data=None, dbname=None):
+    def __init__(self, ivdb=None):
         # initialize with an IsoVolDatabase object to avoid needing level
         # info
-        self.data = data
-        self.db = dbname
-        self.levels = None
         if ivdb is not None:
             self.read_isovol(ivdb)
         self.mb = core.Core()
@@ -34,25 +33,6 @@ class IsoGeom(object):
         self.levels = ivdb.levels
         self.db = ivdb.db
         self.data = ivdb.data
-
-    def read_levels(self, levelfile):
-        """Read level values from a file. One value per line only.
-
-        Input:
-        ------
-            levelfile: str, relative path to file with level information.
-        """
-        if not os.path.exists(levelfile):
-            raise RuntimeError("levelfile does not exist in " +
-                               "database: {}. ".format(levelfile) +
-                               "Please provide levelfile location.")
-        levels = []
-        f = open(levelfile, 'r')
-        lines = f.readlines()
-        for line in lines:
-            levels.append(float(line))
-
-        self.levels = sorted(levels)
 
     def read_database(self):
         """Read the files from the database and initialize the meshset info.
