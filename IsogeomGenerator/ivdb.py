@@ -17,12 +17,7 @@ class IvDb(IsoGeomGen):
 
     def __init__(self, levels=None, data=None, db=None):
         # initialize attributes
-        if levels is not None:
-            self.levels = levels
-        if data is not None:
-            self.data = data
-        if db is not None:
-            self.db = db
+        super(IvDb, self).__init__(levels, data, db)
         self.completed = False
 
     def generate_vols(self):
