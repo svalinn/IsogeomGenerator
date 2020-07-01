@@ -61,8 +61,7 @@ def generate_levels(N, minN, maxN, mode='lin'):
                        "recognized.".format(mode))
 
 
-def generate_volumes(ivdb, filename, data,
-                     db=os.getcwd() + "/tmp",
+def generate_volumes(ivdb, filename, data=None, db=os.getcwd() + "/tmp",
                      levelinfo=None):
     """Creates an STL file for each isovolume. N+1 files are
     generated and stored in the dbname folder.
@@ -71,8 +70,8 @@ def generate_volumes(ivdb, filename, data,
     ------
         ivdb: IsoVolDatabase.IvDb object to use with database generation
         filename: string, path to vtk file with the mesh
-        data: string, name of the data whose values exist on the
-            mesh (will be used to generate isocontours and
+        data: (optional) string, name of the data whose values exist on
+            the mesh (will be used to generate isosurfaces and
             isovolumes)
         db: (optional), string, name of folder to store created
             surface files. Must be absolute path!
