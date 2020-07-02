@@ -213,37 +213,7 @@ def test__generate_vols():
     shutil.rmtree(db)
 
 
-def test__generate_vols_dir_exists():
-    """Catch warning if database already exists - __generate_vols()"""
-    # create useable object with necessary attributes
-    g = vol.IsoVolDatabase()
-    db = test_dir + "/test-exist/"
-    if os.path.isdir(db):
-        shutil.rmtree(db)
-    os.mkdir(db)
-    g.db = db
-    g.data = dataname
-    g.levels = [5, 15, 25, 35]
-    g.arbmax = 50
-    g.arbmin = -10
-    # launch VisIt
-    import visit
-    try:
-        visit.LaunchNowin()
-    except:
-        pass
-    visit.OpenDatabase(test_mesh)
-    # run __generate_vols
-    with pytest.warns(None) as warn_info:
-        g._IsoVolDatabase__generate_vols()
-    # close VisIt
-    visit.CloseComputeEngine()
-    # check that new dir was properly created
-    assert(len(warn_info) == 1)
-    new_db = test_dir + "/test-exist-1"
-    assert(os.path.isdir(new_db))
-    shutil.rmtree(db)
-    shutil.rmtree(new_db)
+
 
 
 def test__get_isovol():
@@ -328,21 +298,6 @@ def test__get_isovol_no_data():
     shutil.rmtree(db)
 
 
-def test__write_levels():
-    """test private method for writing level\file"""
-    g = vol.IsoVolDatabase()
-    db = test_dir + "/test-private-write-levels/"
-    g.db = db
-    if os.path.isdir(db):
-        shutil.rmtree(db)
-    os.mkdir(db)
-    g.levels = [5, 15, 25, 35]
-    g._IsoVolDatabase__write_levels()
-    levelfile_out = db + "/levelfile"
-    # check that the level files are the same
-    res = __compare_levelfiles(exp_levelfile, levelfile_out)
-    assert(res)
-    shutil.rmtree(db)
 
 
 # Test Moab functions
