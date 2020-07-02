@@ -12,15 +12,42 @@ import visit as v
 
 
 class IvDb(IsoGeomGen):
-    """VisIt Step
+    """Class containing necessary methods for generating isosurface
+    volumes from a mesh file with data. This class uses the python
+    interface for VisIt.
+
+    Attributes:
+    -----------
+        levels: list of floats, values used for isosurface values
+        data: string, name of data on mesh
+        db: string, path to database folder with isovolume files
+
+    Methods:
+    --------
+        generate_vols(): generate all isosurface volumes defined by the
+            levels
+        write_levels(): writes levels to a file (can be used by
+            read_levels())
     """
 
     def __init__(self, levels=None, data=None, db=None):
+        """Create IvDb object
+
+        Input:
+        ------
+            levels: (optional), list of floats or string, values to use
+                for isosurface values. If string, then it is the path
+                to levelfile where one value is given per line.
+            data: (optional), string, name of data on the mesh
+            db: (optional), string, path to database folder with
+                isovolume files. If not provided, will be set to the
+                default: '/tmp' in the current directory.
+        """
         # initialize attributes
         super(IvDb, self).__init__(levels, data, db)
         self.completed = False
 
-        # set db:
+        # set db default:
         if self.db is None:
             self.db = os.getcwd() + "/tmp"
 
