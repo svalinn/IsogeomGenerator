@@ -21,50 +21,9 @@ exp_levels = [5, 15, 25, 35]
 exp_geom = test_dir + '/exp-isogeom.h5m'
 
 
-def __compare_levelfiles(f1, f2):
-    """compares the levelfile contents regardless of string format"""
-    fs1 = open(f1, 'r')
-    fs2 = open(f2, 'r')
-
-    levels1 = []
-    lines = fs1.readlines()
-    for line in lines:
-        levels1.append(float(line))
-
-    levels2 = []
-    lines = fs2.readlines()
-    for line in lines:
-        levels2.append(float(line))
-
-    if levels1 == levels2:
-        return True
-    else:
-        return False
 
 
-def test_assign_levels():
-    """assign predetermined levels (out of order)"""
-    g = vol.IsoVolDatabase()
-    levels = [0.1, 0.2, 0.05]
-    exp = sorted(levels)
-    g.assign_levels(levels)
-    assert(g.levels == exp)
 
-
-def test_read_levels():
-    """Read levels from file"""
-    g = vol.IsoVolDatabase()
-    g.read_levels(exp_levelfile)
-    assert(g.levels == exp_levels)
-
-
-def test_read_levels_nofile():
-    """Read levels from nonexisting file"""
-    levelfile = ""
-    g = vol.IsoVolDatabase()
-    with pytest.raises(RuntimeError) as error_info:
-        g.read_levels(levelfile)
-    assert 'does not exist' in str(error_info)
 
 
 # Generate Volumes parametrized tests:
