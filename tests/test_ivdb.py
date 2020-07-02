@@ -196,3 +196,82 @@ def test_write_levels():
     r1 = __compare_levelfiles(levelfile_out, exp_levelfile)
     shutil.rmtree(db)
     assert(all([r0, r1]))
+
+
+def test_get_isovol():
+    """test get_isovol"""
+    r0 = r1 = r2 = False
+    db = test_dir + "/test-isovol/"
+    iv = ivdb.IvDb(levels=exp_levels, data=data, db=db)
+    if isdir(db):
+        shutil.rmtree(db)
+    mkdir(db)
+    mkdir(db + '/vols/')
+    # launch VisIt
+    import visit
+    try:
+        visit.LaunchNowin()
+    except:
+        pass
+    visit.OpenDatabase(test_mesh)
+    visit.AddPlot('Pseudocolor', data)
+    # run __get_isovol
+    lbound = 5
+    ubound = 15
+    i = 1
+    export_res, ubound_out = iv._IvDb__get_isovol(lbound, ubound, i)
+    # close VisIt
+    visit.CloseComputeEngine()
+    # check returned values
+    if export_res == 1:
+        r0 = True
+    if ubound_out == ubound:
+        r1 = True
+    # check that vol file produced are the same
+    gen_vol = db + "/vols/1.stl"
+    exp_vol = exp_vols_dir + "/1.stl"
+    r2 = filecmp.cmp(gen_vol, exp_vol)
+    shutil.rmtree(db)
+    assert(all([r0, r1, r2]))
+
+
+def test_get_isovol_nodata():
+    """test get_isovol no data present"""
+    r0 = r1 = r2 = rs = r4 = False
+    db = test_dir + "/test-isovol-nodata/"
+    iv = ivdb.IvDb(levels=[5, 15, 25, 28, 35], data=data, db=db)
+    if isdir(db):
+        shutil.rmtree(db)
+    mkdir(db)
+    mkdir(db + '/vols/')
+    # launch VisIt
+    import visit
+    try:
+        visit.LaunchNowin()
+    except:
+        pass
+    visit.OpenDatabase(test_mesh)
+    visit.AddPlot('Pseudocolor', data)
+    # run __get_isovol
+    lbound = 25
+    ubound = 28
+    i = 3
+    with pytest.warns(None) as warn_info:
+        export_res, ubound_out = iv._IvDb__get_isovol(lbound, ubound, i)
+    # close VisIt
+    visit.CloseComputeEngine()
+    # check returned/changed values
+    if export_res == 0:
+        r0 = True
+    if ubound_out == 35:
+        r1 = True
+    if iv.levels == [5, 15, 25, 35]:
+        r2 = True
+    gen_vol = db + "/vols/3.stl"
+    if not isfile(gen_vol):
+        # no file should be generated
+        r3 = True
+    if len(warn_info) == 1:
+        r4 = True
+    shutil.rmtree(db)
+    assert(all([r0, r1, r2, r3, r4]))
