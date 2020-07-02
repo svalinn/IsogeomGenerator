@@ -5,24 +5,54 @@ import warnings
 import numpy as np
 import math as m
 
-from IsoGeomGen import IsoGeomGen
+from isg_gen import IsoGeomGen
 
 from pymoab import core, types
 from pymoab.rng import Range
 from pymoab.skinner import Skinner
 
 
-class IsoGeom(IsoGeomGen):
-    """MOAB step
-    """
+class IsGm(IsoGeomGen):
+    """Class containing necessary methods for generating a full mesh
+    geometry from a database of isosurface volumes. This class uses the
+    python interface for MOAB (pyMOAB).
 
-    def __init__(self, ivdb=None):
-        # initialize with an IsoVolDatabase object to avoid needing level
-        # info
+    Attributes:
+    -----------
+        levels: list of floats, values used for isosurface values
+        data: string, name of data on mesh
+        db: string, path to database folder with isovolume files
+        mb: MOAB core instance, contains all information of the mesh
+            geometry
+        isovol_meshsets: dictionary, information relating curve,
+            surface, and volume entity handles to each other.
+
+    Methods:
+    --------
+    """
+    mb = core.Core()
+    isovol_meshsets = {}
+
+    def __init__(self, ivdb=None, levels=None, data=None, db=None):
+        """Create IsGm object. Information provided by an ivdb object
+        will overwrite other data provided.
+
+        Input:
+        ------
+            ivdb: (object), IvDb object, must be a completed object
+            levels: (optional), list of floats or string, values to use
+                for isosurface values. If string, then it is the path
+                to levelfile where one value is given per line.
+            data: (optional), string, name of data on the mesh
+            db: (optional), string, path to database folder with
+                isovolume files
+        """
+        # initialize variables
+        super(IsGm, self).__init__(levels, data, db)
+
+        # if ivdb object is provided, overwrite with that info
         if ivdb is not None:
             self.read_isovol(ivdb)
-        self.mb = core.Core()
-        self.isovol_meshsets = {}
 
     def read_isovol(self, ivdb):
         # if object exists, then set necessary values
