@@ -123,7 +123,7 @@ def test_make_db_dir_exists():
     if isdir(db):
         shutil.rmtree(db)
     mkdir(db)
-    db_exp = db + '-1/'
+    db_exp = test_dir + "/test-direxists-1/"
     iv = ivdb.IvDb(levels=levels, data=data, db=db)
     with pytest.warns(None) as warn_info:
         iv._IvDb__make_db_dir()
@@ -173,11 +173,26 @@ def test_check_levels_nodata():
     """check levels, no levels"""
     r0 = r1 = False
     iv = ivdb.IvDb(levels=[-5, 0, 45], data=data)
-    # data out of range should produce warning
+    # no levels remaining, creates error
     with pytest.raises(RuntimeError) as error_info:
         iv._IvDb__check_levels(test_mesh)
     if "No data exists" in str(error_info):
         r0 = True
     if iv.levels == []:
         r1 = True
+    assert(all([r0, r1]))
+
+
+def test_write_levels():
+    db = test_dir + "/test-write-levels/"
+    iv = ivdb.IvDb(levels=exp_levels, data=data, db=db)
+    if isdir(db):
+        shutil.rmtree(db)
+    mkdir(db)
+    iv.write_levels()
+    levelfile_out = db + "/levelfile"
+    if isfile(levelfile_out):
+        r0 = True
+    r1 = __compare_levelfiles(levelfile_out, exp_levelfile)
+    shutil.rmtree(db)
     assert(all([r0, r1]))
