@@ -20,9 +20,13 @@ class IvDb(IsoGeomGen):
         super(IvDb, self).__init__(levels, data, db)
         self.completed = False
 
+        # set db:
+        if self.db is None:
+            self.db = os.getcwd() + "/tmp"
+
     def generate_vols(self, filename):
         """Generates the isosurface volumes between the level values.
-        Data files are exported as STLs and saved in the folder dbname.
+        Data files are exported as STLs and saved in the folder db.
         Files will be named based on their index corresponding to their
         level values (0.stl is lowest values).
 
@@ -53,8 +57,8 @@ class IvDb(IsoGeomGen):
         # read data using meshio to get min and max and make sure levels are
         # within data bounds:
         mf = meshio.read(filename)
-        mindata = min(mf.cell_data['hexahedron'][ivdb.data])
-        maxdata = max(mf.cell_data['hexahedron'][ivdb.data])
+        mindata = min(mf.cell_data['hexahedron'][self.data])
+        maxdata = max(mf.cell_data['hexahedron'][self.data])
         arbmin = mindata - 10  # lower than lowest data
         arbmax = maxdata + 10  # higher than highest data
         all_levels = list(self.levels)
@@ -81,7 +85,7 @@ class IvDb(IsoGeomGen):
                     lbound = self.levels[i - 1]
 
                 # upper bound
-                ubound = levels[i]
+                ubound = self.levels[i]
 
                 # get volume
                 # res = 0 if no level found (should update to next level)
@@ -89,7 +93,7 @@ class IvDb(IsoGeomGen):
 
         # get maximum isovolume level
         lbound = self.levels[-1]
-        ubound = self.arbmax
+        ubound = arbmax
         self.__get_isovol(lbound, ubound, i + 1)
 
         # delete plots
