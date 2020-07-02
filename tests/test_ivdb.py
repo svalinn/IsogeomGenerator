@@ -1,6 +1,6 @@
 """Tests for the ivdb module"""
 
-from os import listdir, remove, getcwd
+from os import listdir, remove, getcwd, mkdir
 from os.path import isfile, isdir, join
 import filecmp
 import shutil
@@ -77,35 +77,18 @@ def test_init_input_file():
     assert(iv.levels == exp_levels)
 
 
-# Generate Volumes parametrized tests:
-#   (1) Min and Max w/in data bounds
-#   (2) Mid level no data
-#   (3) Min and max out of data bounds
-@pytest.mark.parametrize("levels,id", [([5, 15, 25, 35], 1),
-                                       ([5, 15, 25, 28, 35], 2)])
-def test_generate_vols(levels, id):
-    """Generate all isovolume files with different bounds.
-    Some should raise warnings. Make sure generated files are correct.
+def test_generate_vols():
+    """Generate all isovolume files.
     """
     # assert flags
-    r0 = r1 = r2 = False
+    r1 = r2 = False
     # test database path
-    db = test_dir + "/test-gen-vols-{}".format(id)
+    db = test_dir + "/test-gen-vols"
     if isdir(db):
         shutil.rmtree(db)
     # init ivdb obj
     iv = ivdb.IvDb(levels=levels, data=data, db=db)
-    # data out of range should produce warning
-    with pytest.warns(None) as warn_info:
-        iv.generate_vols(test_mesh)
-    # assert number of warnings raised
-    if id == 2:
-        # no data found warning
-        if len(warn_info) == 1:
-            r0 = True
-    else:
-        if len(warn_info) == 0:
-            r0 = True
+    iv.generate_vols(test_mesh)
     # check that files produced are the same
     gen_vols_dir = db + "/vols"
     res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
@@ -118,6 +101,40 @@ def test_generate_vols(levels, id):
     # remove files
     shutil.rmtree(iv.db)
     # check results
+    assert(all([r1, r2]))
+
+
+def test_make_db_dir():
+    db = test_dir + "/test-mkdir"
+    if isdir(db):
+        shutil.rmtree(db)
+    iv = ivdb.IvDb(levels=levels, data=data, db=db)
+    iv._IvDb__make_db_dir()
+    res = False
+    if isdir(db):
+        res = True
+    shutil.rmtree(iv.db)
+    assert(res)
+
+
+def test_make_db_dir_exists():
+    r0 = r1 = r2 = False
+    db = test_dir + "/test-direxists"
+    if isdir(db):
+        shutil.rmtree(db)
+    mkdir(db)
+    db_exp = db + '-1/'
+    iv = ivdb.IvDb(levels=levels, data=data, db=db)
+    with pytest.warns(None) as warn_info:
+        iv._IvDb__make_db_dir()
+    if len(warn_info) == 1:
+        r0 = True
+    if iv.db == db_exp:
+        r1 = True
+    if isdir(iv.db):
+        r2 = True
+    shutil.rmtree(iv.db)
+    shutil.rmtree(db)
     assert(all([r0, r1, r2]))
 
 

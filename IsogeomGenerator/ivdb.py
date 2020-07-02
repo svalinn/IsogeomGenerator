@@ -34,16 +34,8 @@ class IvDb(IsoGeomGen):
         ------
             filename: string, path to vtk file with the mesh
         """
-        # create folder to store data if it does not already exist
-        i = 0
-        while os.path.isdir(self.db):
-            i += 1
-            new_dir = self.db.rstrip("/").rstrip("-{}".format(i - 1)) +\
-                "-{}/".format(i)
-            warnings.warn("Database {} exists. Using {} " +
-                          "instead.".format(self.db, new_dir))
-            self.db = new_dir
-        os.makedirs(self.db + "/vols/")
+        # create folder for database
+        self.__make_db_dir()
 
         # launch VisIt
         try:
@@ -105,6 +97,18 @@ class IvDb(IsoGeomGen):
         filepath = self.db + '/levelfile'
         with open(filepath, "w") as f:
             f.write(level_str)
+
+    def __make_db_dir(self):
+        # create folder to store data if it does not already exist
+        i = 0
+        while os.path.isdir(self.db):
+            i += 1
+            new_dir = self.db.rstrip("/").rstrip("-{}".format(i - 1)) +\
+                "-{}/".format(i)
+            warnings.warn("Database {} exists. Using {} " +
+                          "instead.".format(self.db, new_dir))
+            self.db = new_dir
+        os.makedirs(self.db + "/vols/")
 
     def __check_levels(self, filename):
         """Read data using meshio to get min and max and make sure
