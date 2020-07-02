@@ -56,18 +56,7 @@ class IvDb(IsoGeomGen):
 
         # read data using meshio to get min and max and make sure levels are
         # within data bounds:
-        mf = meshio.read(filename)
-        mindata = min(mf.cell_data['hexahedron'][self.data])
-        maxdata = max(mf.cell_data['hexahedron'][self.data])
-        arbmin = mindata - 10  # lower than lowest data
-        arbmax = maxdata + 10  # higher than highest data
-        all_levels = list(self.levels)
-        for level in all_levels:
-            if (level <= mindata) or (level >= maxdata):
-                warnings.warn("Level {} is out of data bounds.".format(level))
-                self.levels.remove(level)
-        if len(self.levels) == 0:
-            raise RuntimeError("No data exists within provided levels.")
+        arbmin, arbmax = self.__check_levels(filename)
 
         # plot the pseudocolor data in order to get volumes
         v.AddPlot("Pseudocolor", self.data)
@@ -164,3 +153,22 @@ class IvDb(IsoGeomGen):
         filepath = self.db + '/levelfile'
         with open(filepath, "w") as f:
             f.write(level_str)
+
+    def __check_levels(self, filename):
+        """Read data using meshio to get min and max and make sure levels are
+        # within data bounds
+        """
+        mf = meshio.read(filename)
+        mindata = min(mf.cell_data['hexahedron'][self.data])
+        maxdata = max(mf.cell_data['hexahedron'][self.data])
+        arbmin = mindata - 10  # lower than lowest data
+        arbmax = maxdata + 10  # higher than highest data
+        all_levels = list(self.levels)
+        for level in all_levels:
+            if (level <= mindata) or (level >= maxdata):
+                warnings.warn("Level {} is out of data bounds.".format(level))
+                self.levels.remove(level)
+        if len(self.levels) == 0:
+            raise RuntimeError("No data exists within provided levels.")
+
+        return arbmin, arbmax

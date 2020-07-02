@@ -82,8 +82,7 @@ def test_init_input_file():
 #   (2) Mid level no data
 #   (3) Min and max out of data bounds
 @pytest.mark.parametrize("levels,id", [([5, 15, 25, 35], 1),
-                                       ([5, 15, 25, 28, 35], 2),
-                                       ([-5, 5, 15, 25, 35, 45], 3)])
+                                       ([5, 15, 25, 28, 35], 2)])
 def test_generate_vols(levels, id):
     """Generate all isovolume files with different bounds.
     Some should raise warnings. Make sure generated files are correct.
@@ -104,10 +103,6 @@ def test_generate_vols(levels, id):
         # no data found warning
         if len(warn_info) == 1:
             r0 = True
-    elif id == 3:
-        # levels are out of bounds
-        if len(warn_info) == 2:
-            r0 = True
     else:
         if len(warn_info) == 0:
             r0 = True
@@ -126,13 +121,32 @@ def test_generate_vols(levels, id):
     assert(all([r0, r1, r2]))
 
 
+def test_check_levels():
+    # Generate the volumes
+    iv = ivdb.IvDb(levels=exp_levels, data=data)
+    arbmin, arbmax = iv._IvDb__check_levels(test_mesh)
+    exp_min = -10
+    exp_max = 50
+    assert(arbmin == exp_min)
+    assert(arbmax == exp_max)
+
+
+def test_check_levels_outofbounds():
+    """level values provided are not within data bounds, so raise error"""
+    # Generate the volumes
+    iv = ivdb.IvDb(levels=[-5, 5, 15, 25, 35, 45], data=data)
+    # data out of range should produce warning
+    with pytest.warns(None) as warn_info:
+        iv._IvDb__check_levels(test_mesh)
+    assert(len(warn_info) == 2)
+
+
 @pytest.mark.filterwarnings("ignore:Level")
-def test_generate_vols_levels_outofbounds():
+def test_check_levels_nodata():
     """level values provided are not within data bounds, so raise error"""
     # Generate the volumes
     iv = ivdb.IvDb(levels=[-5, 0, 45], data=data)
     # data out of range should produce warning
     with pytest.raises(RuntimeError) as error_info:
-        iv.generate_vols(test_mesh)
-    shutil.rmtree(iv.db)
+        iv._IvDb__check_levels(test_mesh)
     assert "No data exists" in str(error_info)
