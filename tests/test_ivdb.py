@@ -78,8 +78,7 @@ def test_init_input_file():
 
 
 def test_generate_vols():
-    """Generate all isovolume files.
-    """
+    """Generate all isovolume files."""
     # assert flags
     r1 = r2 = False
     # test database path
@@ -94,6 +93,37 @@ def test_generate_vols():
     res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
     match_list = res[0]
     non_match = res[1]
+    if match_list == common_files:
+        r1 = True
+    if non_match == []:
+        r2 = True
+    # remove files
+    shutil.rmtree(iv.db)
+    # check results
+    assert(all([r1, r2]))
+
+
+def test_generate_vols_single():
+    """Generate all isovolume files with single volume"""
+    # assert flags
+    r1 = r2 = False
+    # test database path
+    db = test_dir + "/test-gen-vols-single"
+    if isdir(db):
+        shutil.rmtree(db)
+    # init ivdb obj
+    iv = ivdb.IvDb(levels=[25], data=data, db=db)
+    iv.generate_vols(test_mesh)
+    gen_vols_dir = db + "/vols"
+    # expected files
+    exp_db = test_dir + "/exp-single/"
+    exp_vols_dir = exp_db + "/vols"
+    common_files = [f for f in listdir(exp_vols_dir)
+                    if isfile(join(exp_vols_dir, f))]
+    res = filecmp.cmpfiles(exp_vols_dir, gen_vols_dir, common_files)
+    match_list = res[0]
+    non_match = res[1]
+    # check that files produced are the same
     if match_list == common_files:
         r1 = True
     if non_match == []:
