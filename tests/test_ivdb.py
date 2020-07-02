@@ -139,31 +139,45 @@ def test_make_db_dir_exists():
 
 
 def test_check_levels():
-    # Generate the volumes
+    """test check levels, all data good"""
+    r0 = r1 = r2 = False
     iv = ivdb.IvDb(levels=exp_levels, data=data)
     arbmin, arbmax = iv._IvDb__check_levels(test_mesh)
     exp_min = -10
     exp_max = 50
-    assert(arbmin == exp_min)
-    assert(arbmax == exp_max)
+    if arbmin == exp_min:
+        r0 = True
+    if arbmax == exp_max:
+        r1 = True
+    if iv.levels == exp_levels:
+        r2 = True
+    assert(all([r0, r1, r2]))
 
 
 def test_check_levels_outofbounds():
-    """level values provided are not within data bounds, so raise error"""
-    # Generate the volumes
+    """test check levels, data out of bounds"""
+    r0 = r1 = False
     iv = ivdb.IvDb(levels=[-5, 5, 15, 25, 35, 45], data=data)
     # data out of range should produce warning
     with pytest.warns(None) as warn_info:
         iv._IvDb__check_levels(test_mesh)
-    assert(len(warn_info) == 2)
+    if len(warn_info) == 2:
+        r0 = True
+    if iv.levels == exp_levels:
+        r1 = True
+    assert(all([r0, r1]))
 
 
 @pytest.mark.filterwarnings("ignore:Level")
 def test_check_levels_nodata():
-    """level values provided are not within data bounds, so raise error"""
-    # Generate the volumes
+    """check levels, no levels"""
+    r0 = r1 = False
     iv = ivdb.IvDb(levels=[-5, 0, 45], data=data)
     # data out of range should produce warning
     with pytest.raises(RuntimeError) as error_info:
         iv._IvDb__check_levels(test_mesh)
-    assert "No data exists" in str(error_info)
+    if "No data exists" in str(error_info):
+        r0 = True
+    if iv.levels == []:
+        r1 = True
+    assert(all([r0, r1]))
