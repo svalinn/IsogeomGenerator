@@ -91,6 +91,49 @@ class IvDb(IsoGeomGen):
         # close visit
         v.CloseComputeEngine()
 
+    def write_levels(self):
+        """Write the final level values used to a file that can be used by
+        read_levels().
+        """
+        # store levels as a string
+        level_str = ""
+        for level in self.levels:
+            level_str += str(level)
+            level_str += "\n"
+
+        # write to a file
+        filepath = self.db + '/levelfile'
+        with open(filepath, "w") as f:
+            f.write(level_str)
+
+    def __check_levels(self, filename):
+        """Read data using meshio to get min and max and make sure
+        levels are within data bounds.
+
+        Input:
+        ------
+            filename: string, path to mesh vtk file to check
+
+        Return:
+        -------
+            arbmin: float, value that is lower than minimum data
+            arbmax: float, value that is greater than the max data
+        """
+        mf = meshio.read(filename)
+        mindata = min(mf.cell_data['hexahedron'][self.data])
+        maxdata = max(mf.cell_data['hexahedron'][self.data])
+        arbmin = mindata - 10  # lower than lowest data
+        arbmax = maxdata + 10  # higher than highest data
+        all_levels = list(self.levels)
+        for level in all_levels:
+            if (level <= mindata) or (level >= maxdata):
+                warnings.warn("Level {} is out of data bounds.".format(level))
+                self.levels.remove(level)
+        if len(self.levels) == 0:
+            raise RuntimeError("No data exists within provided levels.")
+
+        return arbmin, arbmax
+
     def __get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
         outer surface of the volume as STL.
@@ -138,37 +181,3 @@ class IvDb(IsoGeomGen):
         v.RemoveAllOperators()
 
         return export_res, ubound
-
-    def write_levels(self):
-        """Write the final level values used to a file that can be used by
-        read_levels().
-        """
-        # store levels as a string
-        level_str = ""
-        for level in self.levels:
-            level_str += str(level)
-            level_str += "\n"
-
-        # write to a file
-        filepath = self.db + '/levelfile'
-        with open(filepath, "w") as f:
-            f.write(level_str)
-
-    def __check_levels(self, filename):
-        """Read data using meshio to get min and max and make sure levels are
-        # within data bounds
-        """
-        mf = meshio.read(filename)
-        mindata = min(mf.cell_data['hexahedron'][self.data])
-        maxdata = max(mf.cell_data['hexahedron'][self.data])
-        arbmin = mindata - 10  # lower than lowest data
-        arbmax = maxdata + 10  # higher than highest data
-        all_levels = list(self.levels)
-        for level in all_levels:
-            if (level <= mindata) or (level >= maxdata):
-                warnings.warn("Level {} is out of data bounds.".format(level))
-                self.levels.remove(level)
-        if len(self.levels) == 0:
-            raise RuntimeError("No data exists within provided levels.")
-
-        return arbmin, arbmax
