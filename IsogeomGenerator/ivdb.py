@@ -20,11 +20,15 @@ class IvDb(IsoGeomGen):
         super(IvDb, self).__init__(levels, data, db)
         self.completed = False
 
-    def generate_vols(self):
-        """Generates the isosurface volumes between the contour levels.
+    def generate_vols(self, filename):
+        """Generates the isosurface volumes between the level values.
         Data files are exported as STLs and saved in the folder dbname.
         Files will be named based on their index corresponding to their
         level values (0.stl is lowest values).
+
+        Input:
+        ------
+            filename: string, path to vtk file with the mesh
         """
         # create folder to store data if it does not already exist
         i = 0
@@ -36,6 +40,15 @@ class IvDb(IsoGeomGen):
                           "instead.".format(self.db, new_dir))
             self.db = new_dir
         os.makedirs(self.db + "/vols/")
+
+        # launch VisIt
+        try:
+            v.LaunchNowin()
+        except:
+            pass
+
+        # open file
+        v.OpenDatabase(filename)
 
         # read data using meshio to get min and max and make sure levels are
         # within data bounds:
@@ -81,6 +94,9 @@ class IvDb(IsoGeomGen):
 
         # delete plots
         v.DeleteAllPlots()
+
+        # close visit
+        v.CloseComputeEngine()
 
     def __get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the

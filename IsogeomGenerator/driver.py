@@ -6,7 +6,6 @@ import os
 import warnings
 import numpy as np
 import math as m
-import visit as v
 
 
 def generate_levels(N, minN, maxN, mode='lin'):
@@ -106,18 +105,10 @@ def generate_volumes(ivdb, filename, data=None, db=os.getcwd() + "/tmp",
         else:
             raise RuntimeError("Type of levelinfo is not recognized.")
 
-    # Generate isovolumes using VisIT
-    try:
-        v.LaunchNowin()
-    except:
-        pass
-
     # create volumes
-    v.OpenDatabase(filename)
     print("Generating isovolumes...")
-    ivdb.generate_vols()
+    ivdb.generate_vols(filename)
     print("...Isovolumes files generated!")
-    v.CloseComputeEngine()
 
     # write levels to file in database
     ivdb.write_levels()
