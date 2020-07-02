@@ -47,10 +47,6 @@ class IvDb(IsoGeomGen):
         super(IvDb, self).__init__(levels, data, db)
         self.completed = False
 
-        # set db default:
-        if self.db is None:
-            self.db = os.getcwd() + "/tmp"
-
     def generate_vols(self, filename):
         """Generates the isosurface volumes between the level values.
         Data files are exported as STLs and saved in the folder db.

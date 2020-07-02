@@ -20,7 +20,7 @@ def test_init_none():
         r0 = True
     if ig.data is None:
         r1 = True
-    if ig.db is None:
+    if ig.db == os.getcwd() + "/tmp":
         r2 = True
     assert(all([r0, r1, r2]))
 

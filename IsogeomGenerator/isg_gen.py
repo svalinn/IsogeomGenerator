@@ -1,3 +1,5 @@
+import os
+
 class IsoGeomGen(object):
     """Parent class for common member variables and methods used in
     ivdb.IsoVolDatabase() and isg.IsoSurfGen() classes.
@@ -29,10 +31,16 @@ class IsoGeomGen(object):
             db: (optional), string, path to database folder with
                 isovolume files
         """
+        # set levels
         if levels is not None:
             self.read_levels(levels)
+
         self.data = data
         self.db = db
+
+        # set db default
+        if self.db is None:
+            self.db = os.getcwd() + "/tmp"
 
     def read_levels(self, levels):
         """Read list of levels or file to assign as levels attribute
