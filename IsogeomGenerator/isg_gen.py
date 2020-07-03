@@ -1,5 +1,6 @@
 import os
 
+
 class IsoGeomGen(object):
     """Parent class for common member variables and methods used in
     ivdb.IsoVolDatabase() and isg.IsoSurfGen() classes.
