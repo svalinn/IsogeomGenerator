@@ -73,10 +73,17 @@ class IsGm(IsoGeomGen):
     def read_database(self):
         """Read the files from the database and initialize the meshset info.
         """
+        # check that levels exist:
+        if self.levels is None:
+            raise RuntimeError("Object must have levels defined.")
+
+        # check there are correct number of files:
         file_list = sorted(os.listdir(self.db + "/vols/"))
         if len(self.levels) + 1 != len(file_list):
             raise RuntimeError("Number of levels does not match number of " +
                                "isovolume files in the database.")
+
+        # read files
         for f in file_list:
             # get file name
             fpath = self.db + "/vols/" + f

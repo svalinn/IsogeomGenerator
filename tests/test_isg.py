@@ -147,10 +147,19 @@ def test_read_database():
     assert(all(res))
 
 
-def test_read_database_error():
+def test_read_database_numfiles_error():
     """read_database throws error if num levels and files mismatch"""
     # create obj and read database
     ig = isg.IsGm(levels=[300], data=data, db=exp_db)
     with pytest.raises(RuntimeError) as error_info:
         ig.read_database()
     assert "does not match number" in str(error_info)
+
+
+def test_read_database_nolevels_error():
+    """read_database throws error no levels are defined"""
+    # create obj and read database
+    ig = isg.IsGm()
+    with pytest.raises(RuntimeError) as error_info:
+        ig.read_database()
+    assert "levels defined" in str(error_info)
