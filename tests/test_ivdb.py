@@ -20,7 +20,6 @@ common_files = [f for f in listdir(exp_vols_dir)
                 if isfile(join(exp_vols_dir, f))]
 exp_levelfile = exp_db + "/levelfile"
 exp_levels = [5, 15, 25, 35]
-exp_geom = test_dir + '/exp-isogeom.h5m'
 
 
 def __compare_levelfiles(f1, f2):
