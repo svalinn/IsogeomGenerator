@@ -85,3 +85,27 @@ def test_init_input_ivdb():
 def test_init_input_file():
     ig = isg.IsGm(levels=exp_levelfile)
     assert(ig.levels == exp_levels)
+
+
+def test_read_ivdb():
+    """read info from ivdb obj"""
+    iv = __ivdb_obj(True)
+    ig = isg.IsGm()
+    ig.read_ivdb(iv)
+    r0 = r1 = r2 = False
+    if ig.levels == exp_levels:
+        r0 = True
+    if ig.data == data:
+        r1 = True
+    if ig.db == exp_db:
+        r2 = True
+    assert(all([r0, r1, r2]))
+
+
+def test_read_ivdb_incomplete():
+    """raise error if incomplete ivdb obj"""
+    iv = __ivdb_obj(False)
+    ig = isg.IsGm()
+    with pytest.raises(RuntimeError) as error_info:
+        ig.read_ivdb(iv)
+    assert "Incomplete IvDb object" in str(error_info)
