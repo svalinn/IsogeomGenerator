@@ -3,6 +3,7 @@ from os import listdir, remove, getcwd, mkdir
 from os.path import isfile, isdir, join
 import pytest
 from pymoab import core
+import numpy as np
 
 from IsogeomGenerator import isg, ivdb
 
@@ -109,3 +110,47 @@ def test_read_ivdb_incomplete():
     with pytest.raises(RuntimeError) as error_info:
         ig.read_ivdb(iv)
     assert "Incomplete IvDb object" in str(error_info)
+
+
+def test_read_database():
+    """check that meshsets are properly populated with read_database"""
+    # create obj and read database
+    ig = isg.IsGm(levels=levels, data=data, db=exp_db)
+    ig.read_database()
+    # expected meshset entity handles
+    ehs = [12682136550675316737,
+           12682136550675316738,
+           12682136550675316739,
+           12682136550675316740,
+           12682136550675316741]
+    # setup truth array
+    res = np.full(len(ehs) + 1, False)
+    # check that meshsets exist in the moab instance
+    for r, eh in enumerate(ehs):
+        try:
+            # any moab call that will work if meshet exists, else
+            # it will fail
+            ig.mb.get_child_meshsets(eh)
+        except RuntimeError:
+            pass
+        else:
+            res[r] = True
+    # check meshets and bound information are in dictionary
+    exp_meshsets = {(0, ehs[0]): {'bounds': (None, 5.0)},
+                    (1, ehs[1]): {'bounds': (5.0, 15.0)},
+                    (2, ehs[2]): {'bounds': (15.0, 25.0)},
+                    (3, ehs[3]): {'bounds': (25.0, 35.0)},
+                    (4, ehs[4]): {'bounds': (35.0, None)}}
+    if sorted(ig.isovol_meshsets) == sorted(exp_meshsets):
+        res[-1] = True
+    # assert all pass
+    assert(all(res))
+
+
+def test_read_database_error():
+    """read_database throws error if num levels and files mismatch"""
+    # create obj and read database
+    ig = isg.IsGm(levels=[300], data=data, db=exp_db)
+    with pytest.raises(RuntimeError) as error_info:
+        ig.read_database()
+    assert "does not match number" in str(error_info)
