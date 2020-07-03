@@ -52,12 +52,18 @@ class IsGm(IsoGeomGen):
 
         # if ivdb object is provided, overwrite with that info
         if ivdb is not None:
-            self.read_isovol(ivdb)
+            self.read_ivdb(ivdb)
 
-    def read_isovol(self, ivdb):
-        # if object exists, then set necessary values
+    def read_ivdb(self, ivdb):
+        """read information from IvDb object.
+
+        Input:
+        ------
+            ivdb: completed IvDb object
+        """
+        # check that object is completed
         if not ivdb.completed:
-            raise RuntimeError("Incomplete IsoVolDatabase object was " +
+            raise RuntimeError("Incomplete IvDb object was " +
                                "provided. Please run 'generate_volumes()'.")
         # set values
         self.levels = ivdb.levels
