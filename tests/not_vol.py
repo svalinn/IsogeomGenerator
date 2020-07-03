@@ -106,34 +106,6 @@ def __create_isvolobj(complete):
 
 
 # tests for checking if supplied variables are properly handled
-def test_init_obj():
-    """init with an object"""
-    ivo = __create_isvolobj(True)
-    g = vol.IsoSurfGeom(isovoldbobj=ivo)
-    assert(g.data == dataname)
-    assert(g.db == exp_db)
-    assert(g.levels == exp_levels)
-
-
-def test_init_obj_multiple():
-    """init with an object and redundant info. Test for correct variables and
-    warnings are raised."""
-    ivo = __create_isvolobj(True)
-    with pytest.warns(None) as warn_info:
-        g = vol.IsoSurfGeom(isovoldbobj=ivo, data='nonsense', dbname='fake_db')
-    assert(len(warn_info) == 2)
-    assert(g.data == dataname)
-    assert(g.db == exp_db)
-    assert(g.levels == exp_levels)
-
-
-def test_init_obj_incomplete():
-    """Try to init with an obj that was not completed. Should raise error."""
-    ivo = __create_isvolobj(False)
-    with pytest.raises(RuntimeError) as error_info:
-        g = vol.IsoSurfGeom(isovoldbobj=ivo)
-    assert "Incomplete IsoVolDatabase object" in str(error_info)
-
 
 def test_create_geom():
     """Test geometry is created properly when using defaults"""
