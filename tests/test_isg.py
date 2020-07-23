@@ -163,3 +163,59 @@ def test_read_database_nolevels_error():
     with pytest.raises(RuntimeError) as error_info:
         ig.read_database()
     assert "levels defined" in str(error_info)
+
+
+def test_separate_isovols():
+    pass
+
+
+def test_separate_isovols_single():
+    pass
+
+
+def test_imprint_merge():
+    pass
+
+
+def test_make_family():
+    pass
+
+
+def test_tag_for_viz():
+    pass
+
+
+def test_set_tags():
+    pass
+
+
+def test_write_geometry():
+    pass
+
+
+def test_get_surf_triangles():
+    pass
+
+
+def test_get_surf_triangles_all():
+    pass
+
+
+def test_list_coords():
+    pass
+
+
+def test_list_coords_invert():
+    pass
+
+
+def test_get_matches():
+    pass
+
+
+def test_get_matches_approx():
+    pass
+
+
+def test_compare_surfs():
+    pass
