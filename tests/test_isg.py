@@ -2,7 +2,7 @@
 from os import listdir, remove, getcwd, mkdir
 from os.path import isfile, isdir, join
 import pytest
-from pymoab import core
+from pymoab import core, types
 import numpy as np
 
 from IsogeomGenerator import isg, ivdb
@@ -202,11 +202,35 @@ def test_get_surf_triangles_all():
 
 
 def test_list_coords():
-    pass
+    """test list coords returns correct dictionary"""
+    # setup IsGm instance
+    ig = isg.IsGm()
+    ig.mb = core.Core()
+    # create some vertices
+    coords = np.array((1., 2., 3.), dtype='float64')
+    ig.mb.create_vertices(coords)
+    rs = ig.mb.get_root_set()
+    eh = list(ig.mb.get_entities_by_type(rs, types.MBVERTEX))[0]
+    exp_coords_dict = {eh: (1., 2., 3.)}
+    # list coords
+    coords_out = ig._IsGm__list_coords(rs)
+    assert(exp_coords_dict == coords_out)
 
 
 def test_list_coords_invert():
-    pass
+    """test list coords correctly returns inverted dictionary"""
+    # setup IsGm instance
+    ig = isg.IsGm()
+    ig.mb = core.Core()
+    # create some vertices
+    coords = np.array((1., 2., 3.), dtype='float64')
+    ig.mb.create_vertices(coords)
+    rs = ig.mb.get_root_set()
+    eh = list(ig.mb.get_entities_by_type(rs, types.MBVERTEX))[0]
+    exp_coords_dict = {(1., 2., 3.): eh}
+    # list coords
+    coords_out = ig._IsGm__list_coords(rs, invert=True)
+    assert(exp_coords_dict == coords_out)
 
 
 def test_get_matches():
