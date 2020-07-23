@@ -340,7 +340,7 @@ class IsGm(IsoGeomGen):
         print("Geometry file written to {}.".format(save_location))
 
     def __get_surf_triangles(self, verts_good):
-        """This function will take a set of vertice entity handles and
+        """This function will take a set of vertex entity handles and
         return the set of triangles for which all vertices of all
         triangles are in the set of vertices.
 
