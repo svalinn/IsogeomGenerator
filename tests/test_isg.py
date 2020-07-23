@@ -273,11 +273,69 @@ def test_list_coords_invert():
 
 
 def test_get_matches():
-    pass
+    # create instance
+    ig = isg.IsGm()
+    # set up verts to test:
+    vertsA = {10: (1., 2., 3.), 20: (4., 5., 6.), 30: (7., 8., 9.)}
+    vertsB = {(7., 8., 9.): 40, (2., 1., 3.): 50}
+    merge_tol = 1.e-5
+
+    a_eh, a_coords, b_eh, b_coords, match_dict = \
+        ig._IsGm__get_matches(vertsA, vertsB, merge_tol)
+
+    # expected values
+    a_eh_exp = [30]
+    a_coords_exp = [(7., 8., 9.)]
+    b_eh_exp = [40]
+    b_coords_exp = [(7., 8., 9.)]
+    match_dict_exp = {40: 30}
+
+    res = np.full(5, False)
+    if a_eh == a_eh_exp:
+        res[0] = True
+    if a_coords == a_coords_exp:
+        res[1] = True
+    if b_eh == b_eh_exp:
+        res[2] = True
+    if b_coords == b_coords_exp:
+        res[3] = True
+    if match_dict == match_dict_exp:
+        res[4] = True
+
+    assert(all(res))
 
 
 def test_get_matches_approx():
-    pass
+    # create instance
+    ig = isg.IsGm()
+    # set up verts to test:
+    vertsA = {10: (1., 2., 3.), 20: (4., 5., 6.), 30: (7., 8., 9.)}
+    vertsB = {(7., 8., 9.01): 40, (2., 1., 3.): 50}
+    merge_tol = 1.e-1
+
+    a_eh, a_coords, b_eh, b_coords, match_dict = \
+        ig._IsGm__get_matches(vertsA, vertsB, merge_tol)
+
+    # expected values
+    a_eh_exp = [30]
+    a_coords_exp = [(7., 8., 9.)]
+    b_eh_exp = [40]
+    b_coords_exp = [(7., 8., 9.01)]
+    match_dict_exp = {40: 30}
+
+    res = np.full(5, False)
+    if a_eh == a_eh_exp:
+        res[0] = True
+    if a_coords == a_coords_exp:
+        res[1] = True
+    if b_eh == b_eh_exp:
+        res[2] = True
+    if b_coords == b_coords_exp:
+        res[3] = True
+    if match_dict == match_dict_exp:
+        res[4] = True
+
+    assert(all(res))
 
 
 def test_compare_surfs():
