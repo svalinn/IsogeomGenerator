@@ -194,11 +194,50 @@ def test_write_geometry():
 
 
 def test_get_surf_triangles():
-    pass
+    """get triangles when one coord is not good"""
+    # setup IsGm instance
+    ig = isg.IsGm()
+    ig.mb = core.Core()
+    # make good and bad coords/verts
+    all_coords = np.array((0., 0., 0.,
+                           1., 0., 0.,
+                           .5, 1., 0.,
+                           2., 1., 0.), dtype='float64')
+    ig.mb.create_vertices(all_coords)
+    rs = ig.mb.get_root_set()
+    verts_all = ig.mb.get_entities_by_type(rs, types.MBVERTEX)
+    verts_good = verts_all[0:3]
+    verts_bad = verts_all[1:]
+    # make good triangle with coords:
+    tri_good = ig.mb.create_element(types.MBTRI, verts_good)
+    # make bad triangle:
+    tri_bad = ig.mb.create_element(types.MBTRI, verts_bad)
+    # test get surf tris
+    tris_out = ig._IsGm__get_surf_triangles(verts_good)
+    assert(tris_out == tri_good)
 
 
 def test_get_surf_triangles_all():
-    pass
+    """get triangles when all coords are good"""
+    # setup IsGm instance
+    ig = isg.IsGm()
+    ig.mb = core.Core()
+    # make two sets of verts
+    all_coords = np.array((0., 0., 0.,
+                           1., 0., 0.,
+                           .5, 1., 0.,
+                           2., 1., 0.), dtype='float64')
+    ig.mb.create_vertices(all_coords)
+    rs = ig.mb.get_root_set()
+    verts_all = ig.mb.get_entities_by_type(rs, types.MBVERTEX)
+    verts1 = verts_all[0:3]
+    verts2 = verts_all[1:]
+    # make two triangles
+    tri1 = ig.mb.create_element(types.MBTRI, verts1)
+    tri2 = ig.mb.create_element(types.MBTRI, verts2)
+    # test get surf tris
+    tris_out = ig._IsGm__get_surf_triangles(verts_all)
+    assert(sorted(tris_out) == sorted([tri1, tri2]))
 
 
 def test_list_coords():
