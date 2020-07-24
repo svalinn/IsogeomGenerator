@@ -221,7 +221,56 @@ def test_separate_isovols_single():
 
 
 def test_imprint_merge():
-    pass
+    # load two coincident volumes that need merging
+    ig = isg.IsGm()
+    fs1 = ig.mb.create_meshset()
+    ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs1)
+    fs2 = ig.mb.create_meshset()
+    ig.mb.load_file(test_dir + '/vol-files/single-box-2.stl', file_set=fs2)
+    # create useable meshset dict
+    iv1 = (0, fs1)
+    iv2 = (1, fs2)
+    ig.isovol_meshsets[iv1] = {}
+    ig.isovol_meshsets[iv1]['bounds'] = (0., 5.)
+    ig.isovol_meshsets[iv2] = {}
+    ig.isovol_meshsets[iv2]['bounds'] = (5., 10.)
+    ig.levels = [5.]
+    ig.data = 'dataname'
+    ig.separate_isovols()  # use this to get surface EHs
+    # imprint and merge
+    norm = 1.0 # change this to a multiplier to test it
+    merge_tol = 1.e-5
+    ig.imprint_merge(norm, merge_tol)
+    # checks
+    r = np.full(5, False)
+    # check number of surfaces in each volume (should be two each)
+    surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
+    surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
+    if len(surfs_1) == 2:
+        r[0] = True
+    if len(surfs_2) == 2:
+        r[1] = True
+    # check there is a common surface
+    common_surf = set(surfs_1) & set(surfs_2)
+    if len(common_surf) == 1:
+        r[2] = True
+    # check the surf_curve dict
+    num_surfs = len(ig.surf_curve.keys())
+    # 3 surfaces
+    if num_surfs == 3:
+        r[3] = True
+    # each surface should have 1 curve and the curve should be identical
+    # in all surfaces (1 curve entity handle)
+    all_curve_lists = ig.surf_curve.values()
+    exp_curve = [all_curve_lists[0]]
+    common_occurrences = all_curve_lists.count(exp_curve)
+    if common_occurrences == 3:
+        r[4] = True
+    # check the tags
+    # check
+    # tag_val -> should be level*norm (shared surf) or 0 (external surf)
+    # sense -> vol 0 should have forward
+    assert(all(r))
 
 
 def test_make_family():
