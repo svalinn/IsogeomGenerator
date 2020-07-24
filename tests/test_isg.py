@@ -166,11 +166,58 @@ def test_read_database_nolevels_error():
 
 
 def test_separate_isovols():
-    pass
+    # load mesh that needs separation
+    ig = isg.IsGm()
+    fs = ig.mb.create_meshset()
+    ig.mb.load_file(test_dir + '/vol-files/separate-vols.stl', file_set=fs)
+    # create useable meshset dict
+    ig.isovol_meshsets[(0, fs)] = {}
+    # separate the volumes
+    ig.separate_isovols()
+    # check there are two new surfaces
+    r = np.full(3, False)
+    num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
+    if num_surfs == 2:
+        r[0] = True
+    # check that no triangles or vertices are shared between the surfs
+    surf0 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][0]
+    verts0 = set(ig.mb.get_entities_by_type(surf0, types.MBVERTEX))
+    tris0 = set(ig.mb.get_entities_by_type(surf0, types.MBTRI))
+    surf1 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][1]
+    verts1 = set(ig.mb.get_entities_by_type(surf1, types.MBVERTEX))
+    tris1 = set(ig.mb.get_entities_by_type(surf1, types.MBTRI))
+    common_verts = verts0 & verts1
+    common_tris = tris0 & tris1
+    if len(common_verts) == 0:
+        r[1] = True
+    if len(common_tris) == 0:
+        r[2] = True
+    assert(all(r))
 
 
 def test_separate_isovols_single():
-    pass
+    # load mesh that does not need separation
+    ig = isg.IsGm()
+    fs = ig.mb.create_meshset()
+    ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
+    # create useable meshset dict
+    ig.isovol_meshsets[(0, fs)] = {}
+    # separate the volumes
+    ig.separate_isovols()
+    # check there are two new surfaces
+    r = np.full(3, False)
+    num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
+    if num_surfs == 1:
+        r[0] = True
+    # check number of triangles and vertices in surfaces (8 verts, 12 tris)
+    surf = ig.isovol_meshsets[(0, fs)]['surfs_EH'][0]
+    verts = ig.mb.get_entities_by_type(surf, types.MBVERTEX)
+    tris = ig.mb.get_entities_by_type(surf, types.MBTRI)
+    if len(verts) == 8:
+        r[1] = True
+    if len(tris) == 12:
+        r[2] = True
+    assert(all(r))
 
 
 def test_imprint_merge():
