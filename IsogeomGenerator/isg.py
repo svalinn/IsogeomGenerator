@@ -410,7 +410,7 @@ class IsGm(IsoGeomGen):
         Input:
         ------
             vertsA: dictionary, key is the MOAB entity handle for the
-                vertice and the value is a tuple of the coordinate
+                vertex and the value is a tuple of the coordinate
                 (x, y, z)
             vertsB: dictionary, key is a tuple of the coordinate and the
                 value is the MOAB entity handle for the coordinate.
@@ -528,11 +528,12 @@ class IsGm(IsoGeomGen):
                     surf = self.mb.create_meshset()
                     self.mb.add_entities(surf, tris1)
                     self.mb.add_entities(surf, s1_match_eh)
-                    self.surf_curve[surf] = []
+                    tris_new = self.mb.get_entities_by_dimension(surf, 2)
 
                     # get skin of new merged surf (gets curve)
-                    curve_verts = sk.find_skin(surf, tris1, True, False)
-                    curve_edges = sk.find_skin(surf, tris1, False, False)
+                    self.surf_curve[surf] = []
+                    curve_verts = sk.find_skin(v1[1], tris1, True, False)
+                    curve_edges = sk.find_skin(v1[1], tris1, False, False)
 
                     # if curve_verts/edges is empty, closed surf is created
                     # so no new curve is needed
