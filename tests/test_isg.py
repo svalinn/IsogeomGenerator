@@ -46,43 +46,43 @@ def test_init_none():
 
 
 def test_init_input():
-    r0 = r1 = r2 = False
+    r = np.full(3, False)
     ig = isg.IsGm(levels=levels, data=data, db=exp_db)
     if ig.levels == exp_levels:
-        r0 = True
+        r[0] = True
     if ig.data == data:
-        r1 = True
+        r[1] = True
     if ig.db == exp_db:
-        r2 = True
-    assert(all([r0, r1, r2]))
+        r[2] = True
+    assert(all(r))
 
 
 def test_init_ivdb():
     """test that info is taken from ivdb"""
-    r0 = r1 = r2 = False
+    r = np.full(3, False)
     iv = __ivdb_obj(True)
     ig = isg.IsGm(ivdb=iv)
     if ig.levels == exp_levels:
-        r0 = True
+        r[0] = True
     if ig.data == data:
-        r1 = True
+        r[1] = True
     if ig.db == exp_db:
-        r2 = True
-    assert(all([r0, r1, r2]))
+        r[2] = True
+    assert(all(r))
 
 
 def test_init_input_ivdb():
     """test that info from ivdb overwrites other input"""
-    r0 = r1 = r2 = False
+    r = np.full(3, False)
     iv = __ivdb_obj(True)
     ig = isg.IsGm(ivdb=iv, levels=[0, 2], data='nonsense', db='fake_db')
     if ig.levels == exp_levels:
-        r0 = True
+        r[0] = True
     if ig.data == data:
-        r1 = True
+        r[1] = True
     if ig.db == exp_db:
-        r2 = True
-    assert(all([r0, r1, r2]))
+        r[2] = True
+    assert(all(r))
 
 
 def test_init_input_file():
@@ -95,14 +95,14 @@ def test_read_ivdb():
     iv = __ivdb_obj(True)
     ig = isg.IsGm()
     ig.read_ivdb(iv)
-    r0 = r1 = r2 = False
+    r = np.full(3, False)
     if ig.levels == exp_levels:
-        r0 = True
+        r[0] = True
     if ig.data == data:
-        r1 = True
+        r[1] = True
     if ig.db == exp_db:
-        r2 = True
-    assert(all([r0, r1, r2]))
+        r[2] = True
+    assert(all(r))
 
 
 def test_read_ivdb_incomplete():
