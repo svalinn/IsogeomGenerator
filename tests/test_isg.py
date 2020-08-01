@@ -198,6 +198,7 @@ def test_separate_isovols():
 def test_separate_isovols_single():
     # load mesh that does not need separation
     ig = isg.IsGm()
+    print(ig)
     fs = ig.mb.create_meshset()
     ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
     # create useable meshset dict
