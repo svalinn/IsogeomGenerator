@@ -26,6 +26,8 @@ class IsGm(IsoGeomGen):
             geometry
         isovol_meshsets: dictionary, information relating curve,
             surface, and volume entity handles to each other.
+        surf_curve: dictionary, information relating surfaces to their
+            curves.  key = surf eh, value = list of child curve eh
 
     Methods:
     --------
@@ -50,6 +52,7 @@ class IsGm(IsoGeomGen):
 
         self.mb = core.Core()
         self.isovol_meshsets = {}
+        self.surf_curve = {}
 
         # if ivdb object is provided, overwrite with that info
         if ivdb is not None:
@@ -192,10 +195,6 @@ class IsGm(IsoGeomGen):
                                    tag_type=types.MB_TYPE_HANDLE,
                                    storage_type=types.MB_TAG_SPARSE,
                                    create_if_missing=True)
-
-        # create dictionary of curves to match to surfaces:
-        # key = surf eh, value = list of child curve eh
-        self.surf_curve = {}
 
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
