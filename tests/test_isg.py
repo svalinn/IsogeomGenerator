@@ -249,7 +249,7 @@ def test_imprint_merge():
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
     all_surfs = list(set(surfs_1).union(set(surfs_2)))
-    common_surf = set(surfs_1) & set(surfs_2)
+    common_surf = list(set(surfs_1) & set(surfs_2))[0]
     # check the tags (all surfaces should have tags now)
     # sense tag:
     #   common surf should have both volumes [vol1, vol2]
@@ -265,7 +265,7 @@ def test_imprint_merge():
     for i, surf in enumerate(all_surfs):
         val_out = ig.mb.tag_get_data(ig.val_tag, surf)[0][0]
         sense_out = list(ig.mb.tag_get_data(ig.sense_tag, surf)[0])
-        if surf == list(common_surf)[0]:
+        if surf == common_surf:
             if val_out == val_exp:
                 tmp_val[i] = True
             if sense_out == sense_exp:
