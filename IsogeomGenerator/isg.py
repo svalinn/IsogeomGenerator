@@ -28,6 +28,8 @@ class IsGm(IsoGeomGen):
             surface, and volume entity handles to each other.
         surf_curve: dictionary, information relating surfaces to their
             curves.  key = surf eh, value = list of child curve eh
+        val_tag: MOAB tag entity handle, tag for surface value
+        sense_tag: MOAB tag entity handle, tag for surface sense
 
     Methods:
     --------
@@ -50,9 +52,20 @@ class IsGm(IsoGeomGen):
         # initialize variables
         super(IsGm, self).__init__(levels, data, db)
 
+        # set MOAB related attributes
         self.mb = core.Core()
         self.isovol_meshsets = {}
         self.surf_curve = {}
+        self.val_tag = \
+            self.mb.tag_get_handle(self.data, size=1,
+                                   tag_type=types.MB_TYPE_DOUBLE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
+        self.sense_tag = \
+            self.mb.tag_get_handle('GEOM_SENSE_2', size=2,
+                                   tag_type=types.MB_TYPE_HANDLE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=True)
 
         # if ivdb object is provided, overwrite with that info
         if ivdb is not None:
@@ -184,18 +197,6 @@ class IsGm(IsoGeomGen):
             merge_tol: float, Merge tolerance for mesh based merge of
                 coincident surfaces.
         """
-        # set up surface tag information (value and sense)
-        self.val_tag = \
-            self.mb.tag_get_handle(self.data, size=1,
-                                   tag_type=types.MB_TYPE_DOUBLE,
-                                   storage_type=types.MB_TAG_SPARSE,
-                                   create_if_missing=True)
-        self.sense_tag = \
-            self.mb.tag_get_handle('GEOM_SENSE_2', size=2,
-                                   tag_type=types.MB_TYPE_HANDLE,
-                                   storage_type=types.MB_TAG_SPARSE,
-                                   create_if_missing=True)
-
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
         for i, isovol in enumerate(all_vols):
