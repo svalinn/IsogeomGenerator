@@ -30,8 +30,6 @@ class IsGm(IsoGeomGen):
     Methods:
     --------
     """
-    mb = core.Core()
-    isovol_meshsets = {}
 
     def __init__(self, ivdb=None, levels=None, data=None, db=None):
         """Create IsGm object. Information provided by an ivdb object
@@ -49,6 +47,9 @@ class IsGm(IsoGeomGen):
         """
         # initialize variables
         super(IsGm, self).__init__(levels, data, db)
+
+        self.mb = core.Core()
+        self.isovol_meshsets = {}
 
         # if ivdb object is provided, overwrite with that info
         if ivdb is not None:
