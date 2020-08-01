@@ -238,11 +238,11 @@ def test_imprint_merge():
     ig.data = 'dataname'
     ig.separate_isovols()  # use this to get surface EHs
     # imprint and merge
-    norm = 1.0 # change this to a multiplier to test it
+    norm = 1.5
     merge_tol = 1.e-5
     ig.imprint_merge(norm, merge_tol)
     # checks
-    r = np.full(5, False)
+    r = np.full(7, False)  # truth array for checks
     # check number of surfaces in each volume (should be two each)
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
@@ -267,9 +267,27 @@ def test_imprint_merge():
     if common_occurrences == 3:
         r[4] = True
     # check the tags
-    # check
-    # tag_val -> should be level*norm (shared surf) or 0 (external surf)
-    # sense -> vol 0 should have forward
+    # sense tag:
+    sense_out = list(ig.mb.tag_get_data(ig.sense_tag, common_surf)[0])
+    sense_exp = [fs1, fs2]
+    if sense_out == sense_exp:
+        r[5] = True
+    # value tag:
+    # common surf should be 7.5, others should be 0
+    # shared surface should be 7.5 (shared bound = 5, norm=1.5 -> 5*1.5=7.5)
+    all_surfs = list(set(surfs_1).union(set(surfs_2)))
+    val_exp = 7.5
+    tmp = [False, False, False]
+    for i, surf in enumerate(all_surfs):
+        val_out = ig.mb.tag_get_data(ig.val_tag, surf)[0][0]
+        if surf == list(common_surf)[0]:
+            if val_out == val_exp:
+                tmp[i] = True
+        else:
+            if val_out == 0.0:
+                tmp[i] = True
+    if all(tmp):
+        r[6] = True
     assert(all(r))
 
 
