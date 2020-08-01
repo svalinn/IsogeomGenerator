@@ -28,19 +28,21 @@ def __ivdb_obj(completed):
 
 
 def test_init_none():
-    r0 = r1 = r2 = r3 = r4 = False
+    r = np.full(6, False)
     ig = isg.IsGm()
     if ig.levels is None:
-        r0 = True
+        r[0] = True
     if ig.data is None:
-        r1 = True
+        r[1] = True
     if ig.db == getcwd() + "/tmp":
-        r2 = True
+        r[2] = True
     if isinstance(ig.mb, type(core.Core())):
-        r3 = True
+        r[3] = True
     if ig.isovol_meshsets == {}:
-        r4 = True
-    assert(all([r0, r1, r2, r3, r4]))
+        r[4] = True
+    if ig.surf_curve == {}:
+        r[5] = True
+    assert(all(r))
 
 
 def test_init_input():
