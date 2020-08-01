@@ -16,9 +16,6 @@ class IsoGeomGen(object):
         read_levels(): read level values from a file or list and set
             attribute
     """
-    levels = None
-    data = None
-    db = None
 
     def __init__(self, levels=None, data=None, db=None):
         """Create IsoGoemGen object
@@ -32,12 +29,13 @@ class IsoGeomGen(object):
             db: (optional), string, path to database folder with
                 isovolume files
         """
-        # set levels
-        if levels is not None:
-            self.read_levels(levels)
-
+        self.levels = levels
         self.data = data
         self.db = db
+
+        # set levels
+        if self.levels is not None:
+            self.read_levels(levels)
 
         # set db default
         if self.db is None:
