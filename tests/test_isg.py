@@ -246,31 +246,39 @@ def test_imprint_merge():
     ig.imprint_merge(norm, merge_tol)
     # checks
     r = np.full(2, False)  # truth array for checks
-    # check number of surfaces in each volume (should be two each)
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
-    common_surf = set(surfs_1) & set(surfs_2)
-    # check the tags
-    # sense tag:
-    sense_out = list(ig.mb.tag_get_data(ig.sense_tag, common_surf)[0])
-    sense_exp = [fs1, fs2]
-    if sense_out == sense_exp:
-        r[0] = True
-    # value tag:
-    # common surf should be 7.5, others should be 0
-    # shared surface should be 7.5 (shared bound = 5, norm=1.5 -> 5*1.5=7.5)
     all_surfs = list(set(surfs_1).union(set(surfs_2)))
+    common_surf = set(surfs_1) & set(surfs_2)
+    # check the tags (all surfaces should have tags now)
+    # sense tag:
+    #   common surf should have both volumes [vol1, vol2]
+    #   other surfaces should have only one vol (bwd sense is 0): [vol, 0]
+    # value tag:
+    #   common surface should be 7.5 (shared bound = 5, norm=1.5 -> 5*1.5=7.5)
+    #   other surfaces should be 0
     val_exp = 7.5
-    tmp = [False, False, False]
+    sense_exp = [fs1, fs2]
+    tmp_val = [False, False, False]
+    tmp_sense = [False, False, False]
+    vols = [fs1, fs2]
     for i, surf in enumerate(all_surfs):
         val_out = ig.mb.tag_get_data(ig.val_tag, surf)[0][0]
+        sense_out = list(ig.mb.tag_get_data(ig.sense_tag, surf)[0])
         if surf == list(common_surf)[0]:
             if val_out == val_exp:
-                tmp[i] = True
+                tmp_val[i] = True
+            if sense_out == sense_exp:
+                tmp_sense[i] = True
         else:
             if val_out == 0.0:
-                tmp[i] = True
-    if all(tmp):
+                tmp_val[i] = True
+            if (sense_out[0] in vols) and (sense_out[1] == np.uint64(0)):
+                tmp_sense[i] = True
+                vols.remove(sense_out[0])
+    if all(tmp_val):
+        r[0] = True
+    if all(tmp_sense):
         r[1] = True
     assert(all(r))
 
@@ -458,7 +466,7 @@ def test_compare_surfs():
     merge_tol = 1.e-5
     ig._IsGm__compare_surfs(iv1, iv2, norm, merge_tol)
     # checks
-    r = np.full(5, False)  # truth array for checks
+    r = np.full(7, False)  # truth array for checks
     # check number of surfaces in each volume (should be two each)
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
@@ -482,4 +490,16 @@ def test_compare_surfs():
     common_occurrences = all_curve_lists.count(exp_curve)
     if common_occurrences == 3:
         r[4] = True
+    # check the tags on the merged surface
+    # sense tag:
+    sense_out = list(ig.mb.tag_get_data(ig.sense_tag, common_surf)[0])
+    sense_exp = [fs1, fs2]
+    if sense_out == sense_exp:
+        r[5] = True
+    # value tag:
+    # shared surface should be 7.5 (shared bound = 5, norm=1.5 -> 5*1.5=7.5)
+    val_out = ig.mb.tag_get_data(ig.val_tag, common_surf)[0][0]
+    val_exp = 7.5
+    if val_out == val_exp:
+        r[6] = True
     assert(all(r))
