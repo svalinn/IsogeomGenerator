@@ -223,7 +223,7 @@ def test_separate_isovols_single():
     assert(all(r))
 
 
-def test_imprint_merge():
+def __setup_geom():
     # load two coincident volumes that need merging
     ig = isg.IsGm()
     fs1 = ig.mb.create_meshset()
@@ -240,9 +240,20 @@ def test_imprint_merge():
     ig.levels = [5.]
     ig.data = 'dataname'
     ig.separate_isovols()  # use this to get surface EHs
+    return ig
+
+
+def test_imprint_merge():
+    # get setup
+    ig = __setup_geom()
+    ivs = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
+    iv1 = ivs[0]
+    iv2 = ivs[1]
+    fs1 = list(iv1)[1]
+    fs2 = list(iv2)[1]
     # imprint and merge
     norm = 1.5
-    merge_tol = 1.e-5
+    merge_tol = 1e-5
     ig.imprint_merge(norm, merge_tol)
     # checks
     r = np.full(2, False)  # truth array for checks
@@ -261,7 +272,8 @@ def test_imprint_merge():
     sense_exp = [fs1, fs2]
     tmp_val = [False, False, False]
     tmp_sense = [False, False, False]
-    vols = [fs1, fs2]
+    ivs = sorted(ig.isovol_meshsets.keys())
+    vols = [fs1, fs2]  # get EHs
     for i, surf in enumerate(all_surfs):
         val_out = ig.mb.tag_get_data(ig.val_tag, surf)[0][0]
         sense_out = list(ig.mb.tag_get_data(ig.sense_tag, surf)[0])
@@ -445,23 +457,14 @@ def test_get_matches_approx():
 
 
 def test_compare_surfs():
-    # load two coincident volumes that need merging
-    ig = isg.IsGm()
-    fs1 = ig.mb.create_meshset()
-    ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs1)
-    fs2 = ig.mb.create_meshset()
-    ig.mb.load_file(test_dir + '/vol-files/single-box-2.stl', file_set=fs2)
-    # create useable meshset dict
-    iv1 = (0, fs1)
-    iv2 = (1, fs2)
-    ig.isovol_meshsets[iv1] = {}
-    ig.isovol_meshsets[iv1]['bounds'] = (0., 5.)
-    ig.isovol_meshsets[iv2] = {}
-    ig.isovol_meshsets[iv2]['bounds'] = (5., 10.)
-    ig.levels = [5.]
-    ig.data = 'dataname'
-    ig.separate_isovols()  # use this to get surface EHs
-    # run compare surfs
+    # get setup
+    ig = __setup_geom()
+    ivs = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
+    iv1 = ivs[0]
+    iv2 = ivs[1]
+    fs1 = list(iv1)[1]
+    fs2 = list(iv2)[1]
+    # compare surfs
     norm = 1.5
     merge_tol = 1.e-5
     ig._IsGm__compare_surfs(iv1, iv2, norm, merge_tol)
