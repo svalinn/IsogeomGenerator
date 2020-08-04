@@ -255,6 +255,7 @@ class IsGm(IsoGeomGen):
 
         vol_id = 0
         surf_id = 0
+        completed_surf_list = []
         for v in self.isovol_meshsets.keys():
             vol_eh = v[1]
 
@@ -268,23 +269,28 @@ class IsGm(IsoGeomGen):
                 # create relationship
                 self.mb.add_parent_child(vol_eh, surf_eh)
 
-                # tag surfaces
-                self.mb.tag_set_data(geom_dim, surf_eh, 2)
-                self.mb.tag_set_data(category, surf_eh, 'Surface')
-                surf_id += 1
-                self.mb.tag_set_data(global_id, surf_eh, surf_id)
+                # tag surfaces (if not already done)
+                if surf_eh not in completed_surf_list:
+                    self.mb.tag_set_data(geom_dim, surf_eh, 2)
+                    self.mb.tag_set_data(category, surf_eh, 'Surface')
+                    surf_id += 1
+                    self.mb.tag_set_data(global_id, surf_eh, surf_id)
+                    completed_surf_list.append(surf_eh)
 
         curve_id = 0
+        completed_curve_list = []
         for s in self.surf_curve.keys():
             for c in self.surf_curve[s]:
                 # create relationship
                 self.mb.add_parent_child(s, c)
 
-                # tag curves
-                self.mb.tag_set_data(geom_dim, c, 1)
-                self.mb.tag_set_data(category, c, 'Curve')
-                curve_id += 1
-                self.mb.tag_set_data(global_id, c, curve_id)
+                # tag curves (if not already done)
+                if c not in completed_curve_list:
+                    self.mb.tag_set_data(geom_dim, c, 1)
+                    self.mb.tag_set_data(category, c, 'Curve')
+                    curve_id += 1
+                    self.mb.tag_set_data(global_id, c, curve_id)
+                    completed_curve_list.append(c)
 
     def tag_for_viz(self):
         """Tags all triangles on all surfaces with the data value for
