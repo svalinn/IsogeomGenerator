@@ -4,6 +4,7 @@ from os.path import isfile, isdir, join
 import pytest
 from pymoab import core, types
 import numpy as np
+import itertools
 
 from IsogeomGenerator import isg, ivdb
 
@@ -296,7 +297,121 @@ def test_imprint_merge():
 
 
 def test_make_family():
-    pass
+    # get setup
+    ig = __setup_geom()
+    ivs = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
+    iv1 = ivs[0]
+    iv2 = ivs[1]
+    fs1 = list(iv1)[1]
+    fs2 = list(iv2)[1]
+    norm = 1.5
+    merge_tol = 1e-5
+    ig.imprint_merge(norm, merge_tol)  # do this to get shared surfaces
+    # run make_family
+    ig.make_family()
+    # checks:
+    r = np.full(14, False)
+    # Check Tags:
+    #   geom dim: vols=3, surfs=2, curves=1
+    #   category: 'Volume', 'Surface', 'Curve'
+    #   global id: 1..N for each vol, surf, curve
+    all_vols = [fs1, fs2]
+    all_surfs = ig.surf_curve.keys()
+    all_curves = list(set(itertools.chain(*ig.surf_curve.values())))
+    surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
+    surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
+    common_surf = list(set(surfs_1) & set(surfs_2))[0]
+    # tag EHs
+    geom_dim = ig.mb.tag_get_handle('GEOM_DIMENSION')
+    category = ig.mb.tag_get_handle('CATEGORY')
+    global_id = ig.mb.tag_get_handle('GLOBAL_ID')
+    # volume tags
+    vol_dim = ig.mb.tag_get_data(geom_dim, all_vols)
+    vol_category = ig.mb.tag_get_data(category, all_vols)
+    vol_id = ig.mb.tag_get_data(global_id, all_vols)
+    if list(vol_dim) == [3, 3]:
+        r[0] = True
+    if list(vol_category) == ['Volume', 'Volume']:
+        r[1] = True
+    if sorted(list(vol_id)) == [1, 2]:
+        r[2] = True
+    # surface tags
+    surf_dim = ig.mb.tag_get_data(geom_dim, all_surfs)
+    surf_category = ig.mb.tag_get_data(category, all_surfs)
+    surf_id = ig.mb.tag_get_data(global_id, all_surfs)
+    if list(surf_dim) == [2, 2, 2]:
+        r[3] = True
+    if list(surf_category) == ['Surface', 'Surface', 'Surface']:
+        r[4] = True
+    if sorted(list(surf_id)) == [1, 2, 3]:
+        r[5] = True
+    # curve tags
+    curve_dim = ig.mb.tag_get_data(geom_dim, all_curves)
+    curve_category = ig.mb.tag_get_data(category, all_curves)
+    curve_id = ig.mb.tag_get_data(global_id, all_curves)
+    if list(curve_dim) == [1]:
+        r[6] = True
+    if list(curve_category) == ['Curve']:
+        r[7] = True
+    if sorted(list(curve_id)) == [1]:
+        r[8] = True
+    # Check Parent/Child Relationships
+    #   1) each vol is parent to two surfs
+    #   2) each surf is parent to one curve
+    #   3) one curve has 3 surf parents
+    #   4) one surf (shared surface) has 2 vol parents
+    #   5) two surfs each have one vol parent
+    # 1) volumes have two child surfaces
+    tmp1 = np.full(len(all_vols), False)
+    tmp2 = np.full(len(all_vols), False)
+    for i, vol in enumerate(all_vols):
+        child_surfs = list(ig.mb.get_child_meshsets(vol))
+        if all(child in all_surfs for child in child_surfs):
+            tmp1[i] = True
+        if len(child_surfs) == 2:
+            tmp2[i] = True
+    if all(tmp1) and all(tmp2):
+        r[9] = True
+    # 2) surfs have one curve
+    tmp1 = np.full(len(all_surfs), False)
+    tmp2 = np.full(len(all_surfs), False)
+    for i, surf in enumerate(all_surfs):
+        child_curves = list(ig.mb.get_child_meshsets(surf))
+        if all(child in all_curves for child in child_curves):
+            tmp1[i] = True
+        if len(child_curves) == 1:
+            tmp2[i] = True
+    if all(tmp1) and all(tmp2):
+        r[10] = True
+    # 3) curve has 3 parent surfs
+    tmp1 = np.full(len(all_curves), False)
+    tmp2 = np.full(len(all_curves), False)
+    for i, curve in enumerate(all_curves):
+        parent_surfs = list(ig.mb.get_parent_meshsets(curve))
+        if all(parent in all_surfs for parent in parent_surfs):
+            tmp1[i] = True
+        if len(parent_surfs) == 3:
+            tmp2[i] = True
+    if all(tmp1) and all(tmp2):
+        r[11] = True
+    # 4) common surf has 2 vol parents
+    parent_vols = list(ig.mb.get_parent_meshsets(common_surf))
+    if sorted(parent_vols) == sorted(all_vols):
+        r[12] = True
+    # 5) other two surfaces have one vol parent
+    all_surfs.remove(common_surf)
+    tmp1 = np.full(len(all_surfs), False)
+    tmp2 = np.full(len(all_surfs), False)
+    for i, surf in enumerate(all_surfs):
+        parent_vols = list(ig.mb.get_parent_meshsets(surf))
+        if all(parent in all_vols for parent in parent_vols):
+            tmp1[i] = True
+            all_vols.remove(parent_vols)  # no shared parent vols
+        if len(parent_vols) == 1:
+            tmp2[i] = True
+    if all(tmp1) and all(tmp2):
+        r[13] = True
+    assert(all(r))
 
 
 def test_tag_for_viz():
