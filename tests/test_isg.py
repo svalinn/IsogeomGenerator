@@ -417,7 +417,24 @@ def test_make_family():
 
 
 def test_tag_for_viz():
-    pass
+    # load volume
+    ig = isg.IsGm()
+    fs = ig.mb.create_meshset()
+    ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
+    iv = (0, fs)
+    ig.isovol_meshsets[iv] = {}
+    ig.separate_isovols()  # use this to get surface EHs
+    # set val_tag (used for viz)
+    val = 5.0
+    surf = ig.isovol_meshsets[iv]['surfs_EH'][0]
+    ig.mb.tag_set_data(ig.val_tag, surf, val)
+    # tag for viz
+    ig.tag_for_viz()
+    # test viz tags
+    all_tris = ig.mb.get_entities_by_type(surf, types.MBTRI)
+    vals_out = list(ig.mb.tag_get_data(ig.val_tag, all_tris))
+    vals_exp = list(np.full(12, 5.0))
+    assert(vals_exp == vals_out)
 
 
 def test_set_tags():
