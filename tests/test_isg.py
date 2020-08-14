@@ -640,3 +640,13 @@ def test_compare_surfs():
     if val_out == val_exp:
         r[6] = True
     assert(all(r))
+
+
+def test_compare_surfs_full_surf():
+    """full surface is merged into another"""
+    pass
+
+
+def test_compare_surfs_no_val():
+    """no matching value - should throw warning"""
+    pass
