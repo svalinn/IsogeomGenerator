@@ -8,6 +8,7 @@ the command line. This script will parse the command line options and call the
 necessary methods from the vol.py file. There are three modes for running this
 script: full, visit, and moab. Each are documented below.
 """
+formatter = argparse.RawDescriptionHelpFormatter
 
 
 def set_level_options(parser, moab):
@@ -267,7 +268,7 @@ different modes:
     parser = argparse.ArgumentParser(description=mode_description,
                                      usage='generate_isogeom MODE [OPTIONS]',
                                      epilog=mode_examples,
-                                     formatter_class=argparse.RawDescriptionHelpFormatter)
+                                     formatter_class=formatter)
     subparsers = parser.add_subparsers(title='Modes',
                                        help='Select which steps to run for ' +
                                        'generating the geometry.')
@@ -309,7 +310,7 @@ Example Usage:
                                         description=full_description,
                                         usage=full_usage,
                                         epilog=full_examples,
-                                        formatter_class=argparse.RawDescriptionHelpFormatter)
+                                        formatter_class=formatter)
     set_visit_only_options(full_parser)
     set_shared_options(full_parser)
     set_moab_only_options(full_parser)
@@ -352,7 +353,7 @@ Example Usage:
                                          description=visit_description,
                                          usage=visit_usage,
                                          epilog=visit_examples,
-                                         formatter_class=argparse.RawDescriptionHelpFormatter)
+                                         formatter_class=formatter)
     set_visit_only_options(visit_parser)
     set_shared_options(visit_parser)
     visit_parser.set_defaults(which='visit')
@@ -393,7 +394,7 @@ Example Usage:
                                         description=moab_description,
                                         usage=moab_usage,
                                         epilog=moab_examples,
-                                        formatter_class=argparse.RawDescriptionHelpFormatter)
+                                        formatter_class=formatter)
     set_shared_options(moab_parser, moab=True)
     set_moab_only_options(moab_parser)
     moab_parser.set_defaults(which='moab')
