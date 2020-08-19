@@ -437,15 +437,16 @@ def test_tag_for_viz():
     assert(vals_exp == vals_out)
 
 
-@pytest.mark.parametrize("tagname,tagvalue,expname,expval,exptype",
-                         [('int_tag', 1, 'int_tag', 1, int),
-                          ('float_tag', 2.0, 'float_tag', 2.0, float),
-                          ('list_tag', [3., 4.], 'list_tag', [3., 4.], float),
-                          ('str_tag', 'val', 'str_tag', 'val', str),
-                          (1.0, 'convert', '1.0', 'convert', str)])
-def test_set_tags(tagname, tagvalue, expname, expval, exptype):
+@pytest.mark.parametrize("tagname, tagval, expname, expval, exptype",
+                         [('int_tag', 1, 'int_tag', [1], np.int32),
+                          ('float_tag', 2.0, 'float_tag', [2.0], np.float64),
+                          ('list_tag', [3., 4.], 'list_tag',
+                           [3., 4.], np.float64),
+                          ('str_tag', 'val', 'str_tag', ['val'], np.string_),
+                          (1.0, 'convert', '1.0', ['convert'], np.string_)])
+def test_set_tags(tagname, tagval, expname, expval, exptype):
     ig = isg.IsGm()
-    tags = {tagname: tagname}
+    tags = {tagname: tagval}
     # set tags
     ig.set_tags(tags)
     # check tag names, data, and type
@@ -458,11 +459,16 @@ def test_set_tags(tagname, tagvalue, expname, expval, exptype):
     except:
         # fails if tag does not exist
         r[0] = False
-
     # only test the rest if tag exists
     if r[0]:
-        data_out = ig.mb.tag_get_data(tag_out)
-        # check data type and value
+        data_out = ig.mb.tag_get_data(tag_out, rs)
+        # check data value
+        if list(data_out[0]) == expval:
+            r[1] = True
+        # check data type
+        if type(data_out[0][0]) is exptype:
+            r[2] = True
+    assert(all(r))
 
 
 def test_write_geometry():

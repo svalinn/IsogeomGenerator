@@ -328,9 +328,9 @@ class IsGm(IsoGeomGen):
         for tagname, tagval in tags.items():
             # get tag size
             try:
-                taglength = len(tagval)
+                taglength = len(tagval)  # strings or lists of ints/floats
             except:
-                taglength = 1  # can't get length on a single values
+                taglength = 1  # can't get length on a single int/float values
 
             # get datatype:
             if taglength > 1:
