@@ -437,8 +437,32 @@ def test_tag_for_viz():
     assert(vals_exp == vals_out)
 
 
-def test_set_tags():
-    pass
+@pytest.mark.parametrize("tagname,tagvalue,expname,expval,exptype",
+                         [('int_tag', 1, 'int_tag', 1, int),
+                          ('float_tag', 2.0, 'float_tag', 2.0, float),
+                          ('list_tag', [3., 4.], 'list_tag', [3., 4.], float),
+                          ('str_tag', 'val', 'str_tag', 'val', str),
+                          (1.0, 'convert', '1.0', 'convert', str)])
+def test_set_tags(tagname, tagvalue, expname, expval, exptype):
+    ig = isg.IsGm()
+    tags = {tagname: tagname}
+    # set tags
+    ig.set_tags(tags)
+    # check tag names, data, and type
+    rs = ig.mb.get_root_set()
+    r = np.full(3, False)
+    try:
+        # try to get tag by expected name
+        tag_out = ig.mb.tag_get_handle(expname)
+        r[0] = True
+    except:
+        # fails if tag does not exist
+        r[0] = False
+
+    # only test the rest if tag exists
+    if r[0]:
+        data_out = ig.mb.tag_get_data(tag_out)
+        # check data type and value
 
 
 def test_write_geometry():
