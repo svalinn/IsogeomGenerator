@@ -315,14 +315,32 @@ class IsGm(IsoGeomGen):
     def set_tags(self, tags):
         """Set provided tag values on the root set.
 
+        Tag size and type will be determined by the TAGVALUE. Any
+        TAGNAME that is not a string will be converted to a string.
+
         Input:
         ------
-            tags: dict, key=TAGNAME, value=TAGVALUE
+            tags: dict, key=TAGNAME, value=TAGVALUE, TAGNAMEs should be
+                strings and TAGVALUEs can be single values or lists of
+                any type.
         """
         rs = self.mb.get_root_set()
         for tagname, tagval in tags.items():
-            tag = self.mb.tag_get_handle(tagname, size=1,
-                                         tag_type=types.MB_TYPE_DOUBLE,
+            # get tag size
+            try:
+                taglength = len(tagval)
+            except:
+                taglength = 1  # can't get length on a single values
+
+            # get datatype:
+            if taglength > 1:
+                mbtype = types.pymoab_data_type(type(tagval[0]))
+            else:
+                mbtype = types.pymoab_data_type(type(tagval))
+
+            # create tag
+            tag = self.mb.tag_get_handle(str(tagname), size=taglength,
+                                         tag_type=mbtype,
                                          storage_type=types.MB_TAG_SPARSE,
                                          create_if_missing=True)
             self.mb.tag_set_data(tag, rs, tagval)
