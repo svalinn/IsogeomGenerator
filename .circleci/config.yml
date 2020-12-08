@@ -13,7 +13,15 @@ jobs:
             - image: svalinn/pymoab-visit-py2-18.04
         steps:
             - checkout
-            - run: pytest
+            - run:
+                command: |
+                    apt install -y hdf5-tools
+                    pip install coverage meshio
+                    coverage run --source=./IsogeomGenerator/ --omit=./IsogeomGenerator/__init__.py -m pytest
+                    coverage report
+                    coverage html
+            - store_artifacts:
+                path: htmlcov
 
 workflows:
     build:

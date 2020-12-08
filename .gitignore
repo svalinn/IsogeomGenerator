@@ -1,2 +1,7 @@
 *.pyc
 *egg-info/
+visitlog.py
+htmlcov
+.coverage
+.vscode
+.pytest_cache
