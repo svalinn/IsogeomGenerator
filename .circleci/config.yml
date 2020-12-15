@@ -32,7 +32,7 @@ jobs:
 workflows:
     build:
         jobs:
-            - install
+            - install:
                 context: dockerhub
-            - test
+            - test:
                 context: dockerhub
