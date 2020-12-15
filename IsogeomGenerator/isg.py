@@ -620,7 +620,8 @@ class IsGm(IsoGeomGen):
                         list(set(self.isovol_meshsets[v1]['bounds']) &
                              set(self.isovol_meshsets[v2]['bounds']))
                     if not(bool(shared)):
-                        print('no matching value!', v1, v2)
+                        warnings.warn("No matching value for volumes " +
+                                    "{} and {}".format(v1, v2))
                         val = 0.0
                     else:
                         val = shared[0] * norm
