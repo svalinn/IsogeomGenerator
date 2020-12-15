@@ -4,6 +4,9 @@ jobs:
     install:
         docker:
             - image: svalinn/pymoab-visit-py2-18.04
+              auth:
+                username: $DOCKERHUB_USER
+                password: $DOCKERHUB_PASS
         steps:
             - checkout
             - run:  pip install . --user
@@ -11,6 +14,9 @@ jobs:
     test:
         docker:
             - image: svalinn/pymoab-visit-py2-18.04
+              auth:
+                username: $DOCKERHUB_USER
+                password: $DOCKERHUB_PASS
         steps:
             - checkout
             - run:
@@ -27,4 +33,6 @@ workflows:
     build:
         jobs:
             - install
+                context: dockerhub
             - test
+                context: dockerhub
