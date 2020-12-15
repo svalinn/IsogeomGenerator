@@ -485,6 +485,32 @@ def test_write_geometry():
     assert(r0)
 
 
+def test_write_geometry_ext():
+    r = np.full(3, False)
+    # write file with incorrect extension
+    ig = isg.IsGm()
+    sname = 'write-test.bad'
+    with pytest.warns(None) as warn_info:
+        ig.write_geometry(sname, test_dir)
+    # check for a warning
+    if len(warn_info) == 1:
+        r[0] = True
+    # check that file exists
+    good_file = test_dir + '/write-test.h5m'
+    bad_file = test_dir + '/' + sname
+    if isfile(good_file):
+        # check that name was changed
+        r[1] = True
+        remove(good_file)
+    if not isfile(bad_file):
+        # check that bad name was not used
+        r[2] = True
+    else:
+        # file exists, needs removed
+        remove(bad_file)
+    assert(all(r))
+
+
 def test_get_surf_triangles():
     """get triangles when one coord is not good"""
     # setup IsGm instance
