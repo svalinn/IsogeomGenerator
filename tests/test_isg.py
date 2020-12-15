@@ -1,6 +1,7 @@
 """tests for the IsoSurfGeom module"""
 from os import listdir, remove, getcwd, mkdir
 from os.path import isfile, isdir, join
+import shutil
 import pytest
 from pymoab import core, types
 import numpy as np
@@ -472,7 +473,16 @@ def test_set_tags(tagname, tagval, expname, expval, exptype):
 
 
 def test_write_geometry():
-    pass
+    # write a file
+    ig = isg.IsGm()
+    sname = 'write-test.h5m'
+    ig.write_geometry(sname, test_dir)
+    # check that file exists
+    exp_file = test_dir + '/' + sname
+    if isfile(exp_file):
+        r0 = True
+        remove(exp_file)
+    assert(r0)
 
 
 def test_get_surf_triangles():
