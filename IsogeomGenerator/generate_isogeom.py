@@ -28,6 +28,7 @@ def set_level_options(parser, moab):
     level_group.add_argument('-lf', '--levelfile',
                              action='store',
                              nargs=1,
+                             default=[None],
                              type=str,
                              help='Relative path to file containing values ' +
                              'to use for isosurface levels. '
@@ -37,7 +38,7 @@ def set_level_options(parser, moab):
     level_group.add_argument('-lv', '--levelvalues',
                              action='store',
                              nargs='+',
-                             default=None,
+                             default=[None],
                              metavar='VAL',
                              type=float,
                              help='List of values used to generate ' +
@@ -50,7 +51,7 @@ def set_level_options(parser, moab):
                                  action='store',
                                  nargs=1,
                                  choices=['ratio', 'log', 'lin'],
-                                 default=None,
+                                 default=[None],
                                  metavar='ratio/log/lin',
                                  type=str,
                                  help='Specifies the mode for generating ' +
@@ -74,7 +75,7 @@ def set_level_options(parser, moab):
                             action='store',
                             nargs=2,
                             required=False,
-                            default=None,
+                            default=[None],
                             metavar=('MIN_VAL', 'MAX_VAL'),
                             dest='extN',
                             type=float,
@@ -86,7 +87,7 @@ def set_level_options(parser, moab):
                             action='store',
                             nargs=1,
                             required=False,
-                            default=None,
+                            default=[None],
                             metavar='N',
                             dest='N',
                             type=float,
@@ -125,7 +126,7 @@ def set_moab_only_options(parser):
                         action='store',
                         nargs=1,
                         required=False,
-                        default=1e-5,
+                        default=[1e-5],
                         metavar='TOL',
                         dest='mergetol',
                         type=float,
@@ -136,7 +137,7 @@ def set_moab_only_options(parser):
                         action='store',
                         nargs=1,
                         required=False,
-                        default=1,
+                        default=[1.0],
                         metavar='NORM_FACTOR',
                         dest='norm',
                         type=float,
@@ -156,7 +157,7 @@ def set_moab_only_options(parser):
                         action='store',
                         nargs=1,
                         required=False,
-                        default=None,
+                        default=[None],
                         metavar='GEOM_FILENAME',
                         dest='geomfile',
                         type=str,
@@ -169,7 +170,7 @@ def set_moab_only_options(parser):
                         action='store',
                         nargs=1,
                         required=False,
-                        default=None,
+                        default=[None],
                         metavar='PATH',
                         dest='savepath',
                         type=str,
@@ -181,7 +182,7 @@ def set_moab_only_options(parser):
                         action='append',
                         nargs=2,
                         required=False,
-                        default=None,
+                        default=[],
                         metavar=('TAGNAME', 'TAGVAL'),
                         dest='tags',
                         help='Information to tag on the whole geometry. ' +
@@ -205,7 +206,7 @@ def set_shared_options(parser, moab=False):
                         action='store',
                         nargs=1,
                         required=False,
-                        default="/tmp",
+                        default=["/tmp"],
                         metavar='DATABASE_PATH',
                         dest='db',
                         type=str,
@@ -413,7 +414,7 @@ def check_level_gen(args):
     ------
         args: set of ArgumentParser args
     """
-    if (args.extN is None) or (args.N is None):
+    if (args.extN[0] is None) or (args.N[0] is None):
         raise RuntimeError("Min/Max level values (-lx) and number of levels " +
                            "(-N) must be set to use --generatelevels option.")
 
@@ -425,19 +426,18 @@ def get_levels(args):
     ------
         args: set of ArgumentParser args
     """
-    levels = None
     # collect level information:
-    if args.levelfile is not None:
+    if args.levelfile[0] is not None:
         # option 1: read from file, set levels to file name
         levels = args.levelfile[0]
-    elif args.levelvalues is not None:
+    elif args.levelvalues[0] is not None:
         # option 2: set list of values
         levels = args.levelvalues
     elif args.generatelevels is not None:
         # option 3: generate levels
         check_level_gen(args)
-        minN = min(args.extN)
-        maxN = max(args.extN)
+        minN = min(args.extN[0])
+        maxN = max(args.extN[0])
         levels = driver.generate_levels(args.N[0], minN, maxN,
                                         mode=args.generatelevels[0])
     else:
@@ -492,7 +492,7 @@ def main():
 
     if mode in visit_modes:
         iv = ivdb.IvDb(levels=levels, data=data, db=db)
-        driver.generate_volumes(iv, filename)
+        driver.generate_volumes(iv, args.meshfile[0])
 
     if mode in moab_modes:
         if args.tags is not None:
@@ -508,9 +508,9 @@ def main():
 
         # create geom from info
         driver.create_geometry(ig,
-                               tag_for_viz=args.tagviz[0],
+                               tag_for_viz=args.tagviz,
                                norm=args.norm[0],
-                               merg_tol=args.merg_tol[0],
+                               merge_tol=args.mergetol[0],
                                tags=tags,
                                sname=args.geomfile[0],
                                sdir=args.savepath[0])
