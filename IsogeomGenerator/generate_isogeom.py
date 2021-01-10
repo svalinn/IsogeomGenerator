@@ -1,6 +1,7 @@
 import argparse
 import os
-import vol as v
+from IsogeomGenerator import driver
+from IsogeomGenerator import isg, ivdb
 
 """This is a script that can be installed for a user to easily run all the
 steps to create an isosurface geometry from a mesh file with scalar data from
@@ -111,14 +112,6 @@ def set_visit_only_options(parser):
                         '(vtk format) that will be used to generate ' +
                         'isosurfaces.'
                         )
-    parser.add_argument('dataname',
-                        action='store',
-                        nargs=1,
-                        type=str,
-                        help='String representing the name of the scalar ' +
-                        'data on the Cartesian mesh file to use for the ' +
-                        'isosurfaces.'
-                        )
 
 
 def set_moab_only_options(parser):
@@ -220,6 +213,14 @@ def set_shared_options(parser, moab=False):
                         'meshfiles from VisIt are located or to be saved. ' +
                         'Default is a folder named tmp/ in the current ' +
                         'directory.'
+                        )
+    parser.add_argument('dataname',
+                        action='store',
+                        nargs=1,
+                        type=str,
+                        help='String representing the name of the scalar ' +
+                        'data on the Cartesian mesh file to use for the ' +
+                        'isosurfaces.'
                         )
 
 
@@ -417,30 +418,32 @@ def check_level_gen(args):
                            "(-N) must be set to use --generatelevels option.")
 
 
-def get_levels(args, g):
+def get_levels(args):
     """Get level information depending on supplied args.
 
     Input:
     ------
         args: set of ArgumentParser args
-        g: IsoVolume instance
     """
+    levels = None
     # collect level information:
     if args.levelfile is not None:
-        # option 1: read from file
-        g.read_levels(args.levelfile[0])
+        # option 1: read from file, set levels to file name
+        levels = args.levelfile[0]
     elif args.levelvalues is not None:
-        # option 2: set values at run time
-        g.assign_levels(args.levelvalues)
+        # option 2: set list of values
+        levels = args.levelvalues
     elif args.generatelevels is not None:
         # option 3: generate levels
         check_level_gen(args)
         minN = min(args.extN)
         maxN = max(args.extN)
-        g.generate_levels(args.N[0], minN, maxN, mode=args.generatelevels[0])
+        levels = driver.generate_levels(args.N[0], minN, maxN,
+                                        mode=args.generatelevels[0])
     else:
         raise RuntimeError("Mode for setting level information is not " +
                            "recognized")
+    return levels
 
 
 def process_tags(tags):
@@ -471,22 +474,25 @@ def main():
     # get args
     args = parse_arguments()
 
-    # create instance
-    g = v.IsoVolume()
-
-    # get level info regardless of mode
-    get_levels(args, g)
+    # generate level info if necessary
+    # levels is either a list of values or path to file
+    levels = get_levels(args)
 
     # get database information
     db = os.getcwd() + '/' + args.db[0]
+
+    # get dataname
+    data = args.dataname[0]
 
     # run steps depending on mode
     mode = args.which
     visit_modes = ["full", "visit"]
     moab_modes = ["full", "moab"]
+    iv = None  # initialize
+
     if mode in visit_modes:
-        # generate isosurfaces
-        g.generate_volumes(args.meshfile[0], args.dataname[0], db)
+        iv = ivdb.IvDb(levels=levels, data=data, db=db)
+        driver.generate_volumes(iv, filename)
 
     if mode in moab_modes:
         if args.tags is not None:
@@ -494,14 +500,20 @@ def main():
         else:
             tags = None
 
-        # create/write geometry
-        g.create_geometry(tag_for_viz=args.tagviz[0],
-                          norm=args.norm[0],
-                          merg_tol=args.merg_tol[0],
-                          tags=tags,
-                          dbname=db,
-                          sname=args.geomfile[0],
-                          sdir=args.savepath[0])
+        # pass IvDb info if object exists from previous step
+        if iv is not None:
+            ig = isg.IsGm(ivdb=iv)
+        else:
+            ig = isg.IsGm(levels=levels, data=data, db=db)
+
+        # create geom from info
+        driver.create_geometry(ig,
+                               tag_for_viz=args.tagviz[0],
+                               norm=args.norm[0],
+                               merg_tol=args.merg_tol[0],
+                               tags=tags,
+                               sname=args.geomfile[0],
+                               sdir=args.savepath[0])
 
 
 if __name__ == "__main__":
