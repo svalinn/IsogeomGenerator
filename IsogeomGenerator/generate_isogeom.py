@@ -495,7 +495,7 @@ def main():
         driver.generate_volumes(iv, args.meshfile[0])
 
     if mode in moab_modes:
-        if args.tags is not None:
+        if args.tags != []:
             tags = process_tags(args.tags)
         else:
             tags = None
