@@ -52,6 +52,10 @@ class IsGm(IsoGeomGen):
         # initialize variables
         super(IsGm, self).__init__(levels, data, db)
 
+        # if ivdb object is provided, overwrite with that info
+        if ivdb is not None:
+            self.read_ivdb(ivdb)
+
         # set MOAB related attributes
         self.mb = core.Core()
         self.isovol_meshsets = {}
@@ -66,10 +70,6 @@ class IsGm(IsoGeomGen):
                                    tag_type=types.MB_TYPE_HANDLE,
                                    storage_type=types.MB_TAG_SPARSE,
                                    create_if_missing=True)
-
-        # if ivdb object is provided, overwrite with that info
-        if ivdb is not None:
-            self.read_ivdb(ivdb)
 
     def read_ivdb(self, ivdb):
         """read information from IvDb object.
