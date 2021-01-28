@@ -1,7 +1,6 @@
 import argparse
 import os
-from IsogeomGenerator import driver
-from IsogeomGenerator import isg, ivdb
+from IsogeomGenerator import driver, isg, ivdb
 
 """This is a script that can be installed for a user to easily run all the
 steps to create an isosurface geometry from a mesh file with scalar data from
