@@ -181,7 +181,6 @@ def set_moab_only_options(parser):
                         action='append',
                         nargs=2,
                         required=False,
-                        default=[],
                         metavar=('TAGNAME', 'TAGVAL'),
                         dest='tags',
                         help='Information to tag on the whole geometry. ' +
@@ -494,7 +493,7 @@ def main():
         driver.generate_volumes(iv, args.meshfile[0])
 
     if mode in moab_modes:
-        if args.tags != []:
+        if args.tags:
             tags = process_tags(args.tags)
         else:
             tags = None
