@@ -170,6 +170,7 @@ def test_read_database_nolevels_error():
 
 
 def test_separate_isovols():
+    """test that disjoint volumes are properly separated"""
     # load mesh that needs separation
     ig = isg.IsGm()
     fs = ig.mb.create_meshset()
@@ -200,6 +201,7 @@ def test_separate_isovols():
 
 
 def test_separate_isovols_single():
+    """test a single vol is unchanged when it goes through separation"""
     # load mesh that does not need separation
     ig = isg.IsGm()
     print(ig)
@@ -226,6 +228,7 @@ def test_separate_isovols_single():
 
 
 def __setup_geom():
+    """function for other tests to create a useable isogeom object"""
     # load two coincident volumes that need merging
     ig = isg.IsGm()
     fs1 = ig.mb.create_meshset()
@@ -246,6 +249,7 @@ def __setup_geom():
 
 
 def test_imprint_merge():
+    """test mesh imprint and merge capability"""
     # get setup
     ig = __setup_geom()
     ivs = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
@@ -298,6 +302,7 @@ def test_imprint_merge():
 
 
 def test_make_family():
+    """test tags are added properly"""
     # get setup
     ig = __setup_geom()
     ivs = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
@@ -418,6 +423,7 @@ def test_make_family():
 
 
 def test_tag_for_viz():
+    """test visualization tags are added to triangles"""
     # load volume
     ig = isg.IsGm()
     fs = ig.mb.create_meshset()
@@ -446,6 +452,7 @@ def test_tag_for_viz():
                           ('str_tag', 'val', 'str_tag', ['val'], np.string_),
                           (1.0, 'convert', '1.0', ['convert'], np.string_)])
 def test_set_tags(tagname, tagval, expname, expval, exptype):
+    """test tags are set on root set for various lengths and data types."""
     ig = isg.IsGm()
     tags = {tagname: tagval}
     # set tags
@@ -597,6 +604,7 @@ def test_list_coords_invert():
 
 
 def test_get_matches():
+    """test that coordinates are properly identified as matching"""
     # create instance
     ig = isg.IsGm()
     # set up verts to test:
@@ -630,6 +638,7 @@ def test_get_matches():
 
 
 def test_get_matches_approx():
+    """test coords are identified as matching if approximate matches"""
     # create instance
     ig = isg.IsGm()
     # set up verts to test:
@@ -663,6 +672,7 @@ def test_get_matches_approx():
 
 
 def test_compare_surfs():
+    """test that new surf is correctly generated when comparing two"""
     # get setup
     ig = __setup_geom()
     ivs = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
@@ -721,4 +731,31 @@ def test_compare_surfs_full_surf():
 
 def test_compare_surfs_no_val():
     """no matching value - should throw warning"""
-    pass
+    # get setup
+    ig = __setup_geom()
+    iv = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
+    fs1 = list(iv[0])[1]
+    fs2 = list(iv[1])[1]
+    # change level info on one so there is no common value
+    ig.isovol_meshsets[iv[1]]['bounds'] = (6., 10.)
+    # compare surfs
+    norm = 1.5
+    merge_tol = 1.e-5
+    r = np.full(3, False)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        ig._IsGm__compare_surfs(iv[0], iv[1], norm, merge_tol)
+        # check warning
+        if len(w) == 1:
+            r[0] = True
+        if "No matching value" in str(w[-1].message):
+            r[1] = True
+    # common surface should be assigned a value of 0.0
+    surfs_1 = ig.isovol_meshsets[iv[0]]['surfs_EH']
+    surfs_2 = ig.isovol_meshsets[iv[1]]['surfs_EH']
+    common_surf = set(surfs_1) & set(surfs_2)
+    val_out = ig.mb.tag_get_data(ig.val_tag, common_surf)[0][0]
+    val_exp = 0.0
+    if val_out == val_exp:
+        r[2] = True
+    assert(all(r))
