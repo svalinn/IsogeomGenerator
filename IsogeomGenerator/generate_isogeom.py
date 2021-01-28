@@ -365,7 +365,7 @@ mesh file database.
 
 Levels information must be provided with either the -lf or -lv option.
 """
-    moab_usage = 'generate_isogeom moab [-lf/-lv] [OPTIONS]'
+    moab_usage = 'generate_isogeom moab dataname [-lf/-lv] [OPTIONS]'
     moab_examples = """
 Example Usage:
     (1) Create an isosurface geometry called 'my_isogeom.h5m' with assigned
