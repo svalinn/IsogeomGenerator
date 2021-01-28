@@ -5,6 +5,7 @@ import pytest
 from pymoab import core, types
 import numpy as np
 import itertools
+import warnings
 
 from IsogeomGenerator import isg, ivdb
 
@@ -699,19 +700,21 @@ def test_compare_surfs_no_val():
     # compare surfs
     norm = 1.5
     merge_tol = 1.e-5
-    with pytest.warns(None) as warn_info:
+    r = np.full(3, False)
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
         ig._IsGm__compare_surfs(iv[0], iv[1], norm, merge_tol)
-    # checks
-    r = np.full(2, False)
-    # should raise a warning
-    if len(warn_info) == 1:
-        r[0] = True
+        # check warning
+        if len(w) == 1:
+            r[0] = True
+        if "No matching value" in str(w[-1].message):
+            r[1] = True
     # common surface should be assigned a value of 0.0
-    surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
-    surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
+    surfs_1 = ig.isovol_meshsets[iv[0]]['surfs_EH']
+    surfs_2 = ig.isovol_meshsets[iv[1]]['surfs_EH']
     common_surf = set(surfs_1) & set(surfs_2)
     val_out = ig.mb.tag_get_data(ig.val_tag, common_surf)[0][0]
     val_exp = 0.0
     if val_out == val_exp:
-        r[1] = True
+        r[2] = True
     assert(all(r))
