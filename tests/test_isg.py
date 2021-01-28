@@ -480,10 +480,11 @@ def test_write_geometry():
     ig.write_geometry(sname, test_dir)
     # check that file exists
     exp_file = test_dir + '/' + sname
+    r = False
     if isfile(exp_file):
-        r0 = True
+        r = True
         remove(exp_file)
-    assert(r0)
+    assert(r)
 
 
 def test_write_geometry_ext():
