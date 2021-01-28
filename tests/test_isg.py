@@ -681,18 +681,16 @@ def test_compare_surfs_no_val():
     """no matching value - should throw warning"""
     # get setup
     ig = __setup_geom()
-    ivs = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
-    iv1 = ivs[0]
-    iv2 = ivs[1]
-    fs1 = list(iv1)[1]
-    fs2 = list(iv2)[1]
+    iv = sorted(ig.isovol_meshsets.keys())  # isovol info: (vol id, EH)
+    fs1 = list(iv[0])[1]
+    fs2 = list(iv[1])[1]
     # change level info on one so there is no common value
-    ig.isovol_meshsets[iv2]['bounds'] = (6., 10.)
+    ig.isovol_meshsets[iv[1]]['bounds'] = (6., 10.)
     # compare surfs
     norm = 1.5
     merge_tol = 1.e-5
     with pytest.warns(None) as warn_info:
-        ig._IsGm__compare_surfs(iv1, iv2, norm, merge_tol)
+        ig._IsGm__compare_surfs(iv[0], iv[1], norm, merge_tol)
     # checks
     r = np.full(2, False)
     # should raise a warning
