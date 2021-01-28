@@ -1,7 +1,6 @@
 """tests for the IsoSurfGeom module"""
 from os import listdir, remove, getcwd, mkdir
 from os.path import isfile, isdir, join
-import shutil
 import pytest
 from pymoab import core, types
 import numpy as np
