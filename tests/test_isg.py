@@ -473,6 +473,7 @@ def test_set_tags(tagname, tagval, expname, expval, exptype):
 
 
 def test_write_geometry():
+    """test that a file of the correct name is created"""
     # write a file
     ig = isg.IsGm()
     sname = 'write-test.h5m'
@@ -486,6 +487,7 @@ def test_write_geometry():
 
 
 def test_write_geometry_ext():
+    """generated file should have a different name than supplied + warnings"""
     r = np.full(3, False)
     # write file with incorrect extension
     ig = isg.IsGm()
