@@ -5,6 +5,7 @@ import pytest
 from pymoab import core, types
 import numpy as np
 import itertools
+import warnings
 
 from IsogeomGenerator import isg, ivdb
 
@@ -472,7 +473,48 @@ def test_set_tags(tagname, tagval, expname, expval, exptype):
 
 
 def test_write_geometry():
-    pass
+    """test that a file of the correct name is created"""
+    # write a file
+    ig = isg.IsGm()
+    sname = 'write-test.h5m'
+    ig.write_geometry(sname, test_dir)
+    # check that file exists
+    exp_file = test_dir + '/' + sname
+    r = False
+    if isfile(exp_file):
+        r = True
+        remove(exp_file)
+    assert(r)
+
+
+def test_write_geometry_ext():
+    """generated file should have a different name than supplied + warnings"""
+    r = np.full(4, False)
+    # write file with incorrect extension
+    ig = isg.IsGm()
+    sname = 'write-test.bad'
+    # check for a warning
+    with warnings.catch_warnings(record=True) as w:
+        ig.write_geometry(sname, test_dir)
+        warnings.simplefilter("always")
+        if len(w) == 1:
+            r[0] = True
+        if "File will be saved as type .h5m" in str(w[-1].message):
+            r[1] = True
+    # check that file exists
+    good_file = test_dir + '/write-test.h5m'
+    bad_file = test_dir + '/' + sname
+    if isfile(good_file):
+        # check that name was changed
+        r[2] = True
+        remove(good_file)
+    if not isfile(bad_file):
+        # check that bad name was not used
+        r[3] = True
+    else:
+        # file exists, needs removed
+        remove(bad_file)
+    assert(all(r))
 
 
 def test_get_surf_triangles():
