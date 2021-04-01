@@ -13,7 +13,7 @@ from IsogeomGenerator import isg, ivdb
 test_dir = getcwd() + "/tests/test_files/"
 test_mesh = test_dir + "test_mesh.vtk"
 data = 'dname'
-levels = [15, 5, 25, 35]
+levels = [15, 5, 25, 35, 45]
 exp_db = test_dir + "/exp-test/"
 exp_vols_dir = exp_db + "/vols"
 common_files = [f for f in listdir(exp_vols_dir)
@@ -49,7 +49,7 @@ def test_init_none():
 
 def test_init_input():
     r = np.full(3, False)
-    ig = isg.IsGm(levels=levels, data=data, db=exp_db)
+    ig = isg.IsGm(levels=exp_levels, data=data, db=exp_db)
     if ig.levels == exp_levels:
         r[0] = True
     if ig.data == data:
