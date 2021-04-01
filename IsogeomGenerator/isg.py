@@ -96,7 +96,7 @@ class IsGm(IsoGeomGen):
 
         # check there are correct number of files:
         file_list = sorted(os.listdir(self.db + "/vols/"))
-        if len(self.levels) + 1 != len(file_list):
+        if len(self.levels) != len(file_list):
             raise RuntimeError("Number of levels does not match number of " +
                                "isovolume files in the database.")
 

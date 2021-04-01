@@ -72,6 +72,7 @@ class IvDb(IsoGeomGen):
         # read data using meshio to get min and max and make sure levels are
         # within data bounds:
         arbmin, arbmax = self.__check_levels(filename)
+        self.levels.append(arbmax)
 
         # plot the pseudocolor data in order to get volumes
         v.AddPlot("Pseudocolor", self.data)
@@ -94,11 +95,6 @@ class IvDb(IsoGeomGen):
                 # get volume
                 # res = 0 if no level found (should update to next level)
                 res, ubound = self.__get_isovol(lbound, ubound, i)
-
-        # get maximum isovolume level
-        lbound = self.levels[-1]
-        ubound = arbmax
-        self.__get_isovol(lbound, ubound, i + 1)
 
         # delete plots
         v.DeleteAllPlots()
@@ -126,8 +122,8 @@ class IvDb(IsoGeomGen):
         i = 0
         while os.path.isdir(self.db):
             i += 1
-            new_dir = self.db.rstrip("/").rstrip("-{}".format(i - 1)) +\
-                "-{}/".format(i)
+            new_dir = self.db.rstrip("/").rstrip("_{}".format(i - 1)) +\
+                "_{}/".format(i)
             warnings.warn("Database {} exists. Using {} " +
                           "instead.".format(self.db, new_dir))
             self.db = new_dir
@@ -200,10 +196,16 @@ class IvDb(IsoGeomGen):
                 + "{} and {}.\n".format(lbound, ubound) \
                 + "Increasing upper bound to next selected level."
             warnings.warn(warn_message)
-            index = self.levels.index(ubound)
-            ubound_old = ubound
-            ubound = self.levels[index + 1]
-            self.levels.remove(ubound_old)
+            if ubound == max(self.levels):
+                # already at max so do not need to export more levels
+                self.levels.remove(ubound)
+                export_res = 1
+            else:
+                # update to next level to try again
+                index = self.levels.index(ubound)
+                ubound_old = ubound
+                ubound = self.levels[index + 1]
+                self.levels.remove(ubound_old)
         # delete the operators
         v.RemoveAllOperators()
 

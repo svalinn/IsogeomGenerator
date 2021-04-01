@@ -152,7 +152,7 @@ def test_make_db_dir_exists():
     if isdir(db):
         shutil.rmtree(db)
     mkdir(db)
-    db_exp = test_dir + "/test-direxists-1/"
+    db_exp = test_dir + "/test-direxists_1/"
     iv = ivdb.IvDb(levels=levels, data=data, db=db)
     with pytest.warns(None) as warn_info:
         iv._IvDb__make_db_dir()
