@@ -200,7 +200,7 @@ class IsGm(IsoGeomGen):
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
         for i, isovol in enumerate(all_vols):
-            if i != len(self.levels):
+            if i != len(self.levels) - 1:
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
                 self.__compare_surfs(isovol, all_vols[i + 1], norm, merge_tol)

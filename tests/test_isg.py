@@ -242,7 +242,7 @@ def __setup_geom():
     ig.isovol_meshsets[iv1]['bounds'] = (0., 5.)
     ig.isovol_meshsets[iv2] = {}
     ig.isovol_meshsets[iv2]['bounds'] = (5., 10.)
-    ig.levels = [5.]
+    ig.levels = [5., 100.]
     ig.data = 'dataname'
     ig.separate_isovols()  # use this to get surface EHs
     return ig
