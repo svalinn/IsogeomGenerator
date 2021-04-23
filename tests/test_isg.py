@@ -19,12 +19,12 @@ exp_vols_dir = exp_db + "/vols"
 common_files = [f for f in listdir(exp_vols_dir)
                 if isfile(join(exp_vols_dir, f))]
 exp_levelfile = exp_db + "/levelfile"
-exp_levels = [5, 15, 25, 35]
+exp_levels = [5, 15, 25, 35, 45]
 exp_geom = test_dir + '/exp-isogeom.h5m'
 
 
 def __ivdb_obj(completed):
-    iv = ivdb.IvDb(levels=exp_levels, data=data, db=exp_db)
+    iv = ivdb.IvDb(levels=levels, data=data, db=exp_db)
     iv.completed = completed
     return iv
 
@@ -49,7 +49,7 @@ def test_init_none():
 
 def test_init_input():
     r = np.full(3, False)
-    ig = isg.IsGm(levels=exp_levels, data=data, db=exp_db)
+    ig = isg.IsGm(levels=levels, data=data, db=exp_db)
     if ig.levels == exp_levels:
         r[0] = True
     if ig.data == data:
@@ -236,13 +236,14 @@ def __setup_geom():
     fs2 = ig.mb.create_meshset()
     ig.mb.load_file(test_dir + '/vol-files/single-box-2.stl', file_set=fs2)
     # create useable meshset dict
+    # assign arbitrary values for levels 0, 5, 10
     iv1 = (0, fs1)
     iv2 = (1, fs2)
     ig.isovol_meshsets[iv1] = {}
     ig.isovol_meshsets[iv1]['bounds'] = (0., 5.)
     ig.isovol_meshsets[iv2] = {}
     ig.isovol_meshsets[iv2]['bounds'] = (5., 10.)
-    ig.levels = [5., 100.]
+    ig.levels = [5., 10.]
     ig.data = 'dataname'
     ig.separate_isovols()  # use this to get surface EHs
     return ig
