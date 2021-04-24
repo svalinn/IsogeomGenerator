@@ -19,7 +19,11 @@ exp_vols_dir = exp_db + "/vols"
 common_files = [f for f in listdir(exp_vols_dir)
                 if isfile(join(exp_vols_dir, f))]
 exp_levelfile = exp_db + "/levelfile"
-exp_levels = [5, 15, 25, 35]
+# there are two different level lists expected: one from the init and
+# one after the first step is fully complete (arbmax has been added to
+# the level list for the exp_levels_post)
+exp_levels_init = [5, 15, 25, 35]
+exp_levels_post = [5, 15, 25, 35, 45]
 
 
 def __compare_levelfiles(f1, f2):
@@ -60,7 +64,7 @@ def test_init_none():
 def test_init_input():
     r0 = r1 = r2 = r3 = False
     iv = ivdb.IvDb(levels=levels, data=data, db=exp_db)
-    if iv.levels == exp_levels:
+    if iv.levels == exp_levels_init:
         r0 = True
     if iv.data == data:
         r1 = True
@@ -72,8 +76,12 @@ def test_init_input():
 
 
 def test_init_input_file():
+    # since we are reading from a file, we expect it to be the same values
+    # as the file. Since the file matches exp_levels_post, the test checks
+    # against that list, rather than exp_levels_init even though it is only
+    # the init
     iv = ivdb.IvDb(levels=exp_levelfile)
-    assert(iv.levels == exp_levels)
+    assert(iv.levels == exp_levels_post)
 
 
 def test_generate_vols():
@@ -170,7 +178,7 @@ def test_make_db_dir_exists():
 def test_check_levels():
     """test check levels, all data good"""
     r0 = r1 = r2 = False
-    iv = ivdb.IvDb(levels=exp_levels, data=data)
+    iv = ivdb.IvDb(levels=levels, data=data)
     arbmin, arbmax = iv._IvDb__check_levels(test_mesh)
     exp_min = -10
     exp_max = 50
@@ -178,7 +186,9 @@ def test_check_levels():
         r0 = True
     if arbmax == exp_max:
         r1 = True
-    if iv.levels == exp_levels:
+    if iv.levels == exp_levels_init:
+        # arbmax has not yet been added to levels list so should match
+        # init levels
         r2 = True
     assert(all([r0, r1, r2]))
 
@@ -192,7 +202,9 @@ def test_check_levels_outofbounds():
         iv._IvDb__check_levels(test_mesh)
     if len(warn_info) == 2:
         r0 = True
-    if iv.levels == exp_levels:
+    if iv.levels == exp_levels_init:
+        # arbmax has not yet been added to levels list so should match
+        # init levels
         r1 = True
     assert(all([r0, r1]))
 
@@ -214,7 +226,11 @@ def test_check_levels_nodata():
 
 def test_write_levels():
     db = test_dir + "/test-write-levels/"
-    iv = ivdb.IvDb(levels=exp_levels, data=data, db=db)
+    # this test goes right to the write step and skips that addition
+    # of the arbmax value in the process, so we will init with a level
+    # list that already includes the arbmax value and expect it to match
+    # the level file that would be present after the complete process
+    iv = ivdb.IvDb(levels=exp_levels_post, data=data, db=db)
     if isdir(db):
         shutil.rmtree(db)
     mkdir(db)
@@ -231,7 +247,7 @@ def test_get_isovol():
     """test get_isovol"""
     r0 = r1 = r2 = False
     db = test_dir + "/test-isovol/"
-    iv = ivdb.IvDb(levels=exp_levels, data=data, db=db)
+    iv = ivdb.IvDb(levels=levels, data=data, db=db)
     if isdir(db):
         shutil.rmtree(db)
     mkdir(db)
