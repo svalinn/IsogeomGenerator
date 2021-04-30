@@ -392,8 +392,11 @@ class IsGm(IsoGeomGen):
                                                verts_check, 2, op_type=1),
                                                0, op_type=1)
 
+                # only store verts that are present in the surface
+                vupdate = set(vtmp) & set(all_verts)
+
                 # add newly found verts to all list
-                vtmp_all.update(set(vtmp))
+                vtmp_all.update(vupdate)
 
                 # check if different from already found verts
                 if len(list(vtmp_all)) == len(verts):
