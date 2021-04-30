@@ -232,13 +232,55 @@ def test_separate_isovols_exterior():
 
 
 def test_separate_isovols_single_exterior():
-    """test a single vol is unchanged when it goes through separation"""
+    """test a single vol with an exterior surface is split in separation"""
     # load mesh that does not need separation
     ig = isg.IsGm()
     fs = ig.mb.create_meshset()
     ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
     # create useable meshset dict
     ig.isovol_meshsets[(0, fs)] = {}
+    # manually set the geometric extents
+    # these are chosen such that the volume file aligns on the -x plane
+    # geometric extents (-5). The volume file x, y, and z are -5 to 5,
+    # so if this is considered to be one volume in a larger geometry,
+    # only one the surfaces on the -x plane is considered exterior.
+    ig.xmin = -5.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -15.
+    ig.ymax = ig.zmax = 15.
+    # separate the volumes
+    ig.separate_isovols()
+    # check there are two new surfaces
+    r = np.full(2, False)
+    num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
+    if num_surfs == 2:
+        r[0] = True
+    # check number of triangles and vertices in surfaces (8 verts, 12 tris)
+    # check that no triangles are shared between the each of the surfaces
+    surf0 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][0]
+    tris0 = set(ig.mb.get_entities_by_type(surf0, types.MBTRI))
+    surf1 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][1]
+    tris1 = set(ig.mb.get_entities_by_type(surf1, types.MBTRI))
+    common_tris = tris0 & tris1
+    if len(common_tris) == 0:
+        r[1] = True
+    assert(all(r))
+
+
+def test_separate_isovols_single_interior():
+    """test a single interior vol is unchanged when it goes through separation"""
+    # load mesh that does not need separation
+    ig = isg.IsGm()
+    fs = ig.mb.create_meshset()
+    ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
+    # create useable meshset dict
+    ig.isovol_meshsets[(0, fs)] = {}
+    # manually set the geometric extents so that no surface is on the
+    # exterior
+    ig.xmin = -15.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -15.
+    ig.ymax = ig.zmax = 15.
     # separate the volumes
     ig.separate_isovols()
     # check there are two new surfaces
@@ -256,9 +298,6 @@ def test_separate_isovols_single_exterior():
         r[2] = True
     assert(all(r))
 
-
-def test_separate_isovols_single_interior():
-    pass
 
 def __setup_geom():
     """function for other tests to create a useable isogeom object"""
