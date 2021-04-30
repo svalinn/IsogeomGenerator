@@ -192,7 +192,7 @@ def test_read_database_nolevels_error():
     assert "levels defined" in str(error_info)
 
 
-def test_separate_isovols():
+def test_separate_isovols_exterior():
     """test that disjoint volumes are properly separated"""
     # load mesh that needs separation
     ig = isg.IsGm()
@@ -200,34 +200,41 @@ def test_separate_isovols():
     ig.mb.load_file(test_dir + '/vol-files/separate-vols.stl', file_set=fs)
     # create useable meshset dict
     ig.isovol_meshsets[(0, fs)] = {}
+    # manually set the geometric extents
+    # these are chosen such that the volume file aligns on the x plane
+    # geometric extents (-10, 15). The volume file y and z are -5 to 5,
+    # so if this is considered to be one volume in a larger geometry,
+    # only one the surfaces on the x planes are considered exterior.
+    ig.xmin = -10.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -15.
+    ig.ymax = ig.zmax = 15.
     # separate the volumes
     ig.separate_isovols()
-    # check there are two new surfaces
-    r = np.full(3, False)
+    # check there are four new surfaces
+    r = np.full(2, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
-    if num_surfs == 2:
+    if num_surfs == 4:
         r[0] = True
-    # check that no triangles or vertices are shared between the surfs
+    # check that no triangles are shared between the each of the surfaces
     surf0 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][0]
-    verts0 = set(ig.mb.get_entities_by_type(surf0, types.MBVERTEX))
     tris0 = set(ig.mb.get_entities_by_type(surf0, types.MBTRI))
     surf1 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][1]
-    verts1 = set(ig.mb.get_entities_by_type(surf1, types.MBVERTEX))
     tris1 = set(ig.mb.get_entities_by_type(surf1, types.MBTRI))
-    common_verts = verts0 & verts1
-    common_tris = tris0 & tris1
-    if len(common_verts) == 0:
-        r[1] = True
+    surf2 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][2]
+    tris2 = set(ig.mb.get_entities_by_type(surf2, types.MBTRI))
+    surf3 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][3]
+    tris3 = set(ig.mb.get_entities_by_type(surf3, types.MBTRI))
+    common_tris = tris0 & tris1 & tris2 & tris3
     if len(common_tris) == 0:
-        r[2] = True
+        r[1] = True
     assert(all(r))
 
 
-def test_separate_isovols_single():
+def test_separate_isovols_single_exterior():
     """test a single vol is unchanged when it goes through separation"""
     # load mesh that does not need separation
     ig = isg.IsGm()
-    print(ig)
     fs = ig.mb.create_meshset()
     ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
     # create useable meshset dict
@@ -249,6 +256,9 @@ def test_separate_isovols_single():
         r[2] = True
     assert(all(r))
 
+
+def test_separate_isovols_single_interior():
+    pass
 
 def __setup_geom():
     """function for other tests to create a useable isogeom object"""
