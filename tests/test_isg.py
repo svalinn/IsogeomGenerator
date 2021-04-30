@@ -283,8 +283,7 @@ def test_imprint_merge():
     fs2 = list(iv2)[1]
     # imprint and merge
     norm = 1.5
-    merge_tol = 1e-5
-    ig.imprint_merge(norm, merge_tol)
+    ig.imprint_merge(norm)
     # checks
     r = np.full(2, False)  # truth array for checks
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
@@ -335,8 +334,7 @@ def test_make_family():
     fs1 = list(iv1)[1]
     fs2 = list(iv2)[1]
     norm = 1.5
-    merge_tol = 1e-5
-    ig.imprint_merge(norm, merge_tol)  # do this to get shared surfaces
+    ig.imprint_merge(norm)  # do this to get shared surfaces
     # run make_family
     ig.make_family()
     # checks:
@@ -627,74 +625,6 @@ def test_list_coords_invert():
     assert(exp_coords_dict == coords_out)
 
 
-def test_get_matches():
-    """test that coordinates are properly identified as matching"""
-    # create instance
-    ig = isg.IsGm()
-    # set up verts to test:
-    vertsA = {10: (1., 2., 3.), 20: (4., 5., 6.), 30: (7., 8., 9.)}
-    vertsB = {(7., 8., 9.): 40, (2., 1., 3.): 50}
-    merge_tol = 1.e-5
-
-    a_eh, a_coords, b_eh, b_coords, match_dict = \
-        ig._IsGm__get_matches(vertsA, vertsB, merge_tol)
-
-    # expected values
-    a_eh_exp = [30]
-    a_coords_exp = [(7., 8., 9.)]
-    b_eh_exp = [40]
-    b_coords_exp = [(7., 8., 9.)]
-    match_dict_exp = {40: 30}
-
-    res = np.full(5, False)
-    if a_eh == a_eh_exp:
-        res[0] = True
-    if a_coords == a_coords_exp:
-        res[1] = True
-    if b_eh == b_eh_exp:
-        res[2] = True
-    if b_coords == b_coords_exp:
-        res[3] = True
-    if match_dict == match_dict_exp:
-        res[4] = True
-
-    assert(all(res))
-
-
-def test_get_matches_approx():
-    """test coords are identified as matching if approximate matches"""
-    # create instance
-    ig = isg.IsGm()
-    # set up verts to test:
-    vertsA = {10: (1., 2., 3.), 20: (4., 5., 6.), 30: (7., 8., 9.)}
-    vertsB = {(7., 8., 9.01): 40, (2., 1., 3.): 50}
-    merge_tol = 1.e-1
-
-    a_eh, a_coords, b_eh, b_coords, match_dict = \
-        ig._IsGm__get_matches(vertsA, vertsB, merge_tol)
-
-    # expected values
-    a_eh_exp = [30]
-    a_coords_exp = [(7., 8., 9.)]
-    b_eh_exp = [40]
-    b_coords_exp = [(7., 8., 9.01)]
-    match_dict_exp = {40: 30}
-
-    res = np.full(5, False)
-    if a_eh == a_eh_exp:
-        res[0] = True
-    if a_coords == a_coords_exp:
-        res[1] = True
-    if b_eh == b_eh_exp:
-        res[2] = True
-    if b_coords == b_coords_exp:
-        res[3] = True
-    if match_dict == match_dict_exp:
-        res[4] = True
-
-    assert(all(res))
-
-
 def test_compare_surfs():
     """test that new surf is correctly generated when comparing two"""
     # get setup
@@ -706,8 +636,7 @@ def test_compare_surfs():
     fs2 = list(iv2)[1]
     # compare surfs
     norm = 1.5
-    merge_tol = 1.e-5
-    ig._IsGm__compare_surfs(iv1, iv2, norm, merge_tol)
+    ig._IsGm__compare_surfs(iv1, iv2, norm)
     # checks
     r = np.full(7, False)  # truth array for checks
     # check number of surfaces in each volume (should be two each)
@@ -764,11 +693,10 @@ def test_compare_surfs_no_val():
     ig.isovol_meshsets[iv[1]]['bounds'] = (6., 10.)
     # compare surfs
     norm = 1.5
-    merge_tol = 1.e-5
     r = np.full(3, False)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        ig._IsGm__compare_surfs(iv[0], iv[1], norm, merge_tol)
+        ig._IsGm__compare_surfs(iv[0], iv[1], norm)
         # check warning
         if len(w) == 1:
             r[0] = True
