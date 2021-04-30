@@ -317,6 +317,10 @@ def __setup_geom():
     ig.isovol_meshsets[iv2]['bounds'] = (5., 10.)
     ig.levels = [5., 10.]
     ig.data = 'dataname'
+    ig.xmin = -5.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -5.
+    ig.ymax = ig.zmax = 5.
     ig.separate_isovols()  # use this to get surface EHs
     return ig
 
@@ -387,16 +391,15 @@ def test_make_family():
     # run make_family
     ig.make_family()
     # checks:
-    r = np.full(14, False)
+    r = np.full(9, False)
     # Check Tags:
     #   geom dim: vols=3, surfs=2, curves=1
     #   category: 'Volume', 'Surface', 'Curve'
     #   global id: 1..N for each vol, surf, curve
     all_vols = [fs1, fs2]
-    all_surfs = ig.surf_curve.keys()
-    all_curves = list(set(itertools.chain(*ig.surf_curve.values())))
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
+    all_surfs = list(set(surfs_1 + surfs_2))
     common_surf = list(set(surfs_1) & set(surfs_2))[0]
     # tag EHs
     geom_dim = ig.mb.tag_get_handle('GEOM_DIMENSION')
@@ -422,22 +425,10 @@ def test_make_family():
         r[4] = True
     if sorted(list(surf_id)) == [1, 2, 3]:
         r[5] = True
-    # curve tags
-    curve_dim = ig.mb.tag_get_data(geom_dim, all_curves)
-    curve_category = ig.mb.tag_get_data(category, all_curves)
-    curve_id = ig.mb.tag_get_data(global_id, all_curves)
-    if list(curve_dim) == [1]:
-        r[6] = True
-    if list(curve_category) == ['Curve']:
-        r[7] = True
-    if sorted(list(curve_id)) == [1]:
-        r[8] = True
     # Check Parent/Child Relationships
     #   1) each vol is parent to two surfs
-    #   2) each surf is parent to one curve
-    #   3) one curve has 3 surf parents
-    #   4) one surf (shared surface) has 2 vol parents
-    #   5) two surfs each have one vol parent
+    #   2) one surf (shared surface) has 2 vol parents
+    #   3) two surfs each have one vol parent
     # 1) volumes have two child surfaces
     tmp1 = np.full(len(all_vols), False)
     tmp2 = np.full(len(all_vols), False)
@@ -448,36 +439,12 @@ def test_make_family():
         if len(child_surfs) == 2:
             tmp2[i] = True
     if all(tmp1) and all(tmp2):
-        r[9] = True
-    # 2) surfs have one curve
-    tmp1 = np.full(len(all_surfs), False)
-    tmp2 = np.full(len(all_surfs), False)
-    for i, surf in enumerate(all_surfs):
-        child_curves = list(ig.mb.get_child_meshsets(surf))
-        if all(child in all_curves for child in child_curves):
-            tmp1[i] = True
-        if len(child_curves) == 1:
-            tmp2[i] = True
-    if all(tmp1) and all(tmp2):
-        r[10] = True
-    # 3) curve has 3 parent surfs
-    # THIS PART WON'T PASS CI UNTIL PYMOAB IS UPDATED - skip for now
-    # tmp1 = np.full(len(all_curves), False)
-    # tmp2 = np.full(len(all_curves), False)
-    # for i, curve in enumerate(all_curves):
-    #     parent_surfs = list(ig.mb.get_parent_meshsets(curve))
-    #     if all(parent in all_surfs for parent in parent_surfs):
-    #         tmp1[i] = True
-    #     if len(parent_surfs) == 3:
-    #         tmp2[i] = True
-    # if all(tmp1) and all(tmp2):
-    #     r[11] = True
-    r[11] = True  # Placeholder until MOAB is fixed
-    # 4) common surf has 2 vol parents
+        r[6] = True
+    # 2) common surf has 2 vol parents
     parent_vols = list(ig.mb.get_parent_meshsets(common_surf))
     if sorted(parent_vols) == sorted(all_vols):
-        r[12] = True
-    # 5) other two surfaces have one vol parent
+        r[7] = True
+    # 3) other two surfaces have one vol parent
     all_surfs.remove(common_surf)
     tmp1 = np.full(len(all_surfs), False)
     tmp2 = np.full(len(all_surfs), False)
@@ -489,7 +456,7 @@ def test_make_family():
         if len(parent_vols) == 1:
             tmp2[i] = True
     if all(tmp1) and all(tmp2):
-        r[13] = True
+        r[8] = True
     assert(all(r))
 
 
@@ -687,7 +654,7 @@ def test_compare_surfs():
     norm = 1.5
     ig._IsGm__compare_surfs(iv1, iv2, norm)
     # checks
-    r = np.full(7, False)  # truth array for checks
+    r = np.full(5, False)  # truth array for checks
     # check number of surfaces in each volume (should be two each)
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
@@ -699,30 +666,18 @@ def test_compare_surfs():
     common_surf = set(surfs_1) & set(surfs_2)
     if len(common_surf) == 1:
         r[2] = True
-    # check the surf_curve dict
-    num_surfs = len(ig.surf_curve.keys())
-    # 3 surfaces
-    if num_surfs == 3:
-        r[3] = True
-    # each surface should have 1 curve and the curve should be identical
-    # in all surfaces (1 curve entity handle)
-    all_curve_lists = ig.surf_curve.values()
-    exp_curve = [all_curve_lists[0]]
-    common_occurrences = all_curve_lists.count(exp_curve)
-    if common_occurrences == 3:
-        r[4] = True
     # check the tags on the merged surface
     # sense tag:
     sense_out = list(ig.mb.tag_get_data(ig.sense_tag, common_surf)[0])
     sense_exp = [fs1, fs2]
     if sense_out == sense_exp:
-        r[5] = True
+        r[3] = True
     # value tag:
     # shared surface should be 7.5 (shared bound = 5, norm=1.5 -> 5*1.5=7.5)
     val_out = ig.mb.tag_get_data(ig.val_tag, common_surf)[0][0]
     val_exp = 7.5
     if val_out == val_exp:
-        r[6] = True
+        r[4] = True
     assert(all(r))
 
 
