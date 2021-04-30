@@ -625,22 +625,6 @@ def test_list_coords():
     assert(exp_coords_dict == coords_out)
 
 
-def test_list_coords_invert():
-    """test list coords correctly returns inverted dictionary"""
-    # setup IsGm instance
-    ig = isg.IsGm()
-    ig.mb = core.Core()
-    # create some vertices
-    coords = np.array((1., 2., 3.), dtype='float64')
-    ig.mb.create_vertices(coords)
-    rs = ig.mb.get_root_set()
-    eh = list(ig.mb.get_entities_by_type(rs, types.MBVERTEX))[0]
-    exp_coords_dict = {(1., 2., 3.): eh}
-    # list coords
-    coords_out = ig._IsGm__list_coords(rs, invert=True)
-    assert(exp_coords_dict == coords_out)
-
-
 def test_compare_surfs():
     """test that new surf is correctly generated when comparing two"""
     # get setup
