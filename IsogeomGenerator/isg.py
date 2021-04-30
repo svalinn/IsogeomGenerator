@@ -154,8 +154,8 @@ class IsGm(IsoGeomGen):
             for vert in all_verts:
                 c = self.mb.get_coords(vert)
                 if (c[0] == self.xmin) or (c[0] == self.xmax) or \
-                    (c[1] == self.ymin) or (c[1] == self.ymax) or \
-                    (c[2] == self.zmin) or (c[2] == self.zmax):
+                   (c[1] == self.ymin) or (c[1] == self.ymax) or \
+                   (c[2] == self.zmin) or (c[2] == self.zmax):
                     verts_exterior.append(vert)
                 else:
                     verts_interior.append(vert)
