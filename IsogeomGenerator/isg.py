@@ -378,6 +378,19 @@ class IsGm(IsoGeomGen):
         print("Geometry file written to {}.".format(save_location))
 
     def __separate(self, ms):
+        """For a given surface meshset, separate meshset into unique and
+        disjoint surfaces based on their connectedness.
+
+        Input:
+        ------
+            ms: meshset entity handle
+
+        Returns:
+        --------
+            surf_list: list of entity handles for the set of unique and
+                disjoint surfaces in the meshset
+        """
+        surf_list = []
 
         # get set of all vertices for the isosurface
         all_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
