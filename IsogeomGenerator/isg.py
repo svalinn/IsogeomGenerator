@@ -430,7 +430,6 @@ class IsGm(IsoGeomGen):
             self.mb.add_entities(surf, verts)
 
             # store surfaces in completed list
-            #self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
             surfs_list.append(surf)
 
             # remove surface from original meshset
@@ -594,136 +593,78 @@ class IsGm(IsoGeomGen):
         print("comparing surfaces in isovolumes {} and {}.".format(
             v1[0], v2[0]))
 
-        match_surfs = []
-        sk = Skinner(self.mb)
+        # tag to indicate if interior or exterior surface
+        surf_type_tag = \
+            self.mb.tag_get_handle('SURF_TYPE', size=32,
+                                   tag_type=types.MB_TYPE_OPAQUE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=False)
 
-        # compare all surfaces in v1 (s1) to all surfaces in v2 (s2)
+        # store dict of matched surfaces
+        #   key: surf to remove in v2
+        #   value: surf in v1 to replace it with
+        surfs_to_remove = {}
+
+        # compare all interior surfaces in v1 (s1) to all
+        # interior surfaces in v2 (s2)
         for s1 in self.isovol_meshsets[v1]['surfs_EH']:
+
+            # check if s1 is interior surf
+            surf_type = self.mb.tag_get_data(surf_type_tag, s1)
+            if surf_type != 'interior':
+                continue
+
             # get list of all coordinates in s1
             verts1 = self.__list_coords(s1)
 
-            # initialize list of curves
-            if s1 not in self.surf_curve.keys():
-                self.surf_curve[s1] = []
-
             for s2 in self.isovol_meshsets[v2]['surfs_EH']:
-                if s2 not in self.surf_curve.keys():
-                    self.surf_curve[s2] = []
+                # check surf type
+                surf_type = self.mb.tag_get_data(surf_type_tag, s2)
+                if surf_type != 'interior':
+                    continue
 
-                # get list of all coordinates in s2 (inverted)
-                verts2_inv = self.__list_coords(s2, invert=True)
+                # get surface 2 vertices
+                verts2 = self.__list_coords(s2)
 
-                # compare vertices and gather sets for s1 and s2
-                # that are coincident
-                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, \
-                    match_dict = self.__get_matches(verts1, verts2_inv,
-                                                    merge_tol)
-
-                # matches were found, so continue
-                if s1_match_eh != []:
-                    # get only tris1 that have all match vertices
-                    tris1 = self.__get_surf_triangles(s1_match_eh)
-
-                    # get s2 tris to delete (no new surface needed)
-                    tris2 = self.__get_surf_triangles(s2_match_eh)
-
-                    # create new coincident surface
-                    surf = self.mb.create_meshset()
-                    self.mb.add_entities(surf, tris1)
-                    self.mb.add_entities(surf, s1_match_eh)
-                    tris_new = self.mb.get_entities_by_dimension(surf, 2)
-
-                    # get skin of new merged surf (gets curve)
-                    self.surf_curve[surf] = []
-                    curve_verts = sk.find_skin(v1[1], tris1, True, False)
-                    curve_edges = sk.find_skin(v1[1], tris1, False, False)
-
-                    # if curve_verts/edges is empty, closed surf is created
-                    # so no new curve is needed
-                    if len(curve_verts) > 0:
-                        # if not empty, make new curve
-                        curve = self.mb.create_meshset()
-                        self.mb.add_entities(curve, curve_verts)
-                        self.mb.add_entities(curve, curve_edges)
-                        self.surf_curve[s1].append(curve)
-                        self.surf_curve[s2].append(curve)
-                        self.surf_curve[surf].append(curve)
-
-                        # remove merged verts and tris from each already
-                        # existing surf
-                        for vert_delete in s2_match_eh:
-
-                            # get all triangles connected to the vert to be
-                            # deleted
-                            tris_adjust = self.mb.get_adjacencies(vert_delete,
-                                                                  2, op_type=1)
-
-                            # get the vert that will replace the deleted vert
-                            replacement = match_dict[vert_delete]
-
-                            # for every tri to be deleted, replace vert by
-                            # setting connectivity
-                            for tri in tris_adjust:
-                                tri_verts = self.mb.get_connectivity(tri)
-                                new_verts = [0, 0, 0]
-                                for i, tv in enumerate(tri_verts):
-                                    if tv == vert_delete:
-                                        new_verts[i] = replacement
-                                    else:
-                                        new_verts[i] = tv
-
-                                # set connectivity
-                                self.mb.set_connectivity(tri, new_verts)
-
-                    # remove from both sets (already in new surface)
-                    self.mb.remove_entities(s1, tris1)
-                    self.mb.remove_entities(s1, s1_match_eh)
-                    self.mb.remove_entities(s2, tris2)
-                    self.mb.remove_entities(s2, s2_match_eh)
-
-                    # delete surf 2 (repeats)
-                    self.mb.delete_entities(tris2)
-
-                    # TAG INFORMATION
-
-                    # assign sense tag to surface
-                    # [forward=v1, backward=v2]
-                    fwd = v1[1]
-                    bwd = v2[1]
-                    self.mb.tag_set_data(self.sense_tag, surf,
-                                         [fwd, bwd])
-
-                    # tag the new surface with the shared value
-                    shared = \
-                        list(set(self.isovol_meshsets[v1]['bounds']) &
-                             set(self.isovol_meshsets[v2]['bounds']))
-                    if not(bool(shared)):
-                        warnings.warn("No matching value for volumes " +
-                                    "{} and {}".format(v1, v2))
-                        val = 0.0
-                    else:
-                        val = shared[0] * norm
-                    self.mb.tag_set_data(self.val_tag, surf, val)
-
-                    # add new surface to coincident surface list
-                    match_surfs.append(surf)
-
-                    # check if original surfaces are empty (no vertices)
-                    # if so delete empty meshset and remove from list
-                    s2_remaining = \
-                        self.mb.get_entities_by_type(s2, types.MBVERTEX)
-                    if len(s2_remaining) == 0:
-                        # delete surface from list and mb instance
-                        self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
-
-                    s1_remaining = \
-                        self.mb.get_entities_by_type(s1, types.MBVERTEX)
-                    if len(s1_remaining) == 0:
-                        # delete from list and mb instance and move to
-                        # next surf
-                        self.isovol_meshsets[v1]['surfs_EH'].remove(s1)
+                # check if any vertex matches between the two surfaces
+                match = False
+                for coord1 in verts1.values():
+                    if coord2 in verts2.values():
+                        # exact match, don't need to check anymore
+                        match = True
                         break
 
-        # After all comparisons have been made, add surfaces to lists
-        self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
-        self.isovol_meshsets[v2]['surfs_EH'].extend(match_surfs)
+                if match:
+                    # match was found so s1 and s2 are coincident
+                    # delete s2 (all triangles and all vertices that are
+                    # not on the outer curve)
+                    tris2 = self.__get_surf_triangles(verts2.keys())
+                    self.mb.delete_entities(tris2)
+                    verts_to_save = sk.find_skin(s2, tris2, True, False)
+                    verts_delete = list(set(verts2.keys()) - set(verts_to_save))
+                    self.mb.delete_entities(verts_delete)
+                    surfs_to_remove[s2] = s1
+
+        # remove the matched surfaces from volume 2
+        # assign sense and value tags
+        for s2, s1 in surfs_to_remove.items():
+            self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
+            self.isovol_meshsets[v2]['surfs_EH'].append(s1)
+
+            # assign sense tag to surface
+            # [forward=v1, backward=v2]
+            fwd = v1[1]
+            bwd = v2[1]
+            self.mb.tag_set_data(self.sense_tag, s1, [fwd, bwd])
+
+            # tag the new surface with the shared value
+            shared = \
+                list(set(self.isovol_meshsets[v1]['bounds']) &
+                     set(self.isovol_meshsets[v2]['bounds']))
+            if not(bool(shared)):
+                warnings.warn("No matching value for volumes " +
+                              "{} and {}".format(v1, v2))
+                val = 0.0
+            else:
+                val = shared[0] * norm
+            self.mb.tag_set_data(self.val_tag, s1, val)
