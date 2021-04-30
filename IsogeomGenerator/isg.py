@@ -87,12 +87,12 @@ class IsGm(IsoGeomGen):
         self.levels = ivdb.levels
         self.db = ivdb.db
         self.data = ivdb.data
-        self.xmin = ivdb.min_ext[0]
-        self.xmax = ivdb.max_ext[0]
-        self.ymin = ivdb.min_ext[1]
-        self.ymax = ivdb.max_ext[1]
-        self.zmin = ivdb.min_ext[2]
-        self.zmax = ivdb.max_ext[2]
+        self.xmin = ivdb.xmin
+        self.xmax = ivdb.xmax
+        self.ymin = ivdb.ymin
+        self.ymax = ivdb.ymax
+        self.zmin = ivdb.zmin
+        self.zmax = ivdb.zmax
 
     def read_database(self):
         """Read the files from the database and initialize the meshset info.
