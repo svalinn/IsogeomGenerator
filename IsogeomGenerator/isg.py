@@ -531,8 +531,8 @@ class IsGm(IsoGeomGen):
                     # not on the outer curve)
                     tris2 = self.__get_surf_triangles(verts2.keys())
                     self.mb.delete_entities(tris2)
-                    verts_to_save = sk.find_skin(s2, tris2, True, False)
-                    verts_delete = list(set(verts2.keys()) - set(verts_to_save))
+                    verts_save = sk.find_skin(s2, tris2, True, False)
+                    verts_delete = list(set(verts2.keys()) - set(verts_save))
                     self.mb.delete_entities(verts_delete)
                     surfs_to_remove[s2] = s1
 
