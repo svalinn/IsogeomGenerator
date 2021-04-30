@@ -196,7 +196,7 @@ class IsGm(IsoGeomGen):
             self.isovol_meshsets[iv_info]['surfs_EH'].extend(ext_surfs)
             self.isovol_meshsets[iv_info]['surfs_EH'].extend(int_surfs)
 
-    def imprint_merge(self, norm, merge_tol):
+    def imprint_merge(self, norm):
         """Uses PyMOAB to check if surfaces are coincident. Creates a
         single surface where surfaces are coincident values are tagged
         on each surface. Surface senses are also determined and tagged.
@@ -204,8 +204,6 @@ class IsGm(IsoGeomGen):
         Input:
         ------
             norm: float, All data values will be multiplied by this factor.
-            merge_tol: float, Merge tolerance for mesh based merge of
-                coincident surfaces.
         """
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
@@ -213,7 +211,7 @@ class IsGm(IsoGeomGen):
             if i != len(self.levels) - 1:
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
-                self.__compare_surfs(isovol, all_vols[i + 1], norm, merge_tol)
+                self.__compare_surfs(isovol, all_vols[i + 1], norm)
 
         # if a surface doesn't have a value tagged after merging
         # give it a value of 0 and tag forward sense
@@ -474,7 +472,7 @@ class IsGm(IsoGeomGen):
             coords[v] = coord
         return coords
 
-    def __compare_surfs(self, v1, v2, norm, merge_tol):
+    def __compare_surfs(self, v1, v2, norm):
         """finds coincident surfaces between two isovolumes.
 
         Input:
@@ -482,8 +480,6 @@ class IsGm(IsoGeomGen):
             v1/2: tuple, corresponds to the dictionary keys for two
                 isovolumes in self.isovol_meshsets that will be compared
             norm: float, All data values will be multiplied by this factor.
-            merge_tol: float, Merge tolerance for mesh based merge of
-                coincident surfaces.
         """
         print("comparing surfaces in isovolumes {} and {}.".format(
             v1[0], v2[0]))
