@@ -21,16 +21,21 @@ common_files = [f for f in listdir(exp_vols_dir)
 exp_levelfile = exp_db + "/levelfile"
 exp_levels = [5, 15, 25, 35, 45]
 exp_geom = test_dir + '/exp-isogeom.h5m'
+exp_ext_min = np.array([-10., -10., -10.])
+exp_ext_max = np.array([10., 10., 10.])
 
 
 def __ivdb_obj(completed):
+    # manually generated a usuable ivdb object
     iv = ivdb.IvDb(levels=levels, data=data, db=exp_db)
+    iv.min_ext = exp_ext_min
+    iv.max_ext = exp_ext_max
     iv.completed = completed
     return iv
 
 
 def test_init_none():
-    r = np.full(6, False)
+    r = np.full(5, False)
     ig = isg.IsGm()
     if ig.levels is None:
         r[0] = True
@@ -42,8 +47,6 @@ def test_init_none():
         r[3] = True
     if ig.isovol_meshsets == {}:
         r[4] = True
-    if ig.surf_curve == {}:
-        r[5] = True
     assert(all(r))
 
 
