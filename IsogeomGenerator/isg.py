@@ -33,7 +33,8 @@ class IsGm(IsoGeomGen):
     --------
     """
 
-    def __init__(self, ivdb=None, levels=None, data=None, db=None):
+    def __init__(self, ivdb=None, levels=None, data=None, db=None,
+                 extents=None):
         """Create IsGm object. Information provided by an ivdb object
         will overwrite other data provided.
 
@@ -46,9 +47,12 @@ class IsGm(IsoGeomGen):
             data: (optional), string, name of data on the mesh
             db: (optional), string, path to database folder with
                 isovolume files
+            extents: (optional) list of list of floats, minimum and
+                maximum values for x, y, and z in mesh. Must be
+                structured like [[xmin, ymin, zmin], [xmax, ymax, zmax]]
         """
         # initialize variables
-        super(IsGm, self).__init__(levels, data, db)
+        super(IsGm, self).__init__(levels, data, db, extents)
 
         # if ivdb object is provided, overwrite with that info
         if ivdb is not None:
