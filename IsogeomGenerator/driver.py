@@ -119,7 +119,7 @@ def generate_volumes(ivdb, filename, data=None, db=os.getcwd() + "/tmp",
 
 def create_geometry(isogeom, ivdb=None, data=None, dbname=None,
                     levelfile=None, tag_for_viz=False, norm=1.0,
-                    merge_tol=1e-5, tags=None, sname=None, sdir=None):
+                    tags=None, sname=None, sdir=None):
     """Over-arching function to do all steps to create a single
     isosurface geometry for DAGMC using pyMOAB.
 
@@ -138,9 +138,6 @@ def create_geometry(isogeom, ivdb=None, data=None, dbname=None,
             values in VisIt. Default=False.
         norm: float (optional), default=1. All data values will be
             multiplied by the normalization factor.
-        merge_tol: float (optional), default=1e-5 cm. Merge tolerance for
-            mesh based merge of coincident surfaces. Recommended to be
-            1/10th the mesh voxel size.
         dbname: (optional), string, name of folder to store created
             surface files. Must be absolute path.
             default: a folder called 'tmp' in the current directory
@@ -207,7 +204,7 @@ def create_geometry(isogeom, ivdb=None, data=None, dbname=None,
 
     # Step 2: Merge Coincident Surfaces
     print("Merging surfaces...")
-    isogeom.imprint_merge(norm, merge_tol)
+    isogeom.imprint_merge(norm)
     print("...Merging complete!")
 
     # Step 3: Assign Parent-Child Relationship
