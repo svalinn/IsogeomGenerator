@@ -22,21 +22,22 @@ exp_levelfile = exp_db + "/levelfile"
 exp_levels = [5, 15, 25, 35, 45]
 exp_geom = test_dir + '/exp-isogeom.h5m'
 # geometric extent info
-exp_ext_min = np.array([-10., -10., -10.])
-exp_ext_max = np.array([10., 10., 10.])
+exts = [[-10., -10., -10.], [10., 10., 10.]]
+exp_ext_min = -10.
+exp_ext_max = 10.
 
 
 def __ivdb_obj(completed):
     # manually generated a usuable ivdb object
     iv = ivdb.IvDb(levels=levels, data=data, db=exp_db)
-    iv.min_ext = exp_ext_min
-    iv.max_ext = exp_ext_max
+    iv.xmin = iv.ymin = iv.zmin = exp_ext_min
+    iv.xmax = iv.ymax = iv.zmax = exp_ext_max
     iv.completed = completed
     return iv
 
 
 def test_init_none():
-    r = np.full(5, False)
+    r = np.full(6, False)
     ig = isg.IsGm()
     if ig.levels is None:
         r[0] = True
@@ -48,18 +49,24 @@ def test_init_none():
         r[3] = True
     if ig.isovol_meshsets == {}:
         r[4] = True
+    if ig.xmin == ig.xmax == ig.ymin == ig.ymax == ig.zmin == ig.zmax == None:
+        r[5] = True
     assert(all(r))
 
 
 def test_init_input():
-    r = np.full(3, False)
-    ig = isg.IsGm(levels=levels, data=data, db=exp_db)
+    r = np.full(5, False)
+    ig = isg.IsGm(levels=levels, data=data, db=exp_db, extents=exts)
     if ig.levels == exp_levels:
         r[0] = True
     if ig.data == data:
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
+        r[4] = True
     assert(all(r))
 
 
@@ -74,16 +81,16 @@ def test_init_ivdb():
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
-    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min[0]:
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
         r[3] = True
-    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max[0]:
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
         r[4] = True
     assert(all(r))
 
 
 def test_init_input_ivdb():
     """test that info from ivdb overwrites other input"""
-    r = np.full(3, False)
+    r = np.full(5, False)
     iv = __ivdb_obj(True)
     ig = isg.IsGm(ivdb=iv, levels=[0, 2], data='nonsense', db='fake_db')
     if ig.levels == exp_levels:
@@ -92,6 +99,10 @@ def test_init_input_ivdb():
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
+        r[4] = True
     assert(all(r))
 
 
@@ -105,13 +116,17 @@ def test_read_ivdb():
     iv = __ivdb_obj(True)
     ig = isg.IsGm()
     ig.read_ivdb(iv)
-    r = np.full(3, False)
+    r = np.full(5, False)
     if ig.levels == exp_levels:
         r[0] = True
     if ig.data == data:
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
+        r[4] = True
     assert(all(r))
 
 
