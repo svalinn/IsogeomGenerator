@@ -524,7 +524,7 @@ class IsGm(IsoGeomGen):
                 # check if any vertex matches between the two surfaces
                 match = False
                 for coord1 in verts1.values():
-                    if coord2 in verts2.values():
+                    if coord1 in verts2.values():
                         # exact match, don't need to check anymore
                         match = True
                         break
