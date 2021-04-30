@@ -72,8 +72,12 @@ class IvDb(IsoGeomGen):
         # read data using meshio to get min and max and make sure levels are
         # within data bounds:
         arbmin, arbmax, mins, maxs = self.__check_data(filename)
-        self.min_ext = mins
-        self.max_ext = maxs
+        self.xmin = mins[0]
+        self.ymin = mins[1]
+        self.zmin = mins[2]
+        self.xmax = maxs[0]
+        self.ymax = maxs[1]
+        self.zmax = maxs[2]
         self.levels.append(arbmax)
 
         # plot the pseudocolor data in order to get volumes
