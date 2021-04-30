@@ -488,6 +488,9 @@ class IsGm(IsoGeomGen):
         print("comparing surfaces in isovolumes {} and {}.".format(
             v1[0], v2[0]))
 
+        # skinner object for getting edge verts
+        sk = Skinner(self.mb)
+
         # tag to indicate if interior or exterior surface
         surf_type_tag = \
             self.mb.tag_get_handle('SURF_TYPE', size=32,
@@ -535,9 +538,6 @@ class IsGm(IsoGeomGen):
                     # not on the outer curve)
                     tris2 = self.__get_surf_triangles(verts2.keys())
                     self.mb.delete_entities(tris2)
-                    verts_save = sk.find_skin(s2, tris2, True, False)
-                    verts_delete = list(set(verts2.keys()) - set(verts_save))
-                    self.mb.delete_entities(verts_delete)
                     surfs_to_remove[s2] = s1
 
         # remove the matched surfaces from volume 2
