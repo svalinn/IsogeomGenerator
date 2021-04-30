@@ -71,7 +71,9 @@ class IvDb(IsoGeomGen):
 
         # read data using meshio to get min and max and make sure levels are
         # within data bounds:
-        arbmin, arbmax = self.__check_levels(filename)
+        arbmin, arbmax, mins, maxs = self.__check_data(filename)
+        self.min_ext = mins
+        self.max_ext = maxs
         self.levels.append(arbmax)
 
         # plot the pseudocolor data in order to get volumes
@@ -129,7 +131,7 @@ class IvDb(IsoGeomGen):
             self.db = new_dir
         os.makedirs(self.db + "/vols/")
 
-    def __check_levels(self, filename):
+    def __check_data(self, filename):
         """Read data using meshio to get min and max and make sure
         levels are within data bounds.
 
@@ -141,8 +143,15 @@ class IvDb(IsoGeomGen):
         -------
             arbmin: float, value that is lower than minimum data
             arbmax: float, value that is greater than the max data
+            mins: list of floats, minimum x, y, z values of the
+                geometry [xmin, ymin, zmin]
+            maxs: list of floats, maximum x, y, z values of the
+                geometry [xmax, ymax, zmax]
         """
+        # read in Cartesian mesh file
         mf = meshio.read(filename)
+
+        # get min and max data values
         mindata = min(mf.cell_data['hexahedron'][self.data])
         maxdata = max(mf.cell_data['hexahedron'][self.data])
         arbmin = mindata - 10  # lower than lowest data
@@ -155,7 +164,11 @@ class IvDb(IsoGeomGen):
         if len(self.levels) == 0:
             raise RuntimeError("No data exists within provided levels.")
 
-        return arbmin, arbmax
+        # get extents of the geometric space (min/max x, y, z values)
+        mins = mf.points.min(axis=0)
+        maxs = mf.points.max(axis=0)
+
+        return arbmin, arbmax, mins, maxs
 
     def __get_isovol(self, lbound, ubound, i):
         """Gets the volume selection for isovolume and export just the
