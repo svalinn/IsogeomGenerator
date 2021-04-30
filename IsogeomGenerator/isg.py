@@ -26,8 +26,6 @@ class IsGm(IsoGeomGen):
             geometry
         isovol_meshsets: dictionary, information relating curve,
             surface, and volume entity handles to each other.
-        surf_curve: dictionary, information relating surfaces to their
-            curves.  key = surf eh, value = list of child curve eh
         val_tag: MOAB tag entity handle, tag for surface value
         sense_tag: MOAB tag entity handle, tag for surface sense
 
@@ -59,7 +57,6 @@ class IsGm(IsoGeomGen):
         # set MOAB related attributes
         self.mb = core.Core()
         self.isovol_meshsets = {}
-        self.surf_curve = {}
         self.val_tag = \
             self.mb.tag_get_handle(self.data, size=1,
                                    tag_type=types.MB_TYPE_DOUBLE,
@@ -289,21 +286,6 @@ class IsGm(IsoGeomGen):
                     surf_id += 1
                     self.mb.tag_set_data(global_id, surf_eh, surf_id)
                     completed_surf_list.append(surf_eh)
-
-        curve_id = 0
-        completed_curve_list = []
-        for s in self.surf_curve.keys():
-            for c in self.surf_curve[s]:
-                # create relationship
-                self.mb.add_parent_child(s, c)
-
-                # tag curves (if not already done)
-                if c not in completed_curve_list:
-                    self.mb.tag_set_data(geom_dim, c, 1)
-                    self.mb.tag_set_data(category, c, 'Curve')
-                    curve_id += 1
-                    self.mb.tag_set_data(global_id, c, curve_id)
-                    completed_curve_list.append(c)
 
     def tag_for_viz(self):
         """Tags all triangles on all surfaces with the data value for
