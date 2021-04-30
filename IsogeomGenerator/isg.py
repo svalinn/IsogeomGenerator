@@ -414,7 +414,7 @@ class IsGm(IsoGeomGen):
             self.mb.add_entities(surf, verts)
 
             # store surfaces in completed list
-            surfs_list.append(surf)
+            surf_list.append(surf)
 
             # remove surface from original meshset
             self.mb.remove_entities(ms, tris)
