@@ -21,6 +21,7 @@ common_files = [f for f in listdir(exp_vols_dir)
 exp_levelfile = exp_db + "/levelfile"
 exp_levels = [5, 15, 25, 35, 45]
 exp_geom = test_dir + '/exp-isogeom.h5m'
+# geometric extent info
 exp_ext_min = np.array([-10., -10., -10.])
 exp_ext_max = np.array([10., 10., 10.])
 
@@ -64,7 +65,7 @@ def test_init_input():
 
 def test_init_ivdb():
     """test that info is taken from ivdb"""
-    r = np.full(3, False)
+    r = np.full(5, False)
     iv = __ivdb_obj(True)
     ig = isg.IsGm(ivdb=iv)
     if ig.levels == exp_levels:
@@ -73,6 +74,10 @@ def test_init_ivdb():
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min[0]:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max[0]:
+        r[4] = True
     assert(all(r))
 
 
