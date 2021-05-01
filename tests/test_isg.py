@@ -665,11 +665,6 @@ def test_compare_surfs():
     assert(all(r))
 
 
-def test_compare_surfs_full_surf():
-    """full surface is merged into another"""
-    pass
-
-
 def test_compare_surfs_no_val():
     """no matching value - should throw warning"""
     # get setup
