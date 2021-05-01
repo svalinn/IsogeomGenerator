@@ -372,6 +372,7 @@ class IsGm(IsoGeomGen):
 
         # get set of all vertices for the isosurface
         all_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
+        all_tris = self.mb.get_entities_by_type(ms, types.MBTRI)
 
         while len(all_verts) > 0:
             # get full set of connected verts starting from a seed
@@ -386,7 +387,7 @@ class IsGm(IsoGeomGen):
                                                verts_check, 2, op_type=1),
                                                0, op_type=1)
 
-                # only store verts that are present in the surface
+                # only store verts that are present in the full surface
                 vupdate = set(vtmp) & set(all_verts)
 
                 # add newly found verts to all list
@@ -406,6 +407,8 @@ class IsGm(IsoGeomGen):
             # get the connected set of triangles that make the single
             # surface and store into a unique meshset
             tris = self.__get_surf_triangles(verts)
+            # only include tris that already exist in the full meshset
+            tris = list(set(tris) & set(all_tris))
             surf = self.mb.create_meshset()
             self.mb.add_entities(surf, tris)
             self.mb.add_entities(surf, verts)
