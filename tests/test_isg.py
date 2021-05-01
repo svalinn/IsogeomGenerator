@@ -694,3 +694,52 @@ def test_compare_surfs_no_val():
     if val_out == val_exp:
         r[2] = True
     assert(all(r))
+
+
+def test_calc_centroid():
+    """test centroid calculation"""
+    ig = isg.IsGm()
+    # triangle defined by coordinates (3, 0, 0), (0, 3, 0), (0, 0, 3)
+    coords = [3., 0., 0., 0., 3., 0., 0., 0., 3.]
+    # expected centroid:
+    # x = (3 + 0 + 0)/3 = 1
+    # y = (0 + 3 + 0)/3 = 1
+    # z = (0 + 0 + 3)/3 = 1
+    exp_centroid = [1., 1., 1.]
+    centroid = ig._IsGm__calc_centroid(coords)
+    assert(exp_centroid == centroid)
+
+
+def test_calc_centroid_error():
+    """test that error is raised if wrong number of values in centroid calc"""
+    ig = isg.IsGm()
+    # incorrect list of only 2 coords (6 values)
+    coords = [3., 0., 0., 0., 3., 0.]
+    with pytest.raises(RuntimeError) as error_info:
+        ig._IsGm__calc_centroid(coords)
+    assert "Cannot calculate centroid" in str(error_info)
+
+
+@pytest.mark.parametrize("point", [([-5, 0, 0]), ([5, 0, 0]),
+                                   ([0, -5, 0]), ([0, 5, 0]),
+                                   ([0, 0, -5]), ([0, 0, 5])])
+def test_check_exterior_true(point):
+    """test that point is correctly identified as being on the surface"""
+    ig = isg.IsGm()
+    # define the geometric extents to be -5 to 5 in all directions
+    ig.xmin = ig.ymin = ig.zmin = -5.
+    ig.xmax = ig.ymax = ig.zmax = 5.
+    # test points on each surface (every point should be on a surface)
+    result = ig._IsGm__check_exterior(point)
+    assert(result)
+
+
+def test_check_exterior_false():
+    """test that point is correctly identified as being on the interior"""
+    ig = isg.IsGm()
+    # define the geometric extents to be -5 to 5 in all directions
+    ig.xmin = ig.ymin = ig.zmin = -5.
+    ig.xmax = ig.ymax = ig.zmax = 5.
+    point = [0, 0, 0]  # interior
+    result = ig._IsGm__check_exterior(point)
+    assert(not result)
