@@ -121,17 +121,6 @@ def set_moab_only_options(parser):
     ------
         parser: ArgumentParser object to attach options to
     """
-    parser.add_argument('-m', '--mergetol',
-                        action='store',
-                        nargs=1,
-                        required=False,
-                        default=[1e-5],
-                        metavar='TOL',
-                        dest='mergetol',
-                        type=float,
-                        help='Merge tolerance for mesh based merging of ' +
-                        'coincident surfaces. Default=1e-5.'
-                        )
     parser.add_argument('-n', '--norm',
                         action='store',
                         nargs=1,
@@ -508,7 +497,6 @@ def main():
         driver.create_geometry(ig,
                                tag_for_viz=args.tagviz,
                                norm=args.norm[0],
-                               merge_tol=args.mergetol[0],
                                tags=tags,
                                sname=args.geomfile[0],
                                sdir=args.savepath[0])
