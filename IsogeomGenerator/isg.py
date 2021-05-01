@@ -577,6 +577,9 @@ class IsGm(IsoGeomGen):
         --------
             centroid: list of floats, coordinates of the centroid [x, y, z]
         """
+        if len(coords) != 9:
+            raise RuntimeError("Cannot calculate centroid. List of " +
+                               "coordinates is incorrect size.")
         x = sum(coords[0::3]) / 3.
         y = sum(coords[1::3]) / 3.
         z = sum(coords[2::3]) / 3.
