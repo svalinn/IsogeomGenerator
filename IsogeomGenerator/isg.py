@@ -144,31 +144,25 @@ class IsGm(IsoGeomGen):
             iso_id = iv_info[0]
             fs = iv_info[1]
 
-            # get set of all vertices for the isosurface
-            all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
-
-            # separate the verts into interior vs exterior
-            verts_interior = []
-            verts_exterior = []
-
-            for vert in all_verts:
-                c = self.mb.get_coords(vert)
-                if (c[0] == self.xmin) or (c[0] == self.xmax) or \
-                   (c[1] == self.ymin) or (c[1] == self.ymax) or \
-                   (c[2] == self.zmin) or (c[2] == self.zmax):
-                    verts_exterior.append(vert)
+            # get all triangles and check if the centroid is on an
+            # exterior surface.
+            all_tris = self.mb.get_entities_by_type(fs, types.MBTRI)
+            tris_exterior = []
+            tris_interior = []
+            for tri in all_tris:
+                tri_verts = self.mb.get_connectivity(Range(tri))
+                coords = self.mb.get_coords(tri_verts)
+                centroid = self.__calc_centroid(coords)
+                if self.__check_exterior(centroid):
+                    tris_exterior.append(tri)
                 else:
-                    verts_interior.append(vert)
+                    tris_interior.append(tri)
 
-            # get sets of interior vs exterior tris
-            # all tris connected to interior verts are automatically
-            # considered interior tris
-            tris_interior = self.mb.get_adjacencies(
-                verts_interior, 2, op_type=1)
-
-            # exterior tris are only those with all vertices on an
-            # exterior surface
-            tris_exterior = self.__get_surf_triangles(verts_exterior)
+            # get all interior and exterior vertices
+            verts_interior = self.mb.get_adjacencies(
+                tris_interior, 0, op_type=1)
+            verts_exterior = self.mb.get_adjacencies(
+                tris_exterior, 0, op_type=1)
 
             # create interior and exterior surface meshsets
             surf_exterior = self.mb.create_meshset()
@@ -566,3 +560,41 @@ class IsGm(IsoGeomGen):
             else:
                 val = shared[0] * norm
             self.mb.tag_set_data(self.val_tag, s1, val)
+
+    def __calc_centroid(self, coords):
+        """Calculate the centroid of a list of three coordinates.
+
+        Inputs:
+        -------
+            coords: list of floats, x, y, and z coordinates of three
+                points to calculate centroid. list should be ordered as:
+                [x1, y1, z1, x2, y2, z2, x3, y3, z3]
+
+        Returns:
+        --------
+            centroid: list of floats, coordinates of the centroid [x, y, z]
+        """
+        x = sum(coords[0::3]) / 3.
+        y = sum(coords[1::3]) / 3.
+        z = sum(coords[2::3]) / 3.
+        return [x, y, z]
+
+    def __check_exterior(self, coord):
+        """for a given position [x, y, z] check if it is on the exterior
+        surfaces of the geometry.
+
+        Inputs:
+        -------
+            coord: list of floats, [x, y, z]
+
+        Returns:
+        --------
+            True: located on exterior surface
+            False: not located on exterior surface
+        """
+        if (coord[0] == self.xmin) or (coord[0] == self.xmax) or \
+           (coord[1] == self.ymin) or (coord[1] == self.ymax) or \
+           (coord[2] == self.zmin) or (coord[2] == self.zmax):
+            return True
+        else:
+            return False
