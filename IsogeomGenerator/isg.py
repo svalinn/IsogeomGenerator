@@ -144,6 +144,8 @@ class IsGm(IsoGeomGen):
             iso_id = iv_info[0]
             fs = iv_info[1]
 
+            print("separating isovolume {}".format(iso_id))
+
             # get all triangles and check if the centroid is on an
             # exterior surface.
             all_tris = self.mb.get_entities_by_type(fs, types.MBTRI)
