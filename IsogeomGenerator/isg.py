@@ -395,7 +395,7 @@ class IsGm(IsoGeomGen):
                 vtmp_all.update(vupdate)
 
                 # check if different from already found verts
-                if len(list(vtmp_all)) == len(verts):
+                if len(vtmp_all) == len(verts):
                     # no more vertices are connected, so full surface
                     # has been found
                     break
@@ -554,7 +554,7 @@ class IsGm(IsoGeomGen):
             shared = \
                 list(set(self.isovol_meshsets[v1]['bounds']) &
                      set(self.isovol_meshsets[v2]['bounds']))
-            if not(bool(shared)):
+            if len(shared) != 1:
                 warnings.warn("No matching value for volumes " +
                               "{} and {}".format(v1, v2))
                 val = 0.0
