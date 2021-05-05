@@ -9,7 +9,6 @@ from isg_gen import IsoGeomGen
 
 from pymoab import core, types
 from pymoab.rng import Range
-from pymoab.skinner import Skinner
 
 
 class IsGm(IsoGeomGen):
@@ -489,9 +488,6 @@ class IsGm(IsoGeomGen):
         """
         print("comparing surfaces in isovolumes {} and {}.".format(
             v1[0], v2[0]))
-
-        # skinner object for getting edge verts
-        sk = Skinner(self.mb)
 
         # tag to indicate if interior or exterior surface
         surf_type_tag = \
