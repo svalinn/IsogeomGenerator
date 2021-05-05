@@ -578,10 +578,9 @@ class IsGm(IsoGeomGen):
         if len(coords) != 9:
             raise RuntimeError("Cannot calculate centroid. List of " +
                                "coordinates is incorrect size.")
-        x = sum(coords[0::3]) / 3.
-        y = sum(coords[1::3]) / 3.
-        z = sum(coords[2::3]) / 3.
-        return [x, y, z]
+        # reshape into list of 3 coordinates [[x2,y2,z2],[x2,y2,z2],[x3,y3,z3]]
+        # calculate average along columns (axis 0) to get average x, y, and z
+        return np.mean(np.resize(coords, (3, 3)), axis=0)
 
     def __check_exterior(self, coord):
         """for a given position [x, y, z] check if it is on the exterior

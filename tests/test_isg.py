@@ -707,7 +707,7 @@ def test_calc_centroid():
     # z = (0 + 0 + 3)/3 = 1
     exp_centroid = [1., 1., 1.]
     centroid = ig._IsGm__calc_centroid(coords)
-    assert(exp_centroid == centroid)
+    assert(exp_centroid == list(centroid))
 
 
 def test_calc_centroid_error():
