@@ -22,9 +22,9 @@ exp_levelfile = exp_db + "/levelfile"
 exp_levels = [5, 15, 25, 35, 45]
 exp_geom = test_dir + '/exp-isogeom.h5m'
 # geometric extent info
-exts = [[-10., -10., -10.], [10., 10., 10.]]
 exp_ext_min = -10.
 exp_ext_max = 10.
+exts = [np.full(3, exp_ext_min), np.full(3, exp_ext_max)]
 
 
 def __ivdb_obj(completed):
