@@ -372,57 +372,57 @@ class IsGm(IsoGeomGen):
         surf_list = []
 
         # get set of all vertices for the isosurface
-        all_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
+        remaining_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
         all_tris = self.mb.get_entities_by_type(ms, types.MBTRI)
 
-        while len(all_verts) > 0:
+        while len(remaining_verts) > 0:
             # get full set of connected verts starting from a seed
-            verts = [all_verts[0]]
-            verts_check = [all_verts[0]]
-            vtmp_all = set(verts[:])
+            region_verts = [remaining_verts[0]]
+            boundary_verts = [remaining_verts[0]]
+            expanded_region = set(region_verts[:])
 
             # gather set of all vertices that are connected to the seed
             while True:
                 # check adjancency and connectedness of new vertices
-                vtmp = self.mb.get_adjacencies(self.mb.get_adjacencies(
-                                               verts_check, 2, op_type=1),
-                                               0, op_type=1)
-
-                # only store verts that are present in the full surface
-                vupdate = set(vtmp) & set(all_verts)
+                new_connected_verts = \
+                    self.mb.get_adjacencies(self.mb.get_adjacencies(
+                                            boundary_verts, 2, op_type=1),
+                                            0, op_type=1)
 
                 # add newly found verts to all list
-                vtmp_all.update(vupdate)
+                # only store verts that are present in the full surface
+                expanded_region.update(
+                    set(new_connected_verts) & set(remaining_verts))
 
                 # check if different from already found verts
-                if len(vtmp_all) == len(verts):
+                if len(expanded_region) == len(region_verts):
                     # no more vertices are connected, so full surface
                     # has been found
                     break
                 else:
                     # update vertices list to check only newly found
                     # vertices
-                    verts_check = vtmp_all.difference(verts)
-                    verts = list(vtmp_all)
+                    boundary_verts = expanded_region.difference(region_verts)
+                    region_verts = list(expanded_region)
 
             # get the connected set of triangles that make the single
             # surface and store into a unique meshset
-            tris = self.__get_surf_triangles(verts)
+            tris = self.__get_surf_triangles(region_verts)
             # only include tris that already exist in the full meshset
             tris = list(set(tris) & set(all_tris))
             surf = self.mb.create_meshset()
             self.mb.add_entities(surf, tris)
-            self.mb.add_entities(surf, verts)
+            self.mb.add_entities(surf, region_verts)
 
             # store surfaces in completed list
             surf_list.append(surf)
 
             # remove surface from original meshset
             self.mb.remove_entities(ms, tris)
-            self.mb.remove_entities(ms, verts)
+            self.mb.remove_entities(ms, region_verts)
 
             # resassign vertices that remain
-            all_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
+            remaining_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
 
         return surf_list
 
