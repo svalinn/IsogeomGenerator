@@ -212,7 +212,7 @@ def test_separate_isovols_exterior():
     # separate the volumes
     ig.separate_isovols()
     # check there are four new surfaces
-    r = np.full(3, False)
+    r = np.full(4, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
     if num_surfs == 4:
         r[0] = True
@@ -234,6 +234,14 @@ def test_separate_isovols_exterior():
     num_tris = sorted([len(tris0), len(tris1), len(tris2), len(tris3)])
     if num_tris == [2, 2, 10, 10]:
         r[2] = True
+    # check that 2 surfs have 8 verts and 2 surfs have 4 verts
+    verts0 = set(ig.mb.get_entities_by_type(surf0, types.MBVERTEX))
+    verts1 = set(ig.mb.get_entities_by_type(surf1, types.MBVERTEX))
+    verts2 = set(ig.mb.get_entities_by_type(surf2, types.MBVERTEX))
+    verts3 = set(ig.mb.get_entities_by_type(surf3, types.MBVERTEX))
+    num_verts = sorted([len(verts0), len(verts1), len(verts2), len(verts3)])
+    if num_verts == [4, 4, 8, 8]:
+        r[3] = True
     assert(all(r))
 
 
@@ -257,7 +265,7 @@ def test_separate_isovols_single_exterior():
     # separate the volumes
     ig.separate_isovols()
     # check there are two new surfaces
-    r = np.full(3, False)
+    r = np.full(4, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
     if num_surfs == 2:
         r[0] = True
@@ -273,6 +281,12 @@ def test_separate_isovols_single_exterior():
     num_tris = sorted([len(tris0), len(tris1)])
     if num_tris == [2, 10]:
         r[2] = True
+    # check that one surface has 8 verts and the other has 4
+    verts0 = set(ig.mb.get_entities_by_type(surf0, types.MBVERTEX))
+    verts1 = set(ig.mb.get_entities_by_type(surf1, types.MBVERTEX))
+    num_verts = sorted([len(verts0), len(verts1)])
+    if num_verts == [4, 8]:
+        r[3] = True
     assert(all(r))
 
 
