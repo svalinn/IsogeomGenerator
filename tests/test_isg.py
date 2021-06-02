@@ -257,11 +257,10 @@ def test_separate_isovols_single_exterior():
     # separate the volumes
     ig.separate_isovols()
     # check there are two new surfaces
-    r = np.full(2, False)
+    r = np.full(3, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
     if num_surfs == 2:
         r[0] = True
-    # check number of triangles and vertices in surfaces (8 verts, 12 tris)
     # check that no triangles are shared between the each of the surfaces
     surf0 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][0]
     tris0 = set(ig.mb.get_entities_by_type(surf0, types.MBTRI))
@@ -270,6 +269,10 @@ def test_separate_isovols_single_exterior():
     common_tris = tris0 & tris1
     if len(common_tris) == 0:
         r[1] = True
+    # check that one surface has 2 triangles and the other has 10
+    num_tris = sorted([len(tris0), len(tris1)])
+    if num_tris == [2, 10]:
+        r[2] = True
     assert(all(r))
 
 
