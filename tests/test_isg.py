@@ -225,8 +225,10 @@ def test_separate_isovols_exterior():
     tris2 = set(ig.mb.get_entities_by_type(surf2, types.MBTRI))
     surf3 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][3]
     tris3 = set(ig.mb.get_entities_by_type(surf3, types.MBTRI))
-    common_tris = tris0 & tris1 & tris2 & tris3
-    if len(common_tris) == 0:
+    common_tris = [list(tris0 & tris1), list(tris0 & tris2),
+                   list(tris0 & tris3), list(tris1 & tris2),
+                   list(tris1 & tris3), list(tris2 & tris3)]
+    if not common_tris == 0:
         r[1] = True
     assert(all(r))
 
