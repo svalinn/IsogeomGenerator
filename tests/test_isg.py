@@ -212,7 +212,7 @@ def test_separate_isovols_exterior():
     # separate the volumes
     ig.separate_isovols()
     # check there are four new surfaces
-    r = np.full(2, False)
+    r = np.full(3, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
     if num_surfs == 4:
         r[0] = True
@@ -230,6 +230,10 @@ def test_separate_isovols_exterior():
                    list(tris1 & tris3), list(tris2 & tris3)]
     if not common_tris == 0:
         r[1] = True
+    # check that two surfaces have 10 tris and two surfaces have 2 tris
+    num_tris = sorted([len(tris0), len(tris1), len(tris2), len(tris3)])
+    if num_tris == [2, 2, 10, 10]:
+        r[2] = True
     assert(all(r))
 
 
