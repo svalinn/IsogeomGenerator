@@ -306,7 +306,7 @@ def test_separate_isovols_single_interior():
     ig.ymax = ig.zmax = 15.
     # separate the volumes
     ig.separate_isovols()
-    # check there are two new surfaces
+    # check there is one new surfaces
     r = np.full(3, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
     if num_surfs == 1:
