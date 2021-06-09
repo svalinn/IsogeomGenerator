@@ -49,7 +49,7 @@ def test_init_none():
         r[3] = True
     if ig.isovol_meshsets == {}:
         r[4] = True
-    if ig.xmin == ig.xmax == ig.ymin == ig.ymax == ig.zmin == ig.zmax == None:
+    if ig.xmin == ig.xmax == ig.ymin == ig.ymax == ig.zmin == ig.zmax is None:
         r[5] = True
     assert(all(r))
 
@@ -291,7 +291,7 @@ def test_separate_isovols_single_exterior():
 
 
 def test_separate_isovols_single_interior():
-    """test a single interior vol is unchanged when it goes through separation"""
+    """test a single interior vol is unchanged when it is separated"""
     # load mesh that does not need separation
     ig = isg.IsGm()
     fs = ig.mb.create_meshset()
