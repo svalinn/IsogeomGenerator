@@ -567,8 +567,8 @@ def test_write_geometry_ext():
         warnings.simplefilter("always")
         if len(w) == 1:
             r[0] = True
-        if "File will be saved as type .h5m" in str(w[-1].message):
-            r[1] = True
+            if "File will be saved as type .h5m" in str(w[0].message):
+                r[1] = True
     # check that file exists
     good_file = test_dir + '/write-test.h5m'
     bad_file = test_dir + '/' + sname
@@ -706,8 +706,8 @@ def test_compare_surfs_no_val():
         # check warning
         if len(w) == 1:
             r[0] = True
-        if "No matching value" in str(w[-1].message):
-            r[1] = True
+            if "No matching value" in str(w[0].message):
+                r[1] = True
     # common surface should be assigned a value of 0.0
     surfs_1 = ig.isovol_meshsets[iv[0]]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv[1]]['surfs_EH']
