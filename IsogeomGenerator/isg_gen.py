@@ -17,7 +17,7 @@ class IsoGeomGen(object):
             attribute
     """
 
-    def __init__(self, levels=None, data=None, db=None):
+    def __init__(self, levels=None, data=None, db=None, extents=None):
         """Create IsoGoemGen object
 
         Input:
@@ -28,10 +28,29 @@ class IsoGeomGen(object):
             data: (optional), string, name of data on the mesh
             db: (optional), string, path to database folder with
                 isovolume files
+            extents: (optional) list of list of floats, minimum and
+                maximum values for x, y, and z in mesh. Must be
+                structured like [[xmin, ymin, zmin], [xmax, ymax, zmax]]
         """
         self.levels = levels
         self.data = data
         self.db = db
+
+        # set extents
+        if extents is not None:
+            self.xmin = extents[0][0]
+            self.ymin = extents[0][1]
+            self.zmin = extents[0][2]
+            self.xmax = extents[1][0]
+            self.ymax = extents[1][1]
+            self.zmax = extents[1][2]
+        else:
+            self.xmin = None
+            self.ymin = None
+            self.zmin = None
+            self.xmax = None
+            self.ymax = None
+            self.zmax = None
 
         # set levels
         if self.levels is not None:

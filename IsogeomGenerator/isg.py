@@ -9,7 +9,6 @@ from isg_gen import IsoGeomGen
 
 from pymoab import core, types
 from pymoab.rng import Range
-from pymoab.skinner import Skinner
 
 
 class IsGm(IsoGeomGen):
@@ -26,8 +25,6 @@ class IsGm(IsoGeomGen):
             geometry
         isovol_meshsets: dictionary, information relating curve,
             surface, and volume entity handles to each other.
-        surf_curve: dictionary, information relating surfaces to their
-            curves.  key = surf eh, value = list of child curve eh
         val_tag: MOAB tag entity handle, tag for surface value
         sense_tag: MOAB tag entity handle, tag for surface sense
 
@@ -35,7 +32,8 @@ class IsGm(IsoGeomGen):
     --------
     """
 
-    def __init__(self, ivdb=None, levels=None, data=None, db=None):
+    def __init__(self, ivdb=None, levels=None, data=None, db=None,
+                 extents=None):
         """Create IsGm object. Information provided by an ivdb object
         will overwrite other data provided.
 
@@ -48,9 +46,12 @@ class IsGm(IsoGeomGen):
             data: (optional), string, name of data on the mesh
             db: (optional), string, path to database folder with
                 isovolume files
+            extents: (optional) list of list of floats, minimum and
+                maximum values for x, y, and z in mesh. Must be
+                structured like [[xmin, ymin, zmin], [xmax, ymax, zmax]]
         """
         # initialize variables
-        super(IsGm, self).__init__(levels, data, db)
+        super(IsGm, self).__init__(levels, data, db, extents)
 
         # if ivdb object is provided, overwrite with that info
         if ivdb is not None:
@@ -59,7 +60,6 @@ class IsGm(IsoGeomGen):
         # set MOAB related attributes
         self.mb = core.Core()
         self.isovol_meshsets = {}
-        self.surf_curve = {}
         self.val_tag = \
             self.mb.tag_get_handle(self.data, size=1,
                                    tag_type=types.MB_TYPE_DOUBLE,
@@ -86,6 +86,12 @@ class IsGm(IsoGeomGen):
         self.levels = ivdb.levels
         self.db = ivdb.db
         self.data = ivdb.data
+        self.xmin = ivdb.xmin
+        self.xmax = ivdb.xmax
+        self.ymin = ivdb.ymin
+        self.ymax = ivdb.ymax
+        self.zmin = ivdb.zmin
+        self.zmax = ivdb.zmax
 
     def read_database(self):
         """Read the files from the database and initialize the meshset info.
@@ -126,7 +132,10 @@ class IsGm(IsoGeomGen):
                     (self.levels[i - 1], self.levels[i])
 
     def separate_isovols(self):
-        """For each isovolume in the database, separate any disjoint
+        """Split isosurfaces into different surfaces for exterior vs
+        interior surfaces. Exterior surfaces are those in which full
+        triangles are on the planes defining the bounding box of the
+        geometry. For each isovolume in the database, separate any disjoint
         surfaces into unique single surfaces.
         """
         for iv_info in self.isovol_meshsets.keys():
@@ -134,59 +143,59 @@ class IsGm(IsoGeomGen):
             iso_id = iv_info[0]
             fs = iv_info[1]
 
-            # get set of all vertices for the isosurface
-            all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
+            print("separating isovolume {}".format(iso_id))
 
-            # initiate list to store separate surface entity handles
+            # get all triangles and check if the centroid is on an
+            # exterior surface.
+            all_tris = self.mb.get_entities_by_type(fs, types.MBTRI)
+            tris_exterior = []
+            tris_interior = []
+            for tri in all_tris:
+                tri_verts = self.mb.get_connectivity(Range(tri))
+                coords = self.mb.get_coords(tri_verts)
+                centroid = self.__calc_centroid(coords)
+                if self.__check_exterior(centroid):
+                    tris_exterior.append(tri)
+                else:
+                    tris_interior.append(tri)
+
+            # get all interior and exterior vertices
+            verts_interior = self.mb.get_adjacencies(
+                tris_interior, 0, op_type=1)
+            verts_exterior = self.mb.get_adjacencies(
+                tris_exterior, 0, op_type=1)
+
+            # create interior and exterior surface meshsets
+            surf_exterior = self.mb.create_meshset()
+            self.mb.add_entities(surf_exterior, tris_exterior)
+            self.mb.add_entities(surf_exterior, verts_exterior)
+
+            surf_interior = self.mb.create_meshset()
+            self.mb.add_entities(surf_interior, tris_interior)
+            self.mb.add_entities(surf_interior, verts_interior)
+
+            # separate meshset into disjoint surfaces based on their
+            # connectedness
+            ext_surfs = self.__separate(surf_exterior)
+            int_surfs = self.__separate(surf_interior)
+
+            # tag the surfaces with whether they are interior or exterior
+            surf_type_tag = \
+                self.mb.tag_get_handle('SURF_TYPE', size=32,
+                                       tag_type=types.MB_TYPE_OPAQUE,
+                                       storage_type=types.MB_TAG_SPARSE,
+                                       create_if_missing=True)
+            for s in ext_surfs:
+                self.mb.tag_set_data(surf_type_tag, s, 'exterior')
+            for s in int_surfs:
+                self.mb.tag_set_data(surf_type_tag, s, 'interior')
+
+            # store separate surface entity handles
             self.isovol_meshsets[iv_info]['surfs_EH'] = []
+            self.isovol_meshsets[iv_info]['surfs_EH'].extend(ext_surfs)
+            self.isovol_meshsets[iv_info]['surfs_EH'].extend(int_surfs)
 
-            # separate the surfaces
-            print("Separating isovolume {}".format(iso_id))
-            while len(all_verts) > 0:
-                # get full set of connected verts starting from a seed
-                verts = [all_verts[0]]
-                verts_check = [all_verts[0]]
-                vtmp_all = set(verts[:])
-
-                # gather set of all vertices that are connected to the seed
-                while True:
-                    # check adjancency and connectedness of new vertices
-                    vtmp = self.mb.get_adjacencies(self.mb.get_adjacencies(
-                                                   verts_check, 2, op_type=1),
-                                                   0, op_type=1)
-
-                    # add newly found verts to all list
-                    vtmp_all.update(set(vtmp))
-
-                    # check if different from already found verts
-                    if len(list(vtmp_all)) == len(verts):
-                        # no more vertices are connected, so full surface
-                        # has been found
-                        break
-                    else:
-                        # update vertices list to check only newly found
-                        # vertices
-                        verts_check = vtmp_all.difference(verts)
-                        verts = list(vtmp_all)
-
-                # get the connected set of triangles that make the single
-                # surface and store into a unique meshset
-                tris = self.__get_surf_triangles(verts)
-                surf = self.mb.create_meshset()
-                self.mb.add_entities(surf, tris)
-                self.mb.add_entities(surf, verts)
-
-                # store surfaces in completed list
-                self.isovol_meshsets[iv_info]['surfs_EH'].append(surf)
-
-                # remove surface from original meshset
-                self.mb.remove_entities(fs, tris)
-                self.mb.remove_entities(fs, verts)
-
-                # resassign vertices that remain
-                all_verts = self.mb.get_entities_by_type(fs, types.MBVERTEX)
-
-    def imprint_merge(self, norm, merge_tol):
+    def imprint_merge(self, norm):
         """Uses PyMOAB to check if surfaces are coincident. Creates a
         single surface where surfaces are coincident values are tagged
         on each surface. Surface senses are also determined and tagged.
@@ -194,8 +203,6 @@ class IsGm(IsoGeomGen):
         Input:
         ------
             norm: float, All data values will be multiplied by this factor.
-            merge_tol: float, Merge tolerance for mesh based merge of
-                coincident surfaces.
         """
         # get list of all original isovolumes
         all_vols = sorted(self.isovol_meshsets.keys())
@@ -203,7 +210,7 @@ class IsGm(IsoGeomGen):
             if i != len(self.levels) - 1:
                 # do not need to check the last isovolume because it
                 # will be checked against its neighbor already
-                self.__compare_surfs(isovol, all_vols[i + 1], norm, merge_tol)
+                self.__compare_surfs(isovol, all_vols[i + 1], norm)
 
         # if a surface doesn't have a value tagged after merging
         # give it a value of 0 and tag forward sense
@@ -277,21 +284,6 @@ class IsGm(IsoGeomGen):
                     self.mb.tag_set_data(global_id, surf_eh, surf_id)
                     completed_surf_list.append(surf_eh)
 
-        curve_id = 0
-        completed_curve_list = []
-        for s in self.surf_curve.keys():
-            for c in self.surf_curve[s]:
-                # create relationship
-                self.mb.add_parent_child(s, c)
-
-                # tag curves (if not already done)
-                if c not in completed_curve_list:
-                    self.mb.tag_set_data(geom_dim, c, 1)
-                    self.mb.tag_set_data(category, c, 'Curve')
-                    curve_id += 1
-                    self.mb.tag_set_data(global_id, c, curve_id)
-                    completed_curve_list.append(c)
-
     def tag_for_viz(self):
         """Tags all triangles on all surfaces with the data value for
         that surface. This is for vizualization purposes.
@@ -364,6 +356,76 @@ class IsGm(IsoGeomGen):
         self.mb.write_file(save_location)
         print("Geometry file written to {}.".format(save_location))
 
+    def __separate(self, ms):
+        """For a given surface meshset, separate meshset into unique and
+        disjoint surfaces based on their connectedness.
+
+        Input:
+        ------
+            ms: meshset entity handle
+
+        Returns:
+        --------
+            surf_list: list of entity handles for the set of unique and
+                disjoint surfaces in the meshset
+        """
+        surf_list = []
+
+        # get set of all vertices for the isosurface
+        remaining_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
+        all_tris = set(self.mb.get_entities_by_type(ms, types.MBTRI))
+
+        while len(remaining_verts) > 0:
+            # get full set of connected verts starting from a seed
+            region_verts = [remaining_verts[0]]
+            boundary_verts = [remaining_verts[0]]
+            expanded_region = set(region_verts[:])
+
+            # gather set of all vertices that are connected to the seed
+            while True:
+                # check adjancency and connectedness of new vertices
+                new_connected_verts = \
+                    self.mb.get_adjacencies(self.mb.get_adjacencies(
+                                            boundary_verts, 2, op_type=1),
+                                            0, op_type=1)
+
+                # add newly found verts to all list
+                # only store verts that are present in the full surface
+                expanded_region.update(
+                    set(new_connected_verts) & set(remaining_verts))
+
+                # check if different from already found verts
+                if len(expanded_region) == len(region_verts):
+                    # no more vertices are connected, so full surface
+                    # has been found
+                    break
+                else:
+                    # update vertices list to check only newly found
+                    # vertices
+                    boundary_verts = expanded_region.difference(region_verts)
+                    region_verts = list(expanded_region)
+
+            # get the connected set of triangles that make the single
+            # surface and store into a unique meshset
+            tris = self.__get_surf_triangles(region_verts)
+            # only include tris that already exist in the full meshset
+            tris = list(set(tris) & all_tris)
+            surf = self.mb.create_meshset()
+            self.mb.add_entities(surf, tris)
+            self.mb.add_entities(surf, region_verts)
+
+            # store surfaces in completed list
+            surf_list.append(surf)
+
+            # remove surface from original meshset
+            self.mb.remove_entities(ms, tris)
+            self.mb.remove_entities(ms, region_verts)
+
+            # resassign vertices that remain
+            remaining_verts = self.mb.get_entities_by_type(ms, types.MBVERTEX)
+
+        return surf_list
+
     def __get_surf_triangles(self, verts_good):
         """This function will take a set of vertex entity handles and
         return the set of triangles for which all vertices of all
@@ -393,116 +455,29 @@ class IsGm(IsoGeomGen):
             # empty set so all tris are good
             return tris_all
 
-    def __list_coords(self, eh, invert=False):
+    def __list_coords(self, eh):
         """Gets list of all coords as a list of tuples for an entity
         handle eh.
 
         Input:
         ------
             eh: MOAB entity handle for meshset to retrieve coordinates
-            invert: bool, default=False, True to invert keys and values
-                in returned coords dict
 
         Returns:
         --------
             coords: dictionary, key is the MOAB entity handle for the
                 vertice and the value is a tuple of the coordinate
-                (x, y, z). If invert=True, keys and values are switched.
+                (x, y, z).
         """
         # list of all entity handles for all vertices
         all_verts_eh = self.mb.get_entities_by_type(eh, types.MBVERTEX)
         coords = {}
         for v in all_verts_eh:
             coord = tuple(self.mb.get_coords(v))
-
-            if invert:
-                # invert is true
-                key = coord
-                value = v
-            else:
-                key = v
-                value = coord
-
-            coords[key] = value
-
+            coords[v] = coord
         return coords
 
-    def __get_matches(self, vertsA, vertsB, merge_tol):
-        """Collects the set of entity handles and coordinates in set of
-        vertsA and vertsB that match within the specified absolute
-        tolerance (merge_tol).
-
-        Input:
-        ------
-            vertsA: dictionary, key is the MOAB entity handle for the
-                vertex and the value is a tuple of the coordinate
-                (x, y, z)
-            vertsB: dictionary, key is a tuple of the coordinate and the
-                value is the MOAB entity handle for the coordinate.
-            merge_tol: float, Merge tolerance for mesh based merge of
-                coincident surfaces.
-
-        Returns:
-        --------
-            sA_match_eh: list of MOAB entity handles, the entity handles
-                for set vertsA that exist is vertsB
-            sA_match_coords: list of tuples, each entry is the
-                corresponding coordinate for the EH in sA_match_eh
-            sB_match_eh: list of MOAB entity handles, the entity handles
-                for set vertsB that exist is vertsA
-            sB_match_coords: list of tuples, each entry is the
-                corresponding coordinate for the EH in sB_match_eh
-        """
-        sA_match_eh = []
-        sA_match_coords = []
-        sB_match_eh = []
-        sB_match_coords = []
-        match_dict = {}
-        bcoords = vertsB.keys()
-
-        # get exact matches
-        for vert in vertsA.items():
-            ehA = vert[0]
-            coord = vert[1]
-            if coord in bcoords:
-                # exact match
-                sA_match_eh.append(ehA)
-                sA_match_coords.append(coord)
-                sB_match_coords.append(coord)
-                sB_match_eh.append(vertsB[coord])
-
-                match_dict[vertsB[coord]] = ehA
-
-            else:
-                # check approx
-                tf = np.isclose(coord, bcoords, rtol=0, atol=merge_tol)
-
-                # get index of matches if they exist
-                ix = np.where(zip(*tf)[0])[0]
-                iy = np.where(zip(*tf)[1])[0]
-                iz = np.where(zip(*tf)[2])[0]
-
-                # get index if only x y and z match
-                index_set = list(set(ix) & set(iy) & set(iz))
-
-                if index_set != []:
-                    index = index_set[0]
-
-                    # get the close match coordinate in the bcoords list
-                    bcoord = bcoords[index]
-                    ehB = vertsB[bcoord]
-
-                    sA_match_eh.append(ehA)
-                    sA_match_coords.append(coord)
-                    sB_match_eh.append(ehB)
-                    sB_match_coords.append(bcoord)
-
-                    match_dict[ehB] = ehA
-
-        return sA_match_eh, sA_match_coords, sB_match_eh, sB_match_coords, \
-            match_dict
-
-    def __compare_surfs(self, v1, v2, norm, merge_tol):
+    def __compare_surfs(self, v1, v2, norm):
         """finds coincident surfaces between two isovolumes.
 
         Input:
@@ -510,142 +485,119 @@ class IsGm(IsoGeomGen):
             v1/2: tuple, corresponds to the dictionary keys for two
                 isovolumes in self.isovol_meshsets that will be compared
             norm: float, All data values will be multiplied by this factor.
-            merge_tol: float, Merge tolerance for mesh based merge of
-                coincident surfaces.
         """
         print("comparing surfaces in isovolumes {} and {}.".format(
             v1[0], v2[0]))
 
-        match_surfs = []
-        sk = Skinner(self.mb)
+        # tag to indicate if interior or exterior surface
+        surf_type_tag = \
+            self.mb.tag_get_handle('SURF_TYPE', size=32,
+                                   tag_type=types.MB_TYPE_OPAQUE,
+                                   storage_type=types.MB_TAG_SPARSE,
+                                   create_if_missing=False)
 
-        # compare all surfaces in v1 (s1) to all surfaces in v2 (s2)
+        # store dict of matched surfaces
+        #   key: surf to remove in v2
+        #   value: surf in v1 to replace it with
+        surfs_to_remove = {}
+
+        # compare all interior surfaces in v1 (s1) to all
+        # interior surfaces in v2 (s2)
         for s1 in self.isovol_meshsets[v1]['surfs_EH']:
+
+            # check if s1 is interior surf
+            surf_type = self.mb.tag_get_data(surf_type_tag, s1)
+            if surf_type != 'interior':
+                continue
+
             # get list of all coordinates in s1
             verts1 = self.__list_coords(s1)
 
-            # initialize list of curves
-            if s1 not in self.surf_curve.keys():
-                self.surf_curve[s1] = []
-
             for s2 in self.isovol_meshsets[v2]['surfs_EH']:
-                if s2 not in self.surf_curve.keys():
-                    self.surf_curve[s2] = []
+                # check surf type
+                surf_type = self.mb.tag_get_data(surf_type_tag, s2)
+                if surf_type != 'interior':
+                    continue
 
-                # get list of all coordinates in s2 (inverted)
-                verts2_inv = self.__list_coords(s2, invert=True)
+                # get surface 2 vertices
+                verts2 = self.__list_coords(s2)
 
-                # compare vertices and gather sets for s1 and s2
-                # that are coincident
-                s1_match_eh, s1_match_coords, s2_match_eh, s2_match_coords, \
-                    match_dict = self.__get_matches(verts1, verts2_inv,
-                                                    merge_tol)
-
-                # matches were found, so continue
-                if s1_match_eh != []:
-                    # get only tris1 that have all match vertices
-                    tris1 = self.__get_surf_triangles(s1_match_eh)
-
-                    # get s2 tris to delete (no new surface needed)
-                    tris2 = self.__get_surf_triangles(s2_match_eh)
-
-                    # create new coincident surface
-                    surf = self.mb.create_meshset()
-                    self.mb.add_entities(surf, tris1)
-                    self.mb.add_entities(surf, s1_match_eh)
-                    tris_new = self.mb.get_entities_by_dimension(surf, 2)
-
-                    # get skin of new merged surf (gets curve)
-                    self.surf_curve[surf] = []
-                    curve_verts = sk.find_skin(v1[1], tris1, True, False)
-                    curve_edges = sk.find_skin(v1[1], tris1, False, False)
-
-                    # if curve_verts/edges is empty, closed surf is created
-                    # so no new curve is needed
-                    if len(curve_verts) > 0:
-                        # if not empty, make new curve
-                        curve = self.mb.create_meshset()
-                        self.mb.add_entities(curve, curve_verts)
-                        self.mb.add_entities(curve, curve_edges)
-                        self.surf_curve[s1].append(curve)
-                        self.surf_curve[s2].append(curve)
-                        self.surf_curve[surf].append(curve)
-
-                        # remove merged verts and tris from each already
-                        # existing surf
-                        for vert_delete in s2_match_eh:
-
-                            # get all triangles connected to the vert to be
-                            # deleted
-                            tris_adjust = self.mb.get_adjacencies(vert_delete,
-                                                                  2, op_type=1)
-
-                            # get the vert that will replace the deleted vert
-                            replacement = match_dict[vert_delete]
-
-                            # for every tri to be deleted, replace vert by
-                            # setting connectivity
-                            for tri in tris_adjust:
-                                tri_verts = self.mb.get_connectivity(tri)
-                                new_verts = [0, 0, 0]
-                                for i, tv in enumerate(tri_verts):
-                                    if tv == vert_delete:
-                                        new_verts[i] = replacement
-                                    else:
-                                        new_verts[i] = tv
-
-                                # set connectivity
-                                self.mb.set_connectivity(tri, new_verts)
-
-                    # remove from both sets (already in new surface)
-                    self.mb.remove_entities(s1, tris1)
-                    self.mb.remove_entities(s1, s1_match_eh)
-                    self.mb.remove_entities(s2, tris2)
-                    self.mb.remove_entities(s2, s2_match_eh)
-
-                    # delete surf 2 (repeats)
-                    self.mb.delete_entities(tris2)
-
-                    # TAG INFORMATION
-
-                    # assign sense tag to surface
-                    # [forward=v1, backward=v2]
-                    fwd = v1[1]
-                    bwd = v2[1]
-                    self.mb.tag_set_data(self.sense_tag, surf,
-                                         [fwd, bwd])
-
-                    # tag the new surface with the shared value
-                    shared = \
-                        list(set(self.isovol_meshsets[v1]['bounds']) &
-                             set(self.isovol_meshsets[v2]['bounds']))
-                    if not(bool(shared)):
-                        warnings.warn("No matching value for volumes " +
-                                    "{} and {}".format(v1, v2))
-                        val = 0.0
-                    else:
-                        val = shared[0] * norm
-                    self.mb.tag_set_data(self.val_tag, surf, val)
-
-                    # add new surface to coincident surface list
-                    match_surfs.append(surf)
-
-                    # check if original surfaces are empty (no vertices)
-                    # if so delete empty meshset and remove from list
-                    s2_remaining = \
-                        self.mb.get_entities_by_type(s2, types.MBVERTEX)
-                    if len(s2_remaining) == 0:
-                        # delete surface from list and mb instance
-                        self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
-
-                    s1_remaining = \
-                        self.mb.get_entities_by_type(s1, types.MBVERTEX)
-                    if len(s1_remaining) == 0:
-                        # delete from list and mb instance and move to
-                        # next surf
-                        self.isovol_meshsets[v1]['surfs_EH'].remove(s1)
+                # check if any vertex matches between the two surfaces
+                match = False
+                for coord1 in verts1.values():
+                    if coord1 in verts2.values():
+                        # exact match, don't need to check anymore
+                        match = True
                         break
 
-        # After all comparisons have been made, add surfaces to lists
-        self.isovol_meshsets[v1]['surfs_EH'].extend(match_surfs)
-        self.isovol_meshsets[v2]['surfs_EH'].extend(match_surfs)
+                if match:
+                    # match was found so s1 and s2 are coincident
+                    # delete s2 (all triangles and all vertices that are
+                    # not on the outer curve)
+                    tris2 = self.__get_surf_triangles(verts2.keys())
+                    self.mb.delete_entities(tris2)
+                    surfs_to_remove[s2] = s1
+
+        # remove the matched surfaces from volume 2
+        # assign sense and value tags
+        for s2, s1 in surfs_to_remove.items():
+            self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
+            self.isovol_meshsets[v2]['surfs_EH'].append(s1)
+
+            # assign sense tag to surface
+            # [forward=v1, backward=v2]
+            fwd = v1[1]
+            bwd = v2[1]
+            self.mb.tag_set_data(self.sense_tag, s1, [fwd, bwd])
+
+            # tag the new surface with the shared value
+            shared = \
+                list(set(self.isovol_meshsets[v1]['bounds']) &
+                     set(self.isovol_meshsets[v2]['bounds']))
+            if len(shared) != 1:
+                warnings.warn("No matching value for volumes " +
+                              "{} and {}".format(v1, v2))
+                val = 0.0
+            else:
+                val = shared[0] * norm
+            self.mb.tag_set_data(self.val_tag, s1, val)
+
+    def __calc_centroid(self, coords):
+        """Calculate the centroid of a list of three coordinates.
+
+        Inputs:
+        -------
+            coords: list of floats, x, y, and z coordinates of three
+                points to calculate centroid. list should be ordered as:
+                [x1, y1, z1, x2, y2, z2, x3, y3, z3]
+
+        Returns:
+        --------
+            centroid: list of floats, coordinates of the centroid [x, y, z]
+        """
+        if len(coords) != 9:
+            raise RuntimeError("Cannot calculate centroid. List of " +
+                               "coordinates is incorrect size.")
+        # reshape into list of 3 coordinates [[x2,y2,z2],[x2,y2,z2],[x3,y3,z3]]
+        # calculate average along columns (axis 0) to get average x, y, and z
+        return np.mean(np.resize(coords, (3, 3)), axis=0)
+
+    def __check_exterior(self, coord):
+        """for a given position [x, y, z] check if it is on the exterior
+        surfaces of the geometry.
+
+        Inputs:
+        -------
+            coord: list of floats, [x, y, z]
+
+        Returns:
+        --------
+            True: located on exterior surface
+            False: not located on exterior surface
+        """
+        if (coord[0] == self.xmin) or (coord[0] == self.xmax) or \
+           (coord[1] == self.ymin) or (coord[1] == self.ymax) or \
+           (coord[2] == self.zmin) or (coord[2] == self.zmax):
+            return True
+        else:
+            return False

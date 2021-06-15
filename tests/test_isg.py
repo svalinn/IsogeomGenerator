@@ -21,10 +21,17 @@ common_files = [f for f in listdir(exp_vols_dir)
 exp_levelfile = exp_db + "/levelfile"
 exp_levels = [5, 15, 25, 35, 45]
 exp_geom = test_dir + '/exp-isogeom.h5m'
+# geometric extent info
+exp_ext_min = -10.
+exp_ext_max = 10.
+exts = [np.full(3, exp_ext_min), np.full(3, exp_ext_max)]
 
 
 def __ivdb_obj(completed):
+    # manually generated a usuable ivdb object
     iv = ivdb.IvDb(levels=levels, data=data, db=exp_db)
+    iv.xmin = iv.ymin = iv.zmin = exp_ext_min
+    iv.xmax = iv.ymax = iv.zmax = exp_ext_max
     iv.completed = completed
     return iv
 
@@ -42,26 +49,30 @@ def test_init_none():
         r[3] = True
     if ig.isovol_meshsets == {}:
         r[4] = True
-    if ig.surf_curve == {}:
+    if ig.xmin == ig.xmax == ig.ymin == ig.ymax == ig.zmin == ig.zmax is None:
         r[5] = True
     assert(all(r))
 
 
 def test_init_input():
-    r = np.full(3, False)
-    ig = isg.IsGm(levels=levels, data=data, db=exp_db)
+    r = np.full(5, False)
+    ig = isg.IsGm(levels=levels, data=data, db=exp_db, extents=exts)
     if ig.levels == exp_levels:
         r[0] = True
     if ig.data == data:
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
+        r[4] = True
     assert(all(r))
 
 
 def test_init_ivdb():
     """test that info is taken from ivdb"""
-    r = np.full(3, False)
+    r = np.full(5, False)
     iv = __ivdb_obj(True)
     ig = isg.IsGm(ivdb=iv)
     if ig.levels == exp_levels:
@@ -70,12 +81,16 @@ def test_init_ivdb():
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
+        r[4] = True
     assert(all(r))
 
 
 def test_init_input_ivdb():
     """test that info from ivdb overwrites other input"""
-    r = np.full(3, False)
+    r = np.full(5, False)
     iv = __ivdb_obj(True)
     ig = isg.IsGm(ivdb=iv, levels=[0, 2], data='nonsense', db='fake_db')
     if ig.levels == exp_levels:
@@ -84,6 +99,10 @@ def test_init_input_ivdb():
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
+        r[4] = True
     assert(all(r))
 
 
@@ -97,13 +116,17 @@ def test_read_ivdb():
     iv = __ivdb_obj(True)
     ig = isg.IsGm()
     ig.read_ivdb(iv)
-    r = np.full(3, False)
+    r = np.full(5, False)
     if ig.levels == exp_levels:
         r[0] = True
     if ig.data == data:
         r[1] = True
     if ig.db == exp_db:
         r[2] = True
+    if ig.xmin == ig.ymin == ig.zmin == exp_ext_min:
+        r[3] = True
+    if ig.xmax == ig.ymax == ig.zmax == exp_ext_max:
+        r[4] = True
     assert(all(r))
 
 
@@ -169,7 +192,7 @@ def test_read_database_nolevels_error():
     assert "levels defined" in str(error_info)
 
 
-def test_separate_isovols():
+def test_separate_isovols_exterior():
     """test that disjoint volumes are properly separated"""
     # load mesh that needs separation
     ig = isg.IsGm()
@@ -177,41 +200,113 @@ def test_separate_isovols():
     ig.mb.load_file(test_dir + '/vol-files/separate-vols.stl', file_set=fs)
     # create useable meshset dict
     ig.isovol_meshsets[(0, fs)] = {}
+    # manually set the geometric extents
+    # these are chosen such that the volume file aligns on the x plane
+    # geometric extents (-10, 15). The volume file y and z are -5 to 5,
+    # so if this is considered to be one volume in a larger geometry,
+    # only one the surfaces on the x planes are considered exterior.
+    ig.xmin = -10.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -15.
+    ig.ymax = ig.zmax = 15.
     # separate the volumes
     ig.separate_isovols()
-    # check there are two new surfaces
-    r = np.full(3, False)
+    # check there are four new surfaces
+    r = np.full(4, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
-    if num_surfs == 2:
+    if num_surfs == 4:
         r[0] = True
-    # check that no triangles or vertices are shared between the surfs
+    # check that no triangles are shared between the each of the surfaces
     surf0 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][0]
-    verts0 = set(ig.mb.get_entities_by_type(surf0, types.MBVERTEX))
     tris0 = set(ig.mb.get_entities_by_type(surf0, types.MBTRI))
     surf1 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][1]
-    verts1 = set(ig.mb.get_entities_by_type(surf1, types.MBVERTEX))
     tris1 = set(ig.mb.get_entities_by_type(surf1, types.MBTRI))
-    common_verts = verts0 & verts1
-    common_tris = tris0 & tris1
-    if len(common_verts) == 0:
+    surf2 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][2]
+    tris2 = set(ig.mb.get_entities_by_type(surf2, types.MBTRI))
+    surf3 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][3]
+    tris3 = set(ig.mb.get_entities_by_type(surf3, types.MBTRI))
+    common_tris = [list(tris0 & tris1), list(tris0 & tris2),
+                   list(tris0 & tris3), list(tris1 & tris2),
+                   list(tris1 & tris3), list(tris2 & tris3)]
+    if not common_tris == 0:
         r[1] = True
-    if len(common_tris) == 0:
+    # check that two surfaces have 10 tris and two surfaces have 2 tris
+    num_tris = sorted([len(tris0), len(tris1), len(tris2), len(tris3)])
+    if num_tris == [2, 2, 10, 10]:
         r[2] = True
+    # check that 2 surfs have 8 verts and 2 surfs have 4 verts
+    verts0 = set(ig.mb.get_entities_by_type(surf0, types.MBVERTEX))
+    verts1 = set(ig.mb.get_entities_by_type(surf1, types.MBVERTEX))
+    verts2 = set(ig.mb.get_entities_by_type(surf2, types.MBVERTEX))
+    verts3 = set(ig.mb.get_entities_by_type(surf3, types.MBVERTEX))
+    num_verts = sorted([len(verts0), len(verts1), len(verts2), len(verts3)])
+    if num_verts == [4, 4, 8, 8]:
+        r[3] = True
     assert(all(r))
 
 
-def test_separate_isovols_single():
-    """test a single vol is unchanged when it goes through separation"""
+def test_separate_isovols_single_exterior():
+    """test a single vol with an exterior surface is split in separation"""
     # load mesh that does not need separation
     ig = isg.IsGm()
-    print(ig)
     fs = ig.mb.create_meshset()
     ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
     # create useable meshset dict
     ig.isovol_meshsets[(0, fs)] = {}
+    # manually set the geometric extents
+    # these are chosen such that the volume file aligns on the -x plane
+    # geometric extents (-5). The volume file x, y, and z are -5 to 5,
+    # so if this is considered to be one volume in a larger geometry,
+    # only one the surfaces on the -x plane is considered exterior.
+    ig.xmin = -5.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -15.
+    ig.ymax = ig.zmax = 15.
     # separate the volumes
     ig.separate_isovols()
     # check there are two new surfaces
+    r = np.full(4, False)
+    num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
+    if num_surfs == 2:
+        r[0] = True
+    # check that no triangles are shared between the each of the surfaces
+    surf0 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][0]
+    tris0 = set(ig.mb.get_entities_by_type(surf0, types.MBTRI))
+    surf1 = ig.isovol_meshsets[(0, fs)]['surfs_EH'][1]
+    tris1 = set(ig.mb.get_entities_by_type(surf1, types.MBTRI))
+    common_tris = tris0 & tris1
+    if len(common_tris) == 0:
+        r[1] = True
+    # check that one surface has 2 triangles and the other has 10
+    num_tris = sorted([len(tris0), len(tris1)])
+    if num_tris == [2, 10]:
+        r[2] = True
+    # check that one surface has 8 verts and the other has 4
+    verts0 = set(ig.mb.get_entities_by_type(surf0, types.MBVERTEX))
+    verts1 = set(ig.mb.get_entities_by_type(surf1, types.MBVERTEX))
+    num_verts = sorted([len(verts0), len(verts1)])
+    if num_verts == [4, 8]:
+        r[3] = True
+    assert(all(r))
+
+
+def test_separate_isovols_single_interior():
+    """test a single interior vol is unchanged when it is separated"""
+    # load mesh that does not need separation
+    ig = isg.IsGm()
+    fs = ig.mb.create_meshset()
+    ig.mb.load_file(test_dir + '/vol-files/single-box-1.stl', file_set=fs)
+    # create useable meshset dict
+    ig.isovol_meshsets[(0, fs)] = {}
+    # manually set the geometric extents so that no surface is on the
+    # exterior
+    ig.xmin = -15.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -15.
+    ig.ymax = ig.zmax = 15.
+    # separate the volumes
+    ig.separate_isovols()
+    # check there is one new surfaces
     r = np.full(3, False)
     num_surfs = len(ig.isovol_meshsets[(0, fs)]['surfs_EH'])
     if num_surfs == 1:
@@ -245,6 +340,10 @@ def __setup_geom():
     ig.isovol_meshsets[iv2]['bounds'] = (5., 10.)
     ig.levels = [5., 10.]
     ig.data = 'dataname'
+    ig.xmin = -5.
+    ig.xmax = 15.
+    ig.ymin = ig.zmin = -5.
+    ig.ymax = ig.zmax = 5.
     ig.separate_isovols()  # use this to get surface EHs
     return ig
 
@@ -260,8 +359,7 @@ def test_imprint_merge():
     fs2 = list(iv2)[1]
     # imprint and merge
     norm = 1.5
-    merge_tol = 1e-5
-    ig.imprint_merge(norm, merge_tol)
+    ig.imprint_merge(norm)
     # checks
     r = np.full(2, False)  # truth array for checks
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
@@ -312,21 +410,19 @@ def test_make_family():
     fs1 = list(iv1)[1]
     fs2 = list(iv2)[1]
     norm = 1.5
-    merge_tol = 1e-5
-    ig.imprint_merge(norm, merge_tol)  # do this to get shared surfaces
+    ig.imprint_merge(norm)  # do this to get shared surfaces
     # run make_family
     ig.make_family()
     # checks:
-    r = np.full(14, False)
+    r = np.full(9, False)
     # Check Tags:
     #   geom dim: vols=3, surfs=2, curves=1
     #   category: 'Volume', 'Surface', 'Curve'
     #   global id: 1..N for each vol, surf, curve
     all_vols = [fs1, fs2]
-    all_surfs = ig.surf_curve.keys()
-    all_curves = list(set(itertools.chain(*ig.surf_curve.values())))
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
+    all_surfs = list(set(surfs_1 + surfs_2))
     common_surf = list(set(surfs_1) & set(surfs_2))[0]
     # tag EHs
     geom_dim = ig.mb.tag_get_handle('GEOM_DIMENSION')
@@ -352,22 +448,10 @@ def test_make_family():
         r[4] = True
     if sorted(list(surf_id)) == [1, 2, 3]:
         r[5] = True
-    # curve tags
-    curve_dim = ig.mb.tag_get_data(geom_dim, all_curves)
-    curve_category = ig.mb.tag_get_data(category, all_curves)
-    curve_id = ig.mb.tag_get_data(global_id, all_curves)
-    if list(curve_dim) == [1]:
-        r[6] = True
-    if list(curve_category) == ['Curve']:
-        r[7] = True
-    if sorted(list(curve_id)) == [1]:
-        r[8] = True
     # Check Parent/Child Relationships
     #   1) each vol is parent to two surfs
-    #   2) each surf is parent to one curve
-    #   3) one curve has 3 surf parents
-    #   4) one surf (shared surface) has 2 vol parents
-    #   5) two surfs each have one vol parent
+    #   2) one surf (shared surface) has 2 vol parents
+    #   3) two surfs each have one vol parent
     # 1) volumes have two child surfaces
     tmp1 = np.full(len(all_vols), False)
     tmp2 = np.full(len(all_vols), False)
@@ -378,36 +462,12 @@ def test_make_family():
         if len(child_surfs) == 2:
             tmp2[i] = True
     if all(tmp1) and all(tmp2):
-        r[9] = True
-    # 2) surfs have one curve
-    tmp1 = np.full(len(all_surfs), False)
-    tmp2 = np.full(len(all_surfs), False)
-    for i, surf in enumerate(all_surfs):
-        child_curves = list(ig.mb.get_child_meshsets(surf))
-        if all(child in all_curves for child in child_curves):
-            tmp1[i] = True
-        if len(child_curves) == 1:
-            tmp2[i] = True
-    if all(tmp1) and all(tmp2):
-        r[10] = True
-    # 3) curve has 3 parent surfs
-    # THIS PART WON'T PASS CI UNTIL PYMOAB IS UPDATED - skip for now
-    # tmp1 = np.full(len(all_curves), False)
-    # tmp2 = np.full(len(all_curves), False)
-    # for i, curve in enumerate(all_curves):
-    #     parent_surfs = list(ig.mb.get_parent_meshsets(curve))
-    #     if all(parent in all_surfs for parent in parent_surfs):
-    #         tmp1[i] = True
-    #     if len(parent_surfs) == 3:
-    #         tmp2[i] = True
-    # if all(tmp1) and all(tmp2):
-    #     r[11] = True
-    r[11] = True  # Placeholder until MOAB is fixed
-    # 4) common surf has 2 vol parents
+        r[6] = True
+    # 2) common surf has 2 vol parents
     parent_vols = list(ig.mb.get_parent_meshsets(common_surf))
     if sorted(parent_vols) == sorted(all_vols):
-        r[12] = True
-    # 5) other two surfaces have one vol parent
+        r[7] = True
+    # 3) other two surfaces have one vol parent
     all_surfs.remove(common_surf)
     tmp1 = np.full(len(all_surfs), False)
     tmp2 = np.full(len(all_surfs), False)
@@ -419,7 +479,7 @@ def test_make_family():
         if len(parent_vols) == 1:
             tmp2[i] = True
     if all(tmp1) and all(tmp2):
-        r[13] = True
+        r[8] = True
     assert(all(r))
 
 
@@ -588,90 +648,6 @@ def test_list_coords():
     assert(exp_coords_dict == coords_out)
 
 
-def test_list_coords_invert():
-    """test list coords correctly returns inverted dictionary"""
-    # setup IsGm instance
-    ig = isg.IsGm()
-    ig.mb = core.Core()
-    # create some vertices
-    coords = np.array((1., 2., 3.), dtype='float64')
-    ig.mb.create_vertices(coords)
-    rs = ig.mb.get_root_set()
-    eh = list(ig.mb.get_entities_by_type(rs, types.MBVERTEX))[0]
-    exp_coords_dict = {(1., 2., 3.): eh}
-    # list coords
-    coords_out = ig._IsGm__list_coords(rs, invert=True)
-    assert(exp_coords_dict == coords_out)
-
-
-def test_get_matches():
-    """test that coordinates are properly identified as matching"""
-    # create instance
-    ig = isg.IsGm()
-    # set up verts to test:
-    vertsA = {10: (1., 2., 3.), 20: (4., 5., 6.), 30: (7., 8., 9.)}
-    vertsB = {(7., 8., 9.): 40, (2., 1., 3.): 50}
-    merge_tol = 1.e-5
-
-    a_eh, a_coords, b_eh, b_coords, match_dict = \
-        ig._IsGm__get_matches(vertsA, vertsB, merge_tol)
-
-    # expected values
-    a_eh_exp = [30]
-    a_coords_exp = [(7., 8., 9.)]
-    b_eh_exp = [40]
-    b_coords_exp = [(7., 8., 9.)]
-    match_dict_exp = {40: 30}
-
-    res = np.full(5, False)
-    if a_eh == a_eh_exp:
-        res[0] = True
-    if a_coords == a_coords_exp:
-        res[1] = True
-    if b_eh == b_eh_exp:
-        res[2] = True
-    if b_coords == b_coords_exp:
-        res[3] = True
-    if match_dict == match_dict_exp:
-        res[4] = True
-
-    assert(all(res))
-
-
-def test_get_matches_approx():
-    """test coords are identified as matching if approximate matches"""
-    # create instance
-    ig = isg.IsGm()
-    # set up verts to test:
-    vertsA = {10: (1., 2., 3.), 20: (4., 5., 6.), 30: (7., 8., 9.)}
-    vertsB = {(7., 8., 9.01): 40, (2., 1., 3.): 50}
-    merge_tol = 1.e-1
-
-    a_eh, a_coords, b_eh, b_coords, match_dict = \
-        ig._IsGm__get_matches(vertsA, vertsB, merge_tol)
-
-    # expected values
-    a_eh_exp = [30]
-    a_coords_exp = [(7., 8., 9.)]
-    b_eh_exp = [40]
-    b_coords_exp = [(7., 8., 9.01)]
-    match_dict_exp = {40: 30}
-
-    res = np.full(5, False)
-    if a_eh == a_eh_exp:
-        res[0] = True
-    if a_coords == a_coords_exp:
-        res[1] = True
-    if b_eh == b_eh_exp:
-        res[2] = True
-    if b_coords == b_coords_exp:
-        res[3] = True
-    if match_dict == match_dict_exp:
-        res[4] = True
-
-    assert(all(res))
-
-
 def test_compare_surfs():
     """test that new surf is correctly generated when comparing two"""
     # get setup
@@ -683,10 +659,9 @@ def test_compare_surfs():
     fs2 = list(iv2)[1]
     # compare surfs
     norm = 1.5
-    merge_tol = 1.e-5
-    ig._IsGm__compare_surfs(iv1, iv2, norm, merge_tol)
+    ig._IsGm__compare_surfs(iv1, iv2, norm)
     # checks
-    r = np.full(7, False)  # truth array for checks
+    r = np.full(5, False)  # truth array for checks
     # check number of surfaces in each volume (should be two each)
     surfs_1 = ig.isovol_meshsets[iv1]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv2]['surfs_EH']
@@ -698,36 +673,19 @@ def test_compare_surfs():
     common_surf = set(surfs_1) & set(surfs_2)
     if len(common_surf) == 1:
         r[2] = True
-    # check the surf_curve dict
-    num_surfs = len(ig.surf_curve.keys())
-    # 3 surfaces
-    if num_surfs == 3:
-        r[3] = True
-    # each surface should have 1 curve and the curve should be identical
-    # in all surfaces (1 curve entity handle)
-    all_curve_lists = ig.surf_curve.values()
-    exp_curve = [all_curve_lists[0]]
-    common_occurrences = all_curve_lists.count(exp_curve)
-    if common_occurrences == 3:
-        r[4] = True
     # check the tags on the merged surface
     # sense tag:
     sense_out = list(ig.mb.tag_get_data(ig.sense_tag, common_surf)[0])
     sense_exp = [fs1, fs2]
     if sense_out == sense_exp:
-        r[5] = True
+        r[3] = True
     # value tag:
     # shared surface should be 7.5 (shared bound = 5, norm=1.5 -> 5*1.5=7.5)
     val_out = ig.mb.tag_get_data(ig.val_tag, common_surf)[0][0]
     val_exp = 7.5
     if val_out == val_exp:
-        r[6] = True
+        r[4] = True
     assert(all(r))
-
-
-def test_compare_surfs_full_surf():
-    """full surface is merged into another"""
-    pass
 
 
 def test_compare_surfs_no_val():
@@ -741,11 +699,10 @@ def test_compare_surfs_no_val():
     ig.isovol_meshsets[iv[1]]['bounds'] = (6., 10.)
     # compare surfs
     norm = 1.5
-    merge_tol = 1.e-5
     r = np.full(3, False)
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
-        ig._IsGm__compare_surfs(iv[0], iv[1], norm, merge_tol)
+        ig._IsGm__compare_surfs(iv[0], iv[1], norm)
         # check warning
         if len(w) == 1:
             r[0] = True
@@ -760,3 +717,52 @@ def test_compare_surfs_no_val():
     if val_out == val_exp:
         r[2] = True
     assert(all(r))
+
+
+def test_calc_centroid():
+    """test centroid calculation"""
+    ig = isg.IsGm()
+    # triangle defined by coordinates (3, 0, 0), (0, 3, 0), (0, 0, 3)
+    coords = [3., 0., 0., 0., 3., 0., 0., 0., 3.]
+    # expected centroid:
+    # x = (3 + 0 + 0)/3 = 1
+    # y = (0 + 3 + 0)/3 = 1
+    # z = (0 + 0 + 3)/3 = 1
+    exp_centroid = [1., 1., 1.]
+    centroid = ig._IsGm__calc_centroid(coords)
+    assert(exp_centroid == list(centroid))
+
+
+def test_calc_centroid_error():
+    """test that error is raised if wrong number of values in centroid calc"""
+    ig = isg.IsGm()
+    # incorrect list of only 2 coords (6 values)
+    coords = [3., 0., 0., 0., 3., 0.]
+    with pytest.raises(RuntimeError) as error_info:
+        ig._IsGm__calc_centroid(coords)
+    assert "Cannot calculate centroid" in str(error_info)
+
+
+@pytest.mark.parametrize("point", [([-5, 0, 0]), ([5, 0, 0]),
+                                   ([0, -5, 0]), ([0, 5, 0]),
+                                   ([0, 0, -5]), ([0, 0, 5])])
+def test_check_exterior_true(point):
+    """test that point is correctly identified as being on the surface"""
+    ig = isg.IsGm()
+    # define the geometric extents to be -5 to 5 in all directions
+    ig.xmin = ig.ymin = ig.zmin = -5.
+    ig.xmax = ig.ymax = ig.zmax = 5.
+    # test points on each surface (every point should be on a surface)
+    result = ig._IsGm__check_exterior(point)
+    assert(result)
+
+
+def test_check_exterior_false():
+    """test that point is correctly identified as being on the interior"""
+    ig = isg.IsGm()
+    # define the geometric extents to be -5 to 5 in all directions
+    ig.xmin = ig.ymin = ig.zmin = -5.
+    ig.xmax = ig.ymax = ig.zmax = 5.
+    point = [0, 0, 0]  # interior
+    result = ig._IsGm__check_exterior(point)
+    assert(not result)
