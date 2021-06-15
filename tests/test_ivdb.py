@@ -50,31 +50,31 @@ def __compare_levelfiles(f1, f2):
 
 
 def test_init_none():
-    r0 = r1 = r2 = r3 = False
+    r = np.full(4, False)
     iv = ivdb.IvDb()
     if iv.levels is None:
-        r0 = True
+        r[0] = True
     if iv.data is None:
-        r1 = True
+        r[1] = True
     if iv.db == getcwd() + "/tmp":
-        r2 = True
+        r[2] = True
     if iv.completed is False:
-        r3 = True
-    assert(all([r0, r1, r2, r3]))
+        r[3] = True
+    assert(all(r))
 
 
 def test_init_input():
-    r0 = r1 = r2 = r3 = False
+    r = np.full(4, False)
     iv = ivdb.IvDb(levels=levels, data=data, db=exp_db)
     if iv.levels == exp_levels_init:
-        r0 = True
+        r[0] = True
     if iv.data == data:
-        r1 = True
+        r[1] = True
     if iv.db == exp_db:
-        r2 = True
+        r[2] = True
     if iv.completed is False:
-        r3 = True
-    assert(all([r0, r1, r2, r3]))
+        r[3] = True
+    assert(all(r))
 
 
 def test_init_input_file():
@@ -89,7 +89,7 @@ def test_init_input_file():
 def test_generate_vols():
     """Generate all isovolume files."""
     # assert flags
-    r1 = r2 = False
+    r = np.full(2, False)
     # test database path
     db = test_dir + "/test-gen-vols"
     if isdir(db):
@@ -103,19 +103,19 @@ def test_generate_vols():
     match_list = res[0]
     non_match = res[1]
     if match_list == common_files:
-        r1 = True
+        r[0] = True
     if non_match == []:
-        r2 = True
+        r[1] = True
     # remove files
     shutil.rmtree(iv.db)
     # check results
-    assert(all([r1, r2]))
+    assert(all(r))
 
 
 def test_generate_vols_single():
     """Generate all isovolume files with single volume"""
     # assert flags
-    r1 = r2 = False
+    r = np.full(2, False)
     # test database path
     db = test_dir + "/test-gen-vols-single"
     if isdir(db):
@@ -134,13 +134,13 @@ def test_generate_vols_single():
     non_match = res[1]
     # check that files produced are the same
     if match_list == common_files:
-        r1 = True
+        r[0] = True
     if non_match == []:
-        r2 = True
+        r[1] = True
     # remove files
     shutil.rmtree(iv.db)
     # check results
-    assert(all([r1, r2]))
+    assert(all(r))
 
 
 def test_make_db_dir():
@@ -230,19 +230,20 @@ def test_check_data_outofbounds():
 @pytest.mark.filterwarnings("ignore:Level")
 def test_check_data_nodata():
     """check levels, no levels"""
-    r0 = r1 = False
+    r = np.full(2, False)
     iv = ivdb.IvDb(levels=[-5, 0, 45], data=data)
     # no levels remaining, creates error
     with pytest.raises(RuntimeError) as error_info:
         iv._IvDb__check_data(test_mesh)
     if "No data exists" in str(error_info):
-        r0 = True
+        r[0] = True
     if iv.levels == []:
-        r1 = True
-    assert(all([r0, r1]))
+        r[1] = True
+    assert(all(r))
 
 
 def test_write_levels():
+    r = np.full(2, False)
     db = test_dir + "/test-write-levels/"
     # this test goes right to the write step and skips that addition
     # of the arbmax value in the process, so we will init with a level
@@ -255,15 +256,15 @@ def test_write_levels():
     iv.write_levels()
     levelfile_out = db + "/levelfile"
     if isfile(levelfile_out):
-        r0 = True
-    r1 = __compare_levelfiles(levelfile_out, exp_levelfile)
+        r[0] = True
+    r[1] = __compare_levelfiles(levelfile_out, exp_levelfile)
     shutil.rmtree(db)
-    assert(all([r0, r1]))
+    assert(all(r))
 
 
 def test_get_isovol():
     """test get_isovol"""
-    r0 = r1 = r2 = False
+    r = np.full(3, False)
     db = test_dir + "/test-isovol/"
     iv = ivdb.IvDb(levels=levels, data=data, db=db)
     if isdir(db):
@@ -287,15 +288,15 @@ def test_get_isovol():
     visit.CloseComputeEngine()
     # check returned values
     if export_res == 1:
-        r0 = True
+        r[0] = True
     if ubound_out == ubound:
-        r1 = True
+        r[1] = True
     # check that vol file produced are the same
     gen_vol = db + "/vols/1.stl"
     exp_vol = exp_vols_dir + "/1.stl"
-    r2 = filecmp.cmp(gen_vol, exp_vol)
+    r[2] = filecmp.cmp(gen_vol, exp_vol)
     shutil.rmtree(db)
-    assert(all([r0, r1, r2]))
+    assert(all(r))
 
 
 def test_get_isovol_nodata():
