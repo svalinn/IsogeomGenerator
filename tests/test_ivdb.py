@@ -4,6 +4,7 @@ from os import listdir, remove, getcwd, mkdir
 from os.path import isfile, isdir, join
 import filecmp
 import shutil
+import warnings
 import pytest
 import numpy as np
 
@@ -156,24 +157,27 @@ def test_make_db_dir():
 
 
 def test_make_db_dir_exists():
-    r0 = r1 = r2 = False
+    r = np.full(4, False)
     db = test_dir + "/test-direxists"
     if isdir(db):
         shutil.rmtree(db)
     mkdir(db)
     db_exp = test_dir + "/test-direxists_1/"
     iv = ivdb.IvDb(levels=levels, data=data, db=db)
-    with pytest.warns(None) as warn_info:
+    with warnings.catch_warnings(record=True) as w:
         iv._IvDb__make_db_dir()
-    if len(warn_info) == 1:
-        r0 = True
+        warnings.simplefilter("always")
+    if len(w) == 1:
+        r[0] = True
+        if "exists" in str(w[0].message):
+            r[1] = True
     if iv.db == db_exp:
-        r1 = True
+        r[2] = True
     if isdir(iv.db):
-        r2 = True
+        r[3] = True
     shutil.rmtree(iv.db)
     shutil.rmtree(db)
-    assert(all([r0, r1, r2]))
+    assert(all(r))
 
 
 def test_check_data():
@@ -202,18 +206,25 @@ def test_check_data():
 
 def test_check_data_outofbounds():
     """test check levels, data out of bounds"""
-    r0 = r1 = False
+    r = np.full(4, False)
+    # level -5 and 45 are out of bounds, so two warnings expected
     iv = ivdb.IvDb(levels=[-5, 5, 15, 25, 35, 45], data=data)
     # data out of range should produce warning
-    with pytest.warns(None) as warn_info:
+    with warnings.catch_warnings(record=True) as w:
         iv._IvDb__check_data(test_mesh)
-    if len(warn_info) == 2:
-        r0 = True
+        warnings.simplefilter("always")
+    if len(w) == 2:
+        r[0] = True
+        exp_str = "out of data bounds"
+        if exp_str in str(w[0].message):
+            r[1] = True
+        if exp_str in str(w[1].message):
+            r[2] = True
     if iv.levels == exp_levels_init:
         # arbmax has not yet been added to levels list so should match
         # init levels
-        r1 = True
-    assert(all([r0, r1]))
+        r[3] = True
+    assert(all(r))
 
 
 @pytest.mark.filterwarnings("ignore:Level")
@@ -289,7 +300,7 @@ def test_get_isovol():
 
 def test_get_isovol_nodata():
     """test get_isovol no data present"""
-    r0 = r1 = r2 = rs = r4 = False
+    r = np.full(6, False)
     db = test_dir + "/test-isovol-nodata/"
     iv = ivdb.IvDb(levels=[5, 15, 25, 28, 35], data=data, db=db)
     if isdir(db):
@@ -308,22 +319,24 @@ def test_get_isovol_nodata():
     lbound = 25
     ubound = 28
     i = 3
-    with pytest.warns(None) as warn_info:
+    with warnings.catch_warnings(record=True) as w:
         export_res, ubound_out = iv._IvDb__get_isovol(lbound, ubound, i)
     # close VisIt
     visit.CloseComputeEngine()
     # check returned/changed values
     if export_res == 0:
-        r0 = True
+        r[0] = True
     if ubound_out == 35:
-        r1 = True
+        r[1] = True
     if iv.levels == [5, 15, 25, 35]:
-        r2 = True
+        r[2] = True
     gen_vol = db + "/vols/3.stl"
     if not isfile(gen_vol):
         # no file should be generated
-        r3 = True
-    if len(warn_info) == 1:
-        r4 = True
+        r[3] = True
+    if len(w) == 1:
+        r[4] = True
+        if "no data to export between" in str(w[-1].message):
+            r[5] = True
     shutil.rmtree(db)
-    assert(all([r0, r1, r2, r3, r4]))
+    assert(all(r))
