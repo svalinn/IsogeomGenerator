@@ -49,6 +49,17 @@ def __compare_levelfiles(f1, f2):
         return False
 
 
+def __check_warning(w, strings, num_warns):
+    """check that the warning is present and has correct string"""
+    r = np.full(num_warns + 1, False)
+    if len(w) == num_warns:
+        r[0] = True
+        for i in range(num_warns):
+            if strings[i] in str(w[i].message):
+                r[i + 1] = True
+    return r
+
+
 def test_init_none():
     r = np.full(4, False)
     iv = ivdb.IvDb()
@@ -167,10 +178,7 @@ def test_make_db_dir_exists():
     with warnings.catch_warnings(record=True) as w:
         iv._IvDb__make_db_dir()
         warnings.simplefilter("always")
-    if len(w) == 1:
-        r[0] = True
-        if "exists" in str(w[0].message):
-            r[1] = True
+    r[0:2] = __check_warning(w, ["exists"], 1)
     if iv.db == db_exp:
         r[2] = True
     if isdir(iv.db):
@@ -213,13 +221,8 @@ def test_check_data_outofbounds():
     with warnings.catch_warnings(record=True) as w:
         iv._IvDb__check_data(test_mesh)
         warnings.simplefilter("always")
-    if len(w) == 2:
-        r[0] = True
-        exp_str = "out of data bounds"
-        if exp_str in str(w[0].message):
-            r[1] = True
-        if exp_str in str(w[1].message):
-            r[2] = True
+    exp_str = "out of data bounds"
+    r[0:3] = __check_warning(w, [exp_str]*2, 2)
     if iv.levels == exp_levels_init:
         # arbmax has not yet been added to levels list so should match
         # init levels
@@ -335,9 +338,6 @@ def test_get_isovol_nodata():
     if not isfile(gen_vol):
         # no file should be generated
         r[3] = True
-    if len(w) == 1:
-        r[4] = True
-        if "no data to export between" in str(w[-1].message):
-            r[5] = True
+    r[4:6] = __check_warning(w, ["no data to export between"], 1)
     shutil.rmtree(db)
     assert(all(r))

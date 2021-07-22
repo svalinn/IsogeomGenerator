@@ -27,6 +27,17 @@ exp_ext_max = 10.
 exts = [np.full(3, exp_ext_min), np.full(3, exp_ext_max)]
 
 
+def __check_warning(w, strings, num_warns):
+    """check that the warning is present and has correct string"""
+    r = np.full(num_warns + 1, False)
+    if len(w) == num_warns:
+        r[0] = True
+        for i in range(num_warns):
+            if strings[i] in str(w[i].message):
+                r[i + 1] = True
+    return r
+
+
 def __ivdb_obj(completed):
     # manually generated a usuable ivdb object
     iv = ivdb.IvDb(levels=levels, data=data, db=exp_db)
@@ -565,10 +576,7 @@ def test_write_geometry_ext():
     with warnings.catch_warnings(record=True) as w:
         ig.write_geometry(sname, test_dir)
         warnings.simplefilter("always")
-        if len(w) == 1:
-            r[0] = True
-            if "File will be saved as type .h5m" in str(w[0].message):
-                r[1] = True
+    r[0:2] = __check_warning(w, ["File will be saved as type .h5m"], 1)
     # check that file exists
     good_file = test_dir + '/write-test.h5m'
     bad_file = test_dir + '/' + sname
@@ -703,11 +711,8 @@ def test_compare_surfs_no_val():
     with warnings.catch_warnings(record=True) as w:
         warnings.simplefilter("always")
         ig._IsGm__compare_surfs(iv[0], iv[1], norm)
-        # check warning
-        if len(w) == 1:
-            r[0] = True
-            if "No matching value" in str(w[0].message):
-                r[1] = True
+    # check warning
+    r[0:2] = __check_warning(w, ["No matching value"], 1)
     # common surface should be assigned a value of 0.0
     surfs_1 = ig.isovol_meshsets[iv[0]]['surfs_EH']
     surfs_2 = ig.isovol_meshsets[iv[1]]['surfs_EH']
