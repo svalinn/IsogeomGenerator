@@ -13,14 +13,14 @@ from pymoab import core
 formatter = argparse.RawDescriptionHelpFormatter
 
 
-def decimate_triangles():
+def decimate_triangles(factor):
     """Reduce the number of triangles in the surfaces by user specified
     amount
     """
     pass
 
 
-def smooth_surfaces():
+def smooth_surfaces(factor):
     """Smooth surfaces by a user-specified factor"""
     pass
 
@@ -38,7 +38,13 @@ def parse_arguments():
                                      usage=usage,
                                      epilog=examples,
                                      formatter_class=formatter)
-
+    parser.add_argument('geomfile',
+                        action='store',
+                        nargs=1,
+                        type=str,
+                        help='Relative path an isosurface geometry file to ' +
+                        'be refined.'
+                        )
     parser.add_argument('-d', '--decimate',
                         action='store_true',
                         required=False,
@@ -79,6 +85,11 @@ def parse_arguments():
 
 def main():
     args = parse_arguments()
+
+    if args.smooth:
+        smooth_surfaces(args.smooth_factor[0])
+    if args.decimate:
+        decimate_triangles(args.decimate_factor[0])
 
 
 if __name__ == "__main__":
