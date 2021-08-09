@@ -11,9 +11,10 @@ setup(
     description="A package for generating meshed isosurface geometries",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/kkiesling/IsogeomGenerator",
+    url="https://github.com/CNERG/IsogeomGenerator",
     packages=setuptools.find_packages(),
     entry_points={
         'console_scripts':
-        ['generate_isogeom=IsogeomGenerator.generate_isogeom:main']}
+        ['generate_isogeom=IsogeomGenerator.generate_isogeom:main',
+         'refine_isogeom=IsogeomGenerator.refine_isogeom:main']}
 )
