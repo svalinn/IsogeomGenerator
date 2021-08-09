@@ -534,7 +534,7 @@ class IsGm(IsoGeomGen):
                     # match was found so s1 and s2 are coincident
                     # delete s2 (all triangles and all vertices that are
                     # not on the outer curve)
-                    tris2 = self.__get_surf_triangles(verts2.keys())
+                    tris2 = self.mb.get_entities_by_type(s2, types.MBTRI)
                     self.mb.delete_entities(tris2)
                     surfs_to_remove[s2] = s1
 
@@ -543,6 +543,7 @@ class IsGm(IsoGeomGen):
         for s2, s1 in surfs_to_remove.items():
             self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
             self.isovol_meshsets[v2]['surfs_EH'].append(s1)
+            self.mb.delete_entity(s2)
 
             # assign sense tag to surface
             # [forward=v1, backward=v2]
