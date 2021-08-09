@@ -8,7 +8,9 @@ Mesh Refinements techniques:
 """
 
 import argparse
-from pymoab import core
+from pymoab import core, types
+import vtk
+import numpy as np
 
 formatter = argparse.RawDescriptionHelpFormatter
 
@@ -83,13 +85,134 @@ def parse_arguments():
     return args
 
 
+def refine_surfaces(filename, decimate, df, smooth, sf):
+
+    # load as a moab instance
+    mb = core.Core()
+    mb.load_file(filename)
+    rs = mb.get_root_set()
+    cat_tag = mb.tag_get_handle('CATEGORY', size=32,
+                                tag_type=types.MB_TYPE_OPAQUE,
+                                storage_type=types.MB_TAG_SPARSE,
+                                create_if_missing=False)
+    dim_tag = mb.tag_get_handle('GEOM_DIMENSION', size=1,
+                                tag_type=types.MB_TYPE_INTEGER,
+                                storage_type=types.MB_TAG_SPARSE,
+                                create_if_missing=False)
+    all_surfs = mb.get_entities_by_type_and_tag(rs, types.MBENTITYSET,
+                                                dim_tag, [2])
+
+    # get data tag to rewrite on surfaces (only do this one time)
+    all_tags = mb.tag_get_tags_on_entity(all_surfs[0])
+    non_names = ['GEOM_DIMENSION', 'GLOBAL_ID', 'CATEGORY', 'GEOM_SENSE_2', 'SURF_TYPE']
+    for tag in all_tags:
+        tag_name = tag.get_name()
+        if tag_name not in non_names:
+            data_name = tag_name
+            break
+
+    data_tag = mb.tag_get_handle(data_name, size=1,
+                                 tag_type=types.MB_TYPE_DOUBLE,
+                                 storage_type=types.MB_TAG_SPARSE,
+                                 create_if_missing=False)
+
+    # iterate over all surfaces refining one at a time
+    for surf in all_surfs:
+        print('refining surface {}'.format(surf))
+        # get value of data tag on surface
+        data_val = mb.tag_get_data(data_tag, surf)[0][0]
+
+        # get all triangles and vertices (these will be replaced)
+        tris = mb.get_entities_by_type(surf, types.MBTRI)
+        verts = mb.get_entities_by_type(surf, types.MBVERTEX)
+        print('initial tris: {}'.format(len(tris)))
+        print('initial verts: {}'.format(len(verts)))
+
+        # write surface to .vtk file to use in vtk
+        fname = 'tmp_{}.vtk'.format(surf)
+        mb.write_file(fname, [surf])
+
+        # read in suface w/ vtk
+        # read unstructured grid
+        usg = vtk.vtkUnstructuredGridReader()
+        usg.SetFileName(fname)
+        usg.Update()
+        usgport = usg.GetOutputPort()
+
+        # convert USG to polydata
+        gf = vtk.vtkGeometryFilter()
+        gf.SetInputConnection(usgport)
+        gf.Update()
+        pdport = gf.GetOutputPort()
+
+        # setup decimate operator
+        deci = vtk.vtkDecimatePro()
+        deci.SetInputConnection(pdport)
+
+        # set decimate options
+        target = df
+        deci.SetTargetReduction(target)  # target reduction
+        # preserve topology (splitting or hole elimination not allowed)
+        deci.SetPreserveTopology(True)
+        deci.SetSplitting(False)  # no mesh splitting allowed
+        # no boundary vertex (eddge/curve) deletion allowed
+        deci.SetBoundaryVertexDeletion(False)
+        deci.Update()
+        deciport = deci.GetOutputPort()
+
+        # convert polydata back to USG
+        appendfilter = vtk.vtkAppendFilter()
+        appendfilter.SetInputConnection(deciport)
+        appendfilter.Update()
+        usg_new = vtk.vtkUnstructuredGrid()
+        usg_new.ShallowCopy(appendfilter.GetOutput())
+
+        outfile = fname.split('.')[0] + '_decimate.vtk'
+        writer1 = vtk.vtkGenericDataObjectWriter()
+        writer1.SetFileName(outfile)
+        writer1.SetInputData(usg_new)
+        writer1.Update()
+        writer1.Write()
+        print('wrote {}'.format(outfile))
+
+        # read in vtk file again
+        new_surf = mb.create_meshset()
+        mb.load_file(outfile, new_surf)
+
+        # get all triangles and vertices on new surf
+        tris_new = mb.get_entities_by_type(new_surf, types.MBTRI)
+        verts_new = mb.get_entities_by_type(new_surf, types.MBVERTEX)
+
+        # delete old tris/verts and replace with the new ones
+        mb.remove_entities(surf, tris)
+        mb.remove_entities(surf, verts)
+        mb.add_entities(surf, tris_new)
+        mb.add_entities(surf, verts_new)
+        #mb.delete_entities(tris)
+        #mb.delete_entities(verts)
+
+        # figure out why I can't delete some of the tris above
+
+        # tag viz data again
+        vals = np.full(len(tris_new), data_val)
+        mb.tag_set_data(data_tag, tris_new, vals)
+
+        # delete the temporary new surface
+        mb.delete_entity(new_surf)
+
+        print('final tris: {}'.format(
+            len(mb.get_entities_by_type(surf, types.MBTRI))))
+        print('final verts: {}'.format(
+            len(mb.get_entities_by_type(surf, types.MBVERTEX))))
+
+    mb.write_file('refined_geom.h5m', all_surfs)  # might need to write out volumes here too
+
+
 def main():
     args = parse_arguments()
 
-    if args.smooth:
-        smooth_surfaces(args.smooth_factor[0])
-    if args.decimate:
-        decimate_triangles(args.decimate_factor[0])
+    refine_surfaces(args.geomfile[0], args.decimate, args.deci_factor[0],
+                    args.smooth, args.smooth_factor[0])
 
 
 if __name__ == "__main__":
