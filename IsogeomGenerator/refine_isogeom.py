@@ -97,6 +97,13 @@ Examples:
                         dest='output',
                         help='Name to be used for the refined output file. ' +
                         'Default is refined_geom.h5m')
+    parser.add_argument('-k', '--keep',
+                        action='store_true',
+                        required=False,
+                        dest='keep',
+                        help='If set, temporary surfaces files that are ' +
+                        'generated will not be deleted. (Use for debugging).'
+                        )
     args = parser.parse_args()
     return args
 
@@ -153,7 +160,6 @@ def apply_filters(fname, df, sf, surf_type):
     writer1.SetInputData(usg_new)
     writer1.Update()
     writer1.Write()
-    print('wrote {}'.format(outfile))
 
     return outfile
 
@@ -181,7 +187,7 @@ def get_viz_info(mb, surf):
     return data_tag, data_name
 
 
-def refine_surfaces(filename, df, sf, output):
+def refine_surfaces(filename, df, sf, output, keep):
 
     # load as a moab instance
     mb = core.Core()
@@ -244,8 +250,9 @@ def refine_surfaces(filename, df, sf, output):
             mb.tag_set_data(data_tag, tris_new, vals)
 
         # delete temporary files
-        os.remove(fname)
-        os.remove(outfile)
+        if not keep:
+            os.remove(fname)
+            os.remove(outfile)
 
     # wrtite full geometry - only the necessary entities
     print("Writing refined geometry")
@@ -271,8 +278,8 @@ def main():
         args.smooth_factor = 0.5
         args.deci_factor = 0.5
 
-    refine_surfaces(args.geomfile[0], args.deci_factor,
-                    args.smooth_factor, args.output[0])
+    refine_surfaces(args.geomfile[0], args.deci_factor, args.smooth_factor,
+                    args.output[0], args.keep)
 
 
 if __name__ == "__main__":
