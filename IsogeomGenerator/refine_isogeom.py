@@ -84,12 +84,11 @@ def apply_filters(fname, decimate, df, smooth, sf, surf_type):
     # only apply smoothing filter to interior surfaces to avoid smoothing
     # the corners of the geometry
     if smooth and surf_type == 'interior':
-        smoothfilter = vtk.vtkSmoothPolyDataFilter()
+        smoothfilter = vtk.vtkWindowedSincPolyDataFilter()
         smoothfilter.SetInputConnection(pdport)
-        smoothfilter.SetNumberOfIterations(200)
-        smoothfilter.SetRelaxationFactor(sf)
-        smoothfilter.BoundarySmoothingOff()
-        smoothfilter.FeatureEdgeSmoothingOff()
+        smoothfilter.SetNumberOfIterations(20)
+        smoothfilter.BoundarySmoothingOff  # don't apply to boundaries
+        smoothfilter.NonManifoldSmoothingOff()  # don't collapse topology/vols
         smoothfilter.Update()
         pdport = smoothfilter.GetOutputPort()
 
