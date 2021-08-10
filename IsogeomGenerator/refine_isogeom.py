@@ -102,25 +102,25 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
     all_surfs = mb.get_entities_by_type_and_tag(rs, types.MBENTITYSET,
                                                 dim_tag, [2])
 
-    # get data tag to rewrite on surfaces (only do this one time)
-    all_tags = mb.tag_get_tags_on_entity(all_surfs[0])
+    # check if data tag is on triangles for viz (only do this one time)
+    all_tags = mb.tag_get_tags_on_entity(mb.get_entities_by_type(all_surfs[0], types.MBTRI)[0])
     non_names = ['GEOM_DIMENSION', 'GLOBAL_ID', 'CATEGORY', 'GEOM_SENSE_2', 'SURF_TYPE']
+    data_name = None
     for tag in all_tags:
         tag_name = tag.get_name()
         if tag_name not in non_names:
             data_name = tag_name
             break
 
-    data_tag = mb.tag_get_handle(data_name, size=1,
-                                 tag_type=types.MB_TYPE_DOUBLE,
-                                 storage_type=types.MB_TAG_SPARSE,
-                                 create_if_missing=False)
+    if data_name is not None:
+        data_tag = mb.tag_get_handle(data_name, size=1,
+                                     tag_type=types.MB_TYPE_DOUBLE,
+                                     storage_type=types.MB_TAG_SPARSE,
+                                     create_if_missing=False)
 
     # iterate over all surfaces refining one at a time
     for surf in all_surfs:
         print('refining surface {}'.format(surf))
-        # get value of data tag on surface
-        data_val = mb.tag_get_data(data_tag, surf)[0][0]
 
         # get all triangles and vertices (these will be replaced)
         tris = mb.get_entities_by_type(surf, types.MBTRI)
@@ -191,18 +191,18 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
         mb.add_entities(surf, tris_new)
         mb.add_entities(surf, verts_new)
 
-        # tag viz data again
-        vals = np.full(len(tris_new), data_val)
-        mb.tag_set_data(data_tag, tris_new, vals)
+        # get value of data tag on surface & tag tris again if already tagged
+        if data_name is not None:
+            data_val = mb.tag_get_data(data_tag, surf)[0][0]
+            vals = np.full(len(tris_new), data_val)
+            mb.tag_set_data(data_tag, tris_new, vals)
 
-    # get all vols to write too
-
+    # wrtite full geometry - only the necessary entities
     print("Writing refined geometry")
     all_vols = mb.get_entities_by_type_and_tag(
         rs, types.MBENTITYSET, dim_tag, [3])
     all_sets = rng.unite(all_vols, all_surfs)
-
-    mb.write_file('refined_geom.h5m', all_sets)  # might need to write out volumes here too
+    mb.write_file('refined_geom.h5m', all_sets)
 
 
 def main():
