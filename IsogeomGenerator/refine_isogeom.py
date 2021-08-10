@@ -67,7 +67,7 @@ def parse_arguments():
     return args
 
 
-def apply_filters(fname, decimate, df, smooth, sf):
+def apply_filters(fname, decimate, df, smooth, sf, surf_type):
     # read in suface w/ vtk
     # read unstructured grid
     usg = vtk.vtkUnstructuredGridReader()
@@ -81,7 +81,9 @@ def apply_filters(fname, decimate, df, smooth, sf):
     gf.Update()
     pdport = gf.GetOutputPort()
 
-    if smooth:
+    # only apply smoothing filter to interior surfaces to avoid smoothing
+    # the corners of the geometry
+    if smooth and surf_type == 'interior':
         smoothfilter = vtk.vtkSmoothPolyDataFilter()
         smoothfilter.SetInputConnection(pdport)
         smoothfilter.SetNumberOfIterations(200)
@@ -156,6 +158,11 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
                                 tag_type=types.MB_TYPE_INTEGER,
                                 storage_type=types.MB_TAG_SPARSE,
                                 create_if_missing=False)
+    surf_tag = mb.tag_get_handle('SURF_TYPE', size=32,
+                                 tag_type=types.MB_TYPE_OPAQUE,
+                                 storage_type=types.MB_TAG_SPARSE,
+                                 create_if_missing=False)
+
     all_surfs = mb.get_entities_by_type_and_tag(rs, types.MBENTITYSET,
                                                 dim_tag, [2])
 
@@ -164,6 +171,9 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
     # iterate over all surfaces refining one at a time
     for surf in all_surfs:
         print('refining surface {}'.format(surf))
+
+        # get surface type (interior or exterior)
+        surf_type = mb.tag_get_data(surf_tag, surf)
 
         # get all triangles and vertices (these will be replaced)
         tris = mb.get_entities_by_type(surf, types.MBTRI)
@@ -174,7 +184,7 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
         mb.write_file(fname, [surf])
 
         # apply vtk filters
-        outfile = apply_filters(fname, decimate, df, smooth, sf)
+        outfile = apply_filters(fname, decimate, df, smooth, sf, surf_type)
 
         # read in vtk file again
         new_surf = mb.create_meshset()
