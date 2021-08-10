@@ -109,8 +109,31 @@ Examples:
 
 
 def apply_filters(fname, df, sf, surf_type):
-    # read in suface w/ vtk
-    # read unstructured grid
+    """Apply the decimation and smoothing filters using the VTK library
+    and the user specified refinement factors. Decimation uses the
+    vtkDecimatePro method. Smoothing uses the vtkWindowSincPolyDataFilter
+    method. Both refinement processes maintain boundary vertices and
+    topology. If both filters are applied, smoothing will be applied first.
+
+    Input:
+    ------
+        fname: string, name of the surface vtk file that will be refined
+        df: float or None, factor for target reduction in the decimation
+            process. Must be between 0 and 1. If set to None, no
+            decimation will be applied. A higher value indicates a
+            greater reduction in the number of surface triangles.
+        sf: float or None, smoothing factor for the smoothing process.
+            Must be between 0 and 1. If set to None, no smoothing will
+            be applied. A higher value indicates more smoothing.
+        surf_type: str, 'interior' or 'exterior', used to indicate if
+            the surface being refined is an interior or exterior surface.
+            Only interior surfaces will have smoothing applied if set.
+
+    Return:
+    -------
+        outfile: string, name of the output file from VTK after refinement
+    """
+    # read in surface w/ vtk as an unstructured grid
     usg = vtk.vtkUnstructuredGridReader()
     usg.SetFileName(fname)
     usg.Update()
@@ -165,6 +188,20 @@ def apply_filters(fname, df, sf, surf_type):
 
 
 def get_viz_info(mb, surf):
+    """Use MOAB to determine if the triangles of the surface were
+    previously tagged individually with a data value for visualization.
+    If so, retrieve the data name and tag.
+
+    Input:
+    ------
+        mb: moab instance with geometry file loaded
+        surf: entity handle for a surface to be examined
+
+    Return:
+    -------
+        data_tag: entity handle or None, if tag is present, the entity
+            handle for the data tag.
+    """
     # check if data tag is on triangles for viz (only do this one time)
     all_tags = mb.tag_get_tags_on_entity(
         mb.get_entities_by_type(surf, types.MBTRI)[0])
@@ -184,15 +221,39 @@ def get_viz_info(mb, surf):
                                      storage_type=types.MB_TAG_SPARSE,
                                      create_if_missing=False)
 
-    return data_tag, data_name
+    return data_tag
 
 
 def refine_surfaces(filename, df, sf, output, keep):
+    """For a given isogeom file, iterate through each surface applying
+    the refinement factors specified. A new geometry file will be
+    written out that has gone through the specified refinement.
 
+    Inputs:
+    -------
+        filename: string, name of the HDF5 (.h5m) isogeometry file to
+            to be refined.
+        df: float or None, factor for target reduction in the decimation
+            process. Must be between 0 and 1. If set to None, no
+            decimation will be applied. A higher value indicates a
+            greater reduction in the number of surface triangles.
+        sf: float or None, smoothing factor for the smoothing process.
+            Must be between 0 and 1. If set to None, no smoothing will
+            be applied. A higher value indicates more smoothing.
+        output: string, name of output file to be written after the
+            refinement process
+        keep: bool, if set to True, the temporary surface files written
+            to disk during the process will not be deleted.
+
+    Return:
+    -------
+        None
+    """
     # load as a moab instance
     mb = core.Core()
     mb.load_file(filename)
     rs = mb.get_root_set()
+    # get necessary tag information
     dim_tag = mb.tag_get_handle('GEOM_DIMENSION', size=1,
                                 tag_type=types.MB_TYPE_INTEGER,
                                 storage_type=types.MB_TAG_SPARSE,
@@ -201,15 +262,15 @@ def refine_surfaces(filename, df, sf, output, keep):
                                  tag_type=types.MB_TYPE_OPAQUE,
                                  storage_type=types.MB_TAG_SPARSE,
                                  create_if_missing=False)
-
+    # get all surfaces
     all_surfs = mb.get_entities_by_type_and_tag(rs, types.MBENTITYSET,
                                                 dim_tag, [2])
-
-    data_tag, data_name = get_viz_info(mb, all_surfs[0])
+    # get data tag if present on the triangles (for rewriting viz data later)
+    data_tag = get_viz_info(mb, all_surfs[0])
 
     # iterate over all surfaces refining one at a time
     for surf in all_surfs:
-        print('refining surface {}'.format(surf))
+        print('Refining surface {}'.format(surf))
 
         # get surface type (interior or exterior)
         surf_type = mb.tag_get_data(surf_tag, surf)
@@ -243,8 +304,8 @@ def refine_surfaces(filename, df, sf, output, keep):
         mb.add_entities(surf, tris_new)
         mb.add_entities(surf, verts_new)
 
-        # get value of data tag on surface & tag tris again if already tagged
-        if data_name is not None:
+        # get value of data tag on surface & tag new triangles
+        if data_tag is not None:
             data_val = mb.tag_get_data(data_tag, surf)[0][0]
             vals = np.full(len(tris_new), data_val)
             mb.tag_set_data(data_tag, tris_new, vals)
@@ -271,6 +332,7 @@ def refine_surfaces(filename, df, sf, output, keep):
 
 def main():
     args = parse_arguments()
+
     # use defaults for both if not set
     if (args.smooth_factor is None) and (args.deci_factor is None):
         warnings.warn('No refinement factors provided. Applying default ' +
