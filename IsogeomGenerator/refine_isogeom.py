@@ -82,29 +82,32 @@ def apply_filters(fname, decimate, df, smooth, sf):
     pdport = gf.GetOutputPort()
 
     if smooth:
-        pass
+        smoothfilter = vtk.vtkSmoothPolyDataFilter()
+        smoothfilter.SetInputConnection(pdport)
+        smoothfilter.SetNumberOfIterations(200)
+        smoothfilter.SetRelaxationFactor(sf)
+        smoothfilter.BoundarySmoothingOff()
+        smoothfilter.FeatureEdgeSmoothingOff()
+        smoothfilter.Update()
+        pdport = smoothfilter.GetOutputPort()
 
     if decimate:
         # setup decimate operator
-        deci = vtk.vtkDecimatePro()
-        deci.SetInputConnection(pdport)
+        decifilter = vtk.vtkDecimatePro()
+        decifilter.SetInputConnection(pdport)
         # set decimate options
-        deci.SetTargetReduction(df)  # target reduction
+        decifilter.SetTargetReduction(df)  # target reduction
         # preserve topology (splitting or hole elimination not allowed)
-        deci.SetPreserveTopology(True)
-        deci.SetSplitting(False)  # no mesh splitting allowed
+        decifilter.SetPreserveTopology(True)
+        decifilter.SetSplitting(False)  # no mesh splitting allowed
         # no boundary vertex (eddge/curve) deletion allowed
-        deci.SetBoundaryVertexDeletion(False)
-        deci.Update()
-        deciport = deci.GetOutputPort()
+        decifilter.SetBoundaryVertexDeletion(False)
+        decifilter.Update()
+        pdport = decifilter.GetOutputPort()
 
     # convert polydata back to USG
     appendfilter = vtk.vtkAppendFilter()
-    if smooth:
-        # append smooth filter too
-        pass
-    if decimate:
-        appendfilter.SetInputConnection(deciport)
+    appendfilter.SetInputConnection(pdport)
     appendfilter.Update()
     usg_new = vtk.vtkUnstructuredGrid()
     usg_new.ShallowCopy(appendfilter.GetOutput())
