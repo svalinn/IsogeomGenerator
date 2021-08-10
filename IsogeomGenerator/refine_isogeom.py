@@ -9,18 +9,52 @@ Mesh Refinements techniques:
     * Smooth: decrease surface roughness (vtkWindowedSincPolyDataFilter)
 """
 
-import argparse
 import os
+import argparse
+import warnings
 import numpy as np
 from pymoab import core, types, rng
 import vtk
 
 
 def parse_arguments():
+    """Parser for user input arguments for the commandline
+
+    Inputs:
+    -------
+        None
+
+    Return:
+    -------
+        args: dictionary of parsed arguments
+    """
     formatter = argparse.RawDescriptionHelpFormatter
-    description = "temp description"
-    usage = "temp usage"
-    examples = "temp examples"
+
+    description = """
+This tool will refine surfaces of an isosurface mesh geometry. Options
+for refinement include smoothing and decimating. Smoothing with smooth mesh
+surfaces (decrease surface roughness). Decimation will decrease the number
+of triangles on the surface. If both smoothing and decimation are applied,
+smoothing will be done first as it can cause an increase in triangles. If
+neither decimation or smoothing is specified, both will be applied by
+default using 0.5 factors. Smoothing is only applied to interior surfaces.
+Both refinement methods are built on VTK."""
+
+    usage = "refine_isogeom geomfile [OPTIONS]"
+
+    examples = """
+Examples:
+
+    1) using default refinement factors (0.5 decimation, 0.5 smoothing)
+        refine_isogeom my_geom.h5m
+    2) applying only decimation with a 0.7 target reduction
+        refine_isogeom my_geom.h5m -d 0.7
+    3) applying only smoothing with a 0.4 smoothing factor
+        refine_isogeom my_geom.h5m -s 0.4
+    4) applying both decimation and smoothing with different factors
+        refine_isogeom my_geom.h5m -s 0.4 -d 0.9
+"""
+
     parser = argparse.ArgumentParser(description=description,
                                      usage=usage,
                                      epilog=examples,
@@ -30,7 +64,7 @@ def parse_arguments():
                         nargs=1,
                         type=str,
                         help='Relative path an isosurface geometry file to ' +
-                        'be refined.'
+                        'be refined. Must be an HDF5 (.h5m) file.'
                         )
     parser.add_argument('-d', '--decimate',
                         action='store',
@@ -39,8 +73,7 @@ def parse_arguments():
                         metavar='DECIMATION_FACTOR',
                         dest='deci_factor',
                         help='Decimation factor for triangles (0 < df < 1). ' +
-                        'Higher value means higher reduction in triangles. ' +
-                        'Default value is 0.5.',
+                        'Higher value means higher reduction in triangles.',
                         type=float
                         )
     parser.add_argument('-s', '--smooth',
@@ -54,6 +87,16 @@ def parse_arguments():
                         'Default value is 0.5.',
                         type=float
                         )
+    parser.add_argument('-o', '--output',
+                        action='store',
+                        required=False,
+                        type=str,
+                        nargs=1,
+                        default=['refined_geom.h5m'],
+                        metavar='OUTPUT_FILE',
+                        dest='output',
+                        help='Name to be used for the refined output file. ' +
+                        'Default is refined_geom.h5m')
     args = parser.parse_args()
     return args
 
@@ -138,7 +181,7 @@ def get_viz_info(mb, surf):
     return data_tag, data_name
 
 
-def refine_surfaces(filename, df, sf):
+def refine_surfaces(filename, df, sf, output):
 
     # load as a moab instance
     mb = core.Core()
@@ -209,18 +252,27 @@ def refine_surfaces(filename, df, sf):
     all_vols = mb.get_entities_by_type_and_tag(
         rs, types.MBENTITYSET, dim_tag, [3])
     all_sets = rng.unite(all_vols, all_surfs)
-    mb.write_file('refined_geom.h5m', all_sets)
+
+    # check file extension of save name:
+    ext = output.split(".")[-1]
+    if ext.lower() not in ['h5m', 'vtk']:
+        warnings.warn("File extension {} ".format(ext) +
+                      " not recognized. File will be saved as type .h5m.")
+        output = output.split(".")[0] + ".h5m"
+    mb.write_file(output, all_sets)
 
 
 def main():
     args = parse_arguments()
     # use defaults for both if not set
     if (args.smooth_factor is None) and (args.deci_factor is None):
-        print('Applying default decimation factor (0.5) and smooth factor (0.5).')
+        warnings.warn('No refinement factors provided. Applying default ' +
+                      'decimation factor (0.5) and smooth factor (0.5).')
         args.smooth_factor = 0.5
         args.deci_factor = 0.5
 
-    refine_surfaces(args.geomfile[0], args.deci_factor, args.smooth_factor)
+    refine_surfaces(args.geomfile[0], args.deci_factor,
+                    args.smooth_factor, args.output[0])
 
 
 if __name__ == "__main__":
