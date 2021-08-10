@@ -8,7 +8,7 @@ Mesh Refinements techniques:
 """
 
 import argparse
-from pymoab import core, types
+from pymoab import core, types, rng
 import vtk
 import numpy as np
 
@@ -56,7 +56,7 @@ def parse_arguments():
     parser.add_argument('-df', '--decimatefactor',
                         action='store',
                         required=False,
-                        default=[0.5],
+                        default=0.5,
                         metavar='DECIMATION_FACTOR',
                         dest='deci_factor',
                         help='Decimation factor for triangles (0 < df < 1). ' +
@@ -73,7 +73,7 @@ def parse_arguments():
     parser.add_argument('-sf', '--smoothfactor',
                         action='store',
                         required=False,
-                        default=[0.5],
+                        default=0.5,
                         metavar='SMOOTH_FACTOR',
                         dest='smooth_factor',
                         help='Smoothing relaxation factor for surfaces (0 < sf < 1). ' +
@@ -125,8 +125,6 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
         # get all triangles and vertices (these will be replaced)
         tris = mb.get_entities_by_type(surf, types.MBTRI)
         verts = mb.get_entities_by_type(surf, types.MBVERTEX)
-        print('initial tris: {}'.format(len(tris)))
-        print('initial verts: {}'.format(len(verts)))
 
         # write surface to .vtk file to use in vtk
         fname = 'tmp_{}.vtk'.format(surf)
@@ -183,36 +181,35 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
         tris_new = mb.get_entities_by_type(new_surf, types.MBTRI)
         verts_new = mb.get_entities_by_type(new_surf, types.MBVERTEX)
 
-        # delete old tris/verts and replace with the new ones
+        #  remove old tris/verts from surfs and vols
         mb.remove_entities(surf, tris)
         mb.remove_entities(surf, verts)
+        vols = mb.get_parent_meshsets(surf)
+        for vol in vols:
+            mb.remove_entities(vol, tris)
+            mb.remove_entities(vol, verts)
         mb.add_entities(surf, tris_new)
         mb.add_entities(surf, verts_new)
-        #mb.delete_entities(tris)
-        #mb.delete_entities(verts)
-
-        # figure out why I can't delete some of the tris above
 
         # tag viz data again
         vals = np.full(len(tris_new), data_val)
         mb.tag_set_data(data_tag, tris_new, vals)
 
-        # delete the temporary new surface
-        mb.delete_entity(new_surf)
+    # get all vols to write too
 
-        print('final tris: {}'.format(
-            len(mb.get_entities_by_type(surf, types.MBTRI))))
-        print('final verts: {}'.format(
-            len(mb.get_entities_by_type(surf, types.MBVERTEX))))
+    print("Writing refined geometry")
+    all_vols = mb.get_entities_by_type_and_tag(
+        rs, types.MBENTITYSET, dim_tag, [3])
+    all_sets = rng.unite(all_vols, all_surfs)
 
-    mb.write_file('refined_geom.h5m', all_surfs)  # might need to write out volumes here too
+    mb.write_file('refined_geom.h5m', all_sets)  # might need to write out volumes here too
 
 
 def main():
     args = parse_arguments()
 
-    refine_surfaces(args.geomfile[0], args.decimate, args.deci_factor[0],
-                    args.smooth, args.smooth_factor[0])
+    refine_surfaces(args.geomfile[0], args.decimate, args.deci_factor,
+                    args.smooth, args.smooth_factor)
 
 
 if __name__ == "__main__":
