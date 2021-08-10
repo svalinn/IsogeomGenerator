@@ -1,16 +1,19 @@
-"""For a given isosurface geometry file, apply mesh refinement techniques.
+"""For a given isosurface geometry file, apply mesh refinement techniques
+using the VTK library. Decimation (decrease number of mesh triangles)
+and surface smoothing can be applied. If both are applied, smoothing is
+applied first as it can introduce additional triangles in some cases.
 
 Mesh Refinements techniques:
 ----------------------------
-
-    * Decimate: use fewer triangles in the mesh surfaces
-    * smooth: remove roughness from the surfaces
+    * Decimate: use fewer triangles on the mesh surfaces (vtkDecimatePro)
+    * Smooth: decrease surface roughness (vtkWindowedSincPolyDataFilter)
 """
 
 import argparse
+import os
+import numpy as np
 from pymoab import core, types, rng
 import vtk
-import numpy as np
 
 
 def parse_arguments():
@@ -30,15 +33,9 @@ def parse_arguments():
                         'be refined.'
                         )
     parser.add_argument('-d', '--decimate',
-                        action='store_true',
-                        required=False,
-                        dest='decimate',
-                        help='If set, decimate surface triangles by the ' +
-                        'decimation factor df.')
-    parser.add_argument('-df', '--decimatefactor',
                         action='store',
                         required=False,
-                        default=0.5,
+                        default=None,
                         metavar='DECIMATION_FACTOR',
                         dest='deci_factor',
                         help='Decimation factor for triangles (0 < df < 1). ' +
@@ -47,15 +44,9 @@ def parse_arguments():
                         type=float
                         )
     parser.add_argument('-s', '--smooth',
-                        action='store_true',
-                        required=False,
-                        dest='smooth',
-                        help='If set, smooth surfaces by the ' +
-                        'smoothing factor')
-    parser.add_argument('-sf', '--smoothfactor',
                         action='store',
                         required=False,
-                        default=0.5,
+                        default=None,
                         metavar='SMOOTH_FACTOR',
                         dest='smooth_factor',
                         help='Smoothing relaxation factor for surfaces (0 < sf < 1). ' +
@@ -67,7 +58,7 @@ def parse_arguments():
     return args
 
 
-def apply_filters(fname, decimate, df, smooth, sf, surf_type):
+def apply_filters(fname, df, sf, surf_type):
     # read in suface w/ vtk
     # read unstructured grid
     usg = vtk.vtkUnstructuredGridReader()
@@ -83,7 +74,7 @@ def apply_filters(fname, decimate, df, smooth, sf, surf_type):
 
     # only apply smoothing filter to interior surfaces to avoid smoothing
     # the corners of the geometry
-    if smooth and surf_type == 'interior':
+    if sf is not None and surf_type == 'interior':
         smoothfilter = vtk.vtkWindowedSincPolyDataFilter()
         smoothfilter.SetInputConnection(pdport)
         smoothfilter.SetNumberOfIterations(20)
@@ -92,7 +83,7 @@ def apply_filters(fname, decimate, df, smooth, sf, surf_type):
         smoothfilter.Update()
         pdport = smoothfilter.GetOutputPort()
 
-    if decimate:
+    if df is not None:
         # setup decimate operator
         decifilter = vtk.vtkDecimatePro()
         decifilter.SetInputConnection(pdport)
@@ -113,7 +104,7 @@ def apply_filters(fname, decimate, df, smooth, sf, surf_type):
     usg_new = vtk.vtkUnstructuredGrid()
     usg_new.ShallowCopy(appendfilter.GetOutput())
 
-    outfile = fname.split('.')[0] + '_decimate.vtk'
+    outfile = fname.split('.')[0] + '_refined.vtk'
     writer1 = vtk.vtkGenericDataObjectWriter()
     writer1.SetFileName(outfile)
     writer1.SetInputData(usg_new)
@@ -147,7 +138,7 @@ def get_viz_info(mb, surf):
     return data_tag, data_name
 
 
-def refine_surfaces(filename, decimate, df, smooth, sf):
+def refine_surfaces(filename, df, sf):
 
     # load as a moab instance
     mb = core.Core()
@@ -183,7 +174,7 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
         mb.write_file(fname, [surf])
 
         # apply vtk filters
-        outfile = apply_filters(fname, decimate, df, smooth, sf, surf_type)
+        outfile = apply_filters(fname, df, sf, surf_type)
 
         # read in vtk file again
         new_surf = mb.create_meshset()
@@ -209,6 +200,10 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
             vals = np.full(len(tris_new), data_val)
             mb.tag_set_data(data_tag, tris_new, vals)
 
+        # delete temporary files
+        os.remove(fname)
+        os.remove(outfile)
+
     # wrtite full geometry - only the necessary entities
     print("Writing refined geometry")
     all_vols = mb.get_entities_by_type_and_tag(
@@ -219,8 +214,13 @@ def refine_surfaces(filename, decimate, df, smooth, sf):
 
 def main():
     args = parse_arguments()
-    refine_surfaces(args.geomfile[0], args.decimate, args.deci_factor,
-                    args.smooth, args.smooth_factor)
+    # use defaults for both if not set
+    if (args.smooth_factor is None) and (args.deci_factor is None):
+        print('Applying default decimation factor (0.5) and smooth factor (0.5).')
+        args.smooth_factor = 0.5
+        args.deci_factor = 0.5
+
+    refine_surfaces(args.geomfile[0], args.deci_factor, args.smooth_factor)
 
 
 if __name__ == "__main__":
