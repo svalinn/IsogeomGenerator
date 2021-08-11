@@ -127,7 +127,8 @@ def apply_filters(fname, df, sf, surf_type):
             be applied. A higher value indicates more smoothing.
         surf_type: str, 'interior' or 'exterior', used to indicate if
             the surface being refined is an interior or exterior surface.
-            Only interior surfaces will have smoothing applied if smoothing is requested.
+            Only interior surfaces will have smoothing applied if
+            smoothing is requested.
 
     Return:
     -------
@@ -165,7 +166,7 @@ def apply_filters(fname, df, sf, surf_type):
         # preserve topology (splitting or hole elimination not allowed)
         decifilter.SetPreserveTopology(True)
         decifilter.SetSplitting(False)  # no mesh splitting allowed
-        # no boundary vertex (eddge/curve) deletion allowed
+        # no boundary vertex (edge/curve) deletion allowed
         decifilter.SetBoundaryVertexDeletion(False)
         decifilter.Update()
         pdport = decifilter.GetOutputPort()
