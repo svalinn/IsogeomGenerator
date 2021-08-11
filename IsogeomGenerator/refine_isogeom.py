@@ -127,7 +127,7 @@ def apply_filters(fname, df, sf, surf_type):
             be applied. A higher value indicates more smoothing.
         surf_type: str, 'interior' or 'exterior', used to indicate if
             the surface being refined is an interior or exterior surface.
-            Only interior surfaces will have smoothing applied if set.
+            Only interior surfaces will have smoothing applied if smoothing is requested.
 
     Return:
     -------
@@ -315,7 +315,7 @@ def refine_surfaces(filename, df, sf, output, keep):
             os.remove(fname)
             os.remove(outfile)
 
-    # wrtite full geometry - only the necessary entities
+    # write full geometry - only the necessary entities
     print("Writing refined geometry")
     all_vols = mb.get_entities_by_type_and_tag(
         rs, types.MBENTITYSET, dim_tag, [3])
