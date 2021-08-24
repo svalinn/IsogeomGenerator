@@ -8,7 +8,7 @@ import math as m
 from isg_gen import IsoGeomGen
 
 from pymoab import core, types
-from pymoab.rng import Range
+from pymoab.rng import Range, unite
 
 
 class IsGm(IsoGeomGen):
@@ -345,6 +345,16 @@ class IsGm(IsoGeomGen):
             sname: string, name of file to save written file
             sdir: string, absolute path for writing file
         """
+        # only write out volumes and surfaces that were not deleted
+        vol_list = []
+        surf_list = []
+        for isovol in self.isovol_meshsets.keys():
+            vol_list.append(isovol[1])
+            surf_list.extend(self.isovol_meshsets[isovol]['surfs_EH'])
+
+        # convert to ranges and unite
+        all_meshsets = unite(Range(set(vol_list)), Range(set(surf_list)))
+
         # check file extension of save name:
         ext = sname.split(".")[-1]
         if ext.lower() not in ['h5m', 'vtk']:
@@ -353,7 +363,7 @@ class IsGm(IsoGeomGen):
             sname = sname.split(".")[0] + ".h5m"
         # save the file
         save_location = sdir + "/" + sname
-        self.mb.write_file(save_location)
+        self.mb.write_file(save_location, all_meshsets)
         print("Geometry file written to {}.".format(save_location))
 
     def __separate(self, ms):
@@ -532,9 +542,12 @@ class IsGm(IsoGeomGen):
 
                 if match:
                     # match was found so s1 and s2 are coincident
-                    # delete s2 (all triangles and all vertices that are
-                    # not on the outer curve)
-                    tris2 = self.__get_surf_triangles(verts2.keys())
+                    # delete s2 and remove tris/verts from surf and vol
+                    tris2 = self.mb.get_entities_by_type(s2, types.MBTRI)
+                    self.mb.remove_entities(s2, tris2)
+                    self.mb.remove_entities(v2[1], tris2)
+                    self.mb.remove_entities(s2, verts2.keys())
+                    self.mb.remove_entities(v2[1], verts2.keys())
                     self.mb.delete_entities(tris2)
                     surfs_to_remove[s2] = s1
 
@@ -543,6 +556,7 @@ class IsGm(IsoGeomGen):
         for s2, s1 in surfs_to_remove.items():
             self.isovol_meshsets[v2]['surfs_EH'].remove(s2)
             self.isovol_meshsets[v2]['surfs_EH'].append(s1)
+            self.mb.delete_entity(s2)
 
             # assign sense tag to surface
             # [forward=v1, backward=v2]
